@@ -4,11 +4,16 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 
-const $exports = {
-  strictMode: false,
-  strict(mode) {
-    this.strictMode = mode
-  },
+export function createRule(fun) {
+  const CustomTypeRule = function(value) {
+    let result = true
+    if (typeof fun === 'function') {
+      result = fun(value)
+    }
+    return result
+  }
+  CustomTypeRule.$$type = '[[Custom Type Rule]]'
+  return CustomTypeRule
 }
 
 const modify = function(decorate) {
@@ -40,80 +45,111 @@ const modify = function(decorate) {
   }
 }
 
-const decorator = Object.assign({}, $exports, {
-  expect: {
-    typeof(type) {
-      if (!(type instanceof Type)) {
-        throw new Error('decorator.expect.typeof should receive an instance of Type')
-      }
-      return modify(function(...args) {
-        type.strict(decorator.strictMode).assert(...args)
-      })
-    },
-  },
-  trace: {
-    logs: [],
-    by(type) {
-      if (!(type instanceof Type)) {
-        throw new Error('decorator.trace.by should receive an instance of Type')
-      }
-      return modify(function(...args) {
-        type.strict(decorator.strictMode).trace(...args).catch((error) => {
-          let obj = {
-            args,
-            type,
-            error,
-          }
-          if (typeof decorator.trace.onerror === 'function') {
-            decorator.trace.onerror(obj)
-          }
-          else {
-            decorator.trace.logs.push(obj)
-          }
+const decorator = {
+  get expect() {
+    let mode = this.mode
+    return {
+      typeof(type) {
+        if (!(type instanceof Type)) {
+          throw new Error('decorator.expect.typeof should receive an instance of Type')
+        }
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return modify(function(...args) {
+          type.assert(...args)
         })
-      })
-    },
-    onerror: null,
-    report() {
-      let logs = decorator.trace.logs
-      decorator.trace.logs = []
-      return logs
+      },
     }
   },
-})
+  get trace() {
+    let mode = this.mode
+    return {
+      logs: [],
+      by(type) {
+        if (!(type instanceof Type)) {
+          throw new Error('decorator.trace.by should receive an instance of Type')
+        }
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return modify(function(...args) {
+          type.trace(...args).catch((error) => {
+            let obj = {
+              args,
+              type,
+              error,
+            }
+            if (typeof decorator.trace.onerror === 'function') {
+              decorator.trace.onerror(obj)
+            }
+            else {
+              decorator.trace.logs.push(obj)
+            }
+          })
+        })
+      },
+      onerror: null,
+      report() {
+        let logs = decorator.trace.logs
+        decorator.trace.logs = []
+        return logs
+      },
+    }
+  },
+}
 
-export const HelloType = Object.assign({}, $exports, {
-  decorator,
+export const HelloType = {
+  get decorator() {
+    let mode = this.mode
+    return Object.assign({}, decorator, { mode })
+  },
   expect(...args) {
+    let mode = this.mode
     return {
       typeof(type) {
         if (!(type instanceof Type)) {
           throw new Error('expect.typeof should receive an instance of Type')
         }
-        type.strict(HelloType.strictMode).assert(...args)
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        type.assert(...args)
       },
     }
   },
   is(...args) {
+    let mode = this.mode
     return {
       typeof(type) {
         if (!(type instanceof Type)) {
           throw new Error('is.typeof should receive an instance of Type')
         }
-        return type.strict(HelloType.strictMode).meet(...args)
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return type.meet(...args)
       },
     }
   },
   trace(...args) {
+    let mode = this.mode
     return {
       by(type) {
         if (!(type instanceof Type)) {
           throw new Error('trace.by should receive an instance of Type')
         }
-        return type.strict(HelloType.strictMode).trace(...args)
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return type.trace(...args)
       },
     }
   },
-})
+  mode: 'none',
+  get strict() {
+    return Object.assign({}, HelloType, { mode: 'strict' })
+  },
+}
 
 export default HelloType

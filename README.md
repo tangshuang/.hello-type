@@ -12,13 +12,13 @@ npm i -S hello-type
 ## Usage
 
 ```js
-import HelloType, { Dict, Enum, Tuple, List, Type } from 'hello-type'
+import HelloType, { Dict, Enum, Tuple, List, Type, Rule } from 'hello-type'
 ```
 
 or
 
 ```js
-const { Dict, Enum, Tuple, List, Type, HelloType } = require('hello-type')
+const { Dict, Enum, Tuple, List, Type, Rule, HelloType } = require('hello-type')
 ```
 
 ## Type
@@ -64,6 +64,7 @@ Check rules:
 - ?: any class constructor which a data can be an instance of
 - ?: any value to be equaled
 - ?: an instance of `Type`, will flow the rules of it
+- Rule(?): a custom rule
 
 A type instance have methods:
 
@@ -87,16 +88,16 @@ PersonType.trace(person).catch((error) => console.log(error))
 Assert whether the args match the type.
 Return true if match, and return false if not match.
 
-**strict(mode)**
+**strict()**
 
-Whether use strict mode, default mode is false. If you pass mode with true, object properties which not in type defined will be treated as not matching.
+Whether use strict mode, default mode is false. If you use strict mode, object properties which not in type defined will be treated as not matching.
 
 ```js
 const MyType = new Type({
   name: String,
   age: Number,
 })
-MyType.strict(true).assert({
+MyType.strict().assert({
   name: 'tomy',
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
@@ -168,6 +169,33 @@ const ColorType = Enum('red', 'white', 'green')
 ColorType.assert('black')
 ```
 
+## createRule
+
+Create a custom rule:
+
+```js
+const CustomRule = createRule(function(value) {
+  return value === 'ok'
+})
+const CustomType = new Type(CustomRule)
+CustomType.assert('ok')
+```
+
+The function which you passed inot `Rule()` should have a parameter and return true or false.
+`true` means match, `false` means not match.
+
+Rules priority:
+
+- custom rule: notice here, custom rule comes firstly
+- equal: 'a' === 'a'
+- NaN
+- Number
+- Boolean
+- Object
+- instanceof: [] instanceof Array
+- Type
+- nested Type: new Type(Dict(...), List(...))
+
 ## HelloType
 
 It is a set of APIs.
@@ -176,30 +204,37 @@ It is a set of APIs.
 
 ```js
 HelloType.expect(book).typeof(BookType) // BookType.assert(book)
-@HelloType.docorator.expect.typeof(BookType) // use as Decorator on class or its member
+@HelloType.decorator.expect.typeof(BookType) // use as Decorator on class or its member
+
+HelloType.strict.expect(book).typeof(BookType) // strict mode
+@HelloType.strict.decorator.expect.typeof(BookType)
 ```
 
 2. judgement
 
 ```js
 HelloType.is(book).typeof(BookType) // BookType.meet(book)
+HelloType.strict.is(book).typeof(BookType) // strict mode
 ```
 
 3. track
 
 ```js
 HelloType.trace(book).by(BookType).catch((reports) => {}) // BookType.trace(book).catch((reports) => {})
-@HelloType.docorator.trace.by(BookType) // use as Decorator on class or its member
+@HelloType.decorator.trace.by(BookType) // use as Decorator on class or its member
+
+HelloType.strict.trace(book).by(BookType).catch((reports) => {}) // strict mode
+@HelloType.strict.decorator.trace.by(BookType)
 ```
 
 ```js
-HelloType.docorator.trace.onerror = function(error) {
+HelloType.decorator.trace.onerror = function(error) {
   // when trace catch error
 }
 ```
 
 ```js
-let logs = HelloType.docorator.trace.report()
+let logs = HelloType.decorator.trace.report()
 ```
 
 ## MIT License

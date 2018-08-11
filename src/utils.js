@@ -24,6 +24,7 @@ export function isEmpty(obj) {
 
 export function toFlatObject(obj, parentPath = '', result = {}) {
   let keys = Object.keys(obj)
+  keys.sort() // make sure the output are the same order
   keys.forEach((key) => {
     let path = parentPath ? parentPath + '.' + key : key
     let value = obj[key]
@@ -35,4 +36,16 @@ export function toFlatObject(obj, parentPath = '', result = {}) {
     }
   })
   return result
+}
+
+export function isConstructor(f) {
+  try {
+    new f()
+  } 
+  catch (err) {
+    if (err.message.indexOf('is not a constructor') >= 0) {
+      return false
+    }
+  }
+  return true
 }

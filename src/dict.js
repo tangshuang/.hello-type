@@ -8,7 +8,7 @@ export default function Dict(pattern) {
   let DictType = new Type(pattern)
   DictType.assert = function(arg) {
     if (!isObject(arg)) {
-      throw new Error(`${typeof(arg)} is not match Dict type`)
+      throw new Error(`"${typeof(arg)}" is not match Dict type`)
     }
     let pattern = this.patterns[0]
     this.vaildate(arg, pattern)

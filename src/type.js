@@ -1,62 +1,81 @@
-import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray, isConstructor } from './utils'
 
 export default class Type {
   constructor(...patterns) {
     this.id = Date.now()  + '.' + parseInt(Math.random() * 10000)
-    this.strictMode = false
+    this.mode = 'none'
     
     if (!patterns.length) {
       return
     }
 
-    this.patterns = patterns.map((pattern) => {
-      if (isObject(pattern)) {
-        let flatObj = toFlatObject(pattern)
+    this.patterns = patterns
+    this.rules = patterns.map((rule) => {
+      if (isObject(rule)) {
+        let flatObj = toFlatObject(rule)
         return isEmpty(flatObj) ? Object : flatObj
       }
-      else if (isArray(pattern)) {
+      else if (isArray(rule)) {
         return Array
       }
       else {
-        return pattern
+        return rule
       }
     })
   }
-  vaildate(arg, pattern) {
+  vaildate(arg, rule) {
+    // custom rule
+    // i.e. (new Type((value) => value === true)).assert(true)
+    // notice, this rule should must be bebind `instance` rule
+    if (typeof rule === 'function' && rule.$$type === '[[Custom Type Rule]]') {
+      let result = rule(arg)
+      if (result === true) {
+        return true
+      }
+      else {
+        throw new Error('argument not match custom rule')
+      }
+    }
+
     // is the given value
     // i.e. (new Type('name')).assert('name')
-    if (arg === pattern) {
+    if (arg === rule) {
       return true
     }
 
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
-    if (isNaN(arg) && isNaN(pattern)) {
+    if (typeof arg === 'number' && isNaN(arg) && typeof rule === 'number' && isNaN(rule)) {
       return true
     }
 
     // number
     // i.e. (new Type(Number).assert(1))
-    if (isNumber(arg) && pattern === Number) {
+    if (isNumber(arg) && rule === Number) {
       return true
     }
 
     // boolean
     // i.e. (new Type(Boolean)).assert(true)
-    if (isBoolean(arg) && pattern === Boolean) {
+    if (isBoolean(arg) && rule === Boolean) {
+      return true
+    }
+
+    // string
+    if (typeof arg === 'string' && rule === String) {
       return true
     }
 
     // object
     // i.e. (new Type(Object).assert({}))
-    if (isObject(arg) && pattern === Object) {
+    if (isObject(arg) && rule === Object) {
       return true
     }
 
     // instance
     // i.e. (new Type(Function)).assert(() => {})
     // i.e. (new Type(Array)).assert([])
-    if (arg instanceof pattern) {
+    if (isConstructor(rule) && arg instanceof rule) {
       return true
     }
 
@@ -66,16 +85,16 @@ export default class Type {
     //   price: Number,
     // })
     // BookType.assert({ name: 'Hamlet', price: 120.34 })
-    if (isObject(arg) && isObject(pattern)) {
+    if (isObject(arg) && isObject(rule)) {
       let flatArg = toFlatObject(arg)
-      let patternPaths = Object.keys(pattern)
+      let rulePaths = Object.keys(rule)
       let argPaths = Object.keys(flatArg)
 
-      if (this.strictMode) {
+      if (this.mode === 'strict') {
         argPaths.forEach((argPath) => {
-          if (!inArray(argPath, patternPaths)) {
+          if (!inArray(argPath, rulePaths)) {
             // here, arg may be a deep level object, which contained by Type, so I have to check reverse
-            let exists = patternPaths.find((item) => {
+            let exists = rulePaths.find((item) => {
               if (argPath === item) {
                 return true
               }
@@ -88,18 +107,18 @@ export default class Type {
               return
             }
 
-            throw new Error(`key "${patternPath}" in your argument is not allowed in strict mode`)
+            throw new Error(`key "${rulePath}" in your argument is not allowed in strict mode`)
           }
         })
       }
       
-      patternPaths.forEach((patternPath) => {
-        if (!inArray(patternPath, argPaths)) {
-          throw new Error(`can't find key "${patternPath}" in your argument`)
+      rulePaths.forEach((rulePath) => {
+        if (!inArray(rulePath, argPaths)) {
+          throw new Error(`can't find key "${rulePath}" in your argument`)
         }
 
-        let type = patternPath[patternPath]
-        let value = flatArg[argPath]
+        let type = rule[rulePath]
+        let value = flatArg[rulePath]
         this.vaildate(value, type)
       })
 
@@ -109,14 +128,14 @@ export default class Type {
     // @example:
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
-    if (pattern instanceof Type) {
-      return pattern.assert(arg)
+    if (rule instanceof Type) {
+      return rule.assert(arg)
     }
 
-    let typeName = pattern
+    let typeName = rule
     let argName = arg
-    if (typeof pattern === 'function') {
-      typeName = pattern.name
+    if (typeof rule === 'function') {
+      typeName = rule.name
     }
     if (typeof arg === 'function') {
       argName = 'function ' + arg.name
@@ -130,16 +149,16 @@ export default class Type {
     else if (typeof arg === 'object') {
       argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
     }
-    throw new Error(argName + ' not match type of "' + typeName + '"')
+    throw new Error('"' + argName + '" not match type of "' + typeName + '"')
   }
   assert(...args) {
-    if (args.length !== this.patterns.length) {
+    if (args.length !== this.rules.length) {
       throw new Error('arguments length not match type')
     }
 
     args.forEach((arg, i) => {
-      let pattern = this.patterns[i]
-      this.vaildate(arg, pattern)
+      let rule = this.rules[i]
+      this.vaildate(arg, rule)
     })
   }
   meet(...args) {
@@ -157,8 +176,9 @@ export default class Type {
     })
   }
 
-  strict(mode) {
-    this.strictMode = mode
-    return this
+  strict() {
+    let newInstance = new Type(...this.patterns)
+    newInstance.mode = 'strict'
+    return newInstance
   }
 }
