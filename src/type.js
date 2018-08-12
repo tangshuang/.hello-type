@@ -1,4 +1,5 @@
 import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray, isConstructor } from './utils'
+import Rule from './rule'
 
 export default class Type {
   constructor(...patterns) {
@@ -27,8 +28,8 @@ export default class Type {
     // custom rule
     // i.e. (new Type((value) => value === true)).assert(true)
     // notice, this rule should must be bebind `instance` rule
-    if (typeof rule === 'function' && rule.$$type === '[[Custom Type Rule]]') {
-      let result = rule(arg)
+    if (rule instanceof Rule) {
+      let result = typeof rule.factory && rule.factory(arg)
       if (result === true) {
         return true
       }
@@ -161,6 +162,15 @@ export default class Type {
       this.vaildate(arg, rule)
     })
   }
+  catch(...args) {
+    try {
+      this.assert(...args)
+      return null
+    }
+    catch(e) {
+      return e
+    }
+  }
   meet(...args) {
     try {
       this.assert(...args)
@@ -176,7 +186,7 @@ export default class Type {
     })
   }
 
-  strict() {
+  get strict() {
     let newInstance = new Type(...this.patterns)
     newInstance.mode = 'strict'
     return newInstance

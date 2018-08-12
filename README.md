@@ -88,7 +88,12 @@ PersonType.trace(person).catch((error) => console.log(error))
 Assert whether the args match the type.
 Return true if match, and return false if not match.
 
-**strict()**
+**catch(...args)**
+
+Assert whether the args match the type.
+Return null if match, and return error object if not match.
+
+**strict**
 
 Whether use strict mode, default mode is false. If you use strict mode, object properties which not in type defined will be treated as not matching.
 
@@ -97,7 +102,7 @@ const MyType = new Type({
   name: String,
   age: Number,
 })
-MyType.strict().assert({
+MyType.strict.assert({
   name: 'tomy',
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
@@ -169,19 +174,19 @@ const ColorType = Enum('red', 'white', 'green')
 ColorType.assert('black')
 ```
 
-## createRule
+## Rule
 
 Create a custom rule:
 
 ```js
-const CustomRule = createRule(function(value) {
+const CustomRule = new Rule(function(value) {
   return value === 'ok'
 })
 const CustomType = new Type(CustomRule)
 CustomType.assert('ok')
 ```
 
-The function which you passed inot `Rule()` should have a parameter and return true or false.
+The function which you passed inot `new Rule()` should have a parameter and return true or false.
 `true` means match, `false` means not match.
 
 Rules priority:
@@ -215,6 +220,9 @@ HelloType.strict.expect(book).typeof(BookType) // strict mode
 ```js
 HelloType.is(book).typeof(BookType) // BookType.meet(book)
 HelloType.strict.is(book).typeof(BookType) // strict mode
+
+HelloType.catch(book).by(BookType) // BookType.catch(book)
+HelloType.strict.catch(book).by(BookType) // strict mode
 ```
 
 3. track

@@ -3,18 +3,7 @@ export { default as Dict } from './dict'
 export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
-
-export function createRule(fun) {
-  const CustomTypeRule = function(value) {
-    let result = true
-    if (typeof fun === 'function') {
-      result = fun(value)
-    }
-    return result
-  }
-  CustomTypeRule.$$type = '[[Custom Type Rule]]'
-  return CustomTypeRule
-}
+export { default as Rule } from './rule'
 
 const modify = function(decorate) {
   return function(target, prop, descriptor) {
@@ -109,7 +98,7 @@ export const HelloType = {
     return {
       typeof(type) {
         if (!(type instanceof Type)) {
-          throw new Error('expect.typeof should receive an instance of Type')
+          throw new Error('HelloType.expect.typeof should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -118,12 +107,26 @@ export const HelloType = {
       },
     }
   },
+  catch(...args) {
+    let mode = this.mode
+    return {
+      by(type) {
+        if (!(type instanceof Type)) {
+          throw new Error('HelloType.catch.by should receive an instance of Type')
+        }
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return type.catch(...args)
+      },
+    }
+  },
   is(...args) {
     let mode = this.mode
     return {
       typeof(type) {
         if (!(type instanceof Type)) {
-          throw new Error('is.typeof should receive an instance of Type')
+          throw new Error('HelloType.is.typeof should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -137,7 +140,7 @@ export const HelloType = {
     return {
       by(type) {
         if (!(type instanceof Type)) {
-          throw new Error('trace.by should receive an instance of Type')
+          throw new Error('HelloType.trace.by should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
