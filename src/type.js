@@ -1,5 +1,6 @@
 import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray, isConstructor } from './utils'
 import Rule from './rule'
+import Enum from './enum'
 
 export default class Type {
   constructor(...patterns) {
@@ -17,7 +18,7 @@ export default class Type {
         return isEmpty(flatObj) ? Object : flatObj
       }
       else if (isArray(rule)) {
-        return Array
+        return isEmpty(rule) ? Array : rule
       }
       else {
         return rule
@@ -67,16 +68,40 @@ export default class Type {
       return true
     }
 
-    // object
-    // i.e. (new Type(Object).assert({}))
-    if (isObject(arg) && rule === Object) {
+    // array
+    // i.e. (new Type(Array)).assert([])
+    if (isArray(arg) && rule === Array) {
       return true
     }
 
-    // instance
-    // i.e. (new Type(Function)).assert(() => {})
-    // i.e. (new Type(Array)).assert([])
-    if (isConstructor(rule) && arg instanceof rule) {
+    // @example:
+    // const BookType = new Type([Number, Number])
+    // BookType.strict.assert([1, 10])
+    if (isArray(arg) && isArray(rule)) {
+      let argLen = arg.length
+      let ruleLen = rule.length
+
+      if (this.mode === 'strict' && argLen !== ruleLen) {
+        throw new Error('array length should be ' + ruleLen + ', but receive ' + argLen)
+      }
+
+      let patterns = rule
+      if (argLen > ruleLen) {
+        for (let i = ruleLen; i < argLen; i ++) {
+          let SpreadRule = rule.length > 1 ? Enum(...rule) : rule[0]
+          patterns = patterns.contact([SpreadRule])
+        }
+      }
+      arg.forEach((value, i) => {
+        let pattern = patterns[i]
+        this.vaildate(value, pattern)
+      })
+      return true
+    }
+    
+    // object
+    // i.e. (new Type(Object).assert({}))
+    if (isObject(arg) && rule === Object) {
       return true
     }
 
@@ -123,6 +148,13 @@ export default class Type {
         this.vaildate(value, type)
       })
 
+      return true
+    }
+
+    // instance
+    // i.e. (new Type(Function)).assert(() => {})
+    // i.e. (new Type(Array)).assert([])
+    if (isConstructor(rule) && arg instanceof rule) {
       return true
     }
 

@@ -95,7 +95,7 @@ Return null if match, and return error object if not match.
 
 **strict**
 
-Whether use strict mode, default mode is false. If you use strict mode, object properties which not in type defined will be treated as not matching.
+Whether use strict mode, default mode is false. If you use strict mode, object properties which not in type defined will be treated as not matching, array length should match.
 
 ```js
 const MyType = new Type({
@@ -107,6 +107,11 @@ MyType.strict.assert({
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
 })
+```
+
+```js
+const MyType = new Type([Number, Number])
+MyType.strict.assert([1]) // array length should be 2, but here just passed only one
 ```
 
 ## Dict
@@ -199,9 +204,39 @@ Rules priority:
 - Number
 - Boolean
 - String
+- Array
 - Object
 - instanceof: [] instanceof Array
 - instanceof (nested) Type: new Type(Dict(...), List(...))
+
+**rule of 'object'**
+
+HelloType will check the structure and property value type of object:
+
+```js
+const MyType = new Type({
+  obj: {
+    name: String,
+    Sub: {
+      title: String,
+    },
+  },
+})
+```
+
+In this case, the pending verify object should have the same structure.
+
+**rule of 'array'**
+
+HelloType will check the array's each item's type with the given rule:
+
+```js
+const MyType = new Type({
+  arr: [Number, String, Function, CustomType],
+})
+```
+
+The pending verify array's items should be right data type as the given order. If the array length is longer than the rule's length, the overflow ones should be one of these rules. For example, the 5th item should be Enum(Number, String, Function, CustomType).
 
 ## HelloType
 
