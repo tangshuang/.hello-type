@@ -189,6 +189,8 @@ CustomType.assert('ok')
 The function which you passed inot `new Rule()` should have a parameter and return true or false.
 `true` means match, `false` means not match.
 
+Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
+
 Rules priority:
 
 - custom rule: notice here, custom rule comes firstly
@@ -196,10 +198,10 @@ Rules priority:
 - NaN
 - Number
 - Boolean
+- String
 - Object
 - instanceof: [] instanceof Array
-- Type
-- nested Type: new Type(Dict(...), List(...))
+- instanceof (nested) Type: new Type(Dict(...), List(...))
 
 ## HelloType
 
