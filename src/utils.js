@@ -39,13 +39,16 @@ export function toFlatObject(obj, parentPath = '', result = {}) {
 }
 
 export function isConstructor(f) {
+  let instance = null
   try {
-    new f()
-  } 
-  catch (err) {
-    if (err.message.indexOf('is not a constructor') >= 0) {
+    instance = new f()
+  }
+  catch (e) {
+    if (err.message.indexOf('is not a constructor') > -1) {
+      instance = null
       return false
     }
   }
+  instance = null
   return true
 }
