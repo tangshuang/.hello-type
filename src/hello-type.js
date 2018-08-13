@@ -18,13 +18,19 @@ const modify = function(decorate) {
     }
     // decorate class member function
     else if (prop) {
-      let method = descriptor.value
-      if (typeof method === 'function') {
-        let decorator = function(...args) {
+      let property = descriptor.value
+      if (typeof property === 'function') {
+        let wrapper = function(...args) {
           decorate(...args)
-          method.call(this, ...args)
+          property.call(this, ...args)
         }
-        descriptor.value = decorator
+        descriptor.value = wrapper
+      }
+      else {
+        descriptor.set = (value) => {
+          decorate(value)
+          descriptor.value = value
+        }
       }
       return descriptor
     }
@@ -34,13 +40,13 @@ const modify = function(decorate) {
   }
 }
 
-const decorator = {
-  get expect() {
+export const HelloType = {
+  get decorator() {
     let mode = this.mode
     return {
-      typeof(type) {
+      expect(type) {
         if (!(type instanceof Type)) {
-          throw new Error('decorator.expect.typeof should receive an instance of Type')
+          throw new Error('HelloType.decorator.expect should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -49,15 +55,9 @@ const decorator = {
           type.assert(...args)
         })
       },
-    }
-  },
-  get trace() {
-    let mode = this.mode
-    return {
-      logs: [],
-      by(type) {
+      traceBy(type, onerror) {
         if (!(type instanceof Type)) {
-          throw new Error('decorator.trace.by should receive an instance of Type')
+          throw new Error('HelloType.decorator.traceBy should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -69,83 +69,64 @@ const decorator = {
               type,
               error,
             }
-            if (typeof decorator.trace.onerror === 'function') {
-              decorator.trace.onerror(obj)
-            }
-            else {
-              decorator.trace.logs.push(obj)
+            if (typeof onerror === 'function') {
+              onerror(obj)
             }
           })
         })
       },
-      onerror: null,
-      report() {
-        let logs = decorator.trace.logs
-        decorator.trace.logs = []
-        return logs
-      },
     }
   },
-}
-
-export const HelloType = {
-  get decorator() {
-    let mode = this.mode
-    return Object.assign({}, decorator, { mode })
-  },
-  expect(...args) {
+  typeof(...args) {
     let mode = this.mode
     return {
-      typeof(type) {
+      expect(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.expect.typeof should receive an instance of Type')
+          throw new Error('HelloType.typeof.expect should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
         }
         type.assert(...args)
       },
-    }
-  },
-  catch(...args) {
-    let mode = this.mode
-    return {
-      by(type) {
+      is(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.catch.by should receive an instance of Type')
-        }
-        if (mode === 'strict') {
-          type = type.strict()
-        }
-        return type.catch(...args)
-      },
-    }
-  },
-  is(...args) {
-    let mode = this.mode
-    return {
-      typeof(type) {
-        if (!(type instanceof Type)) {
-          throw new Error('HelloType.is.typeof should receive an instance of Type')
+          throw new Error('HelloType.typeof.is should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
         }
         return type.meet(...args)
       },
-    }
-  },
-  trace(...args) {
-    let mode = this.mode
-    return {
-      by(type) {
+      catchBy(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.trace.by should receive an instance of Type')
+          throw new Error('HelloType.typeof.catchBy should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
         }
-        return type.trace(...args)
+        return type.catch(...args)
+      },
+      traceBy(type, onerror) {
+        if (!(type instanceof Type)) {
+          throw new Error('HelloType.typeof.traceBy should receive an instance of Type')
+        }
+        if (mode === 'strict') {
+          type = type.strict()
+        }
+        return type.trace(...args).catch((error) => {
+          let obj = {
+            args,
+            type,
+            error,
+          }
+          if (typeof onerror === 'function') {
+            onerror(obj)
+          }
+          else {
+            throw error
+          }
+        })
       },
     }
   },
