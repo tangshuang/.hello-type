@@ -5,6 +5,8 @@ export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Rule } from './rule'
 
+import { throwError } from './utils'
+
 const modify = function(decorate) {
   return function(target, prop, descriptor) {
     // decorate class constructor function
@@ -46,7 +48,7 @@ export const HelloType = {
     return {
       expect(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.decorator.expect should receive an instance of Type')
+          throwError('HelloType.decorator.expect should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -57,7 +59,7 @@ export const HelloType = {
       },
       traceBy(type, onerror) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.decorator.traceBy should receive an instance of Type')
+          throwError('HelloType.decorator.traceBy should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -82,7 +84,7 @@ export const HelloType = {
     return {
       expect(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.typeof.expect should receive an instance of Type')
+          throwError('HelloType.typeof.expect should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -91,7 +93,7 @@ export const HelloType = {
       },
       is(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.typeof.is should receive an instance of Type')
+          throwError('HelloType.typeof.is should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -100,7 +102,7 @@ export const HelloType = {
       },
       catchBy(type) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.typeof.catchBy should receive an instance of Type')
+          throwError('HelloType.typeof.catchBy should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -109,7 +111,7 @@ export const HelloType = {
       },
       traceBy(type, onerror) {
         if (!(type instanceof Type)) {
-          throw new Error('HelloType.typeof.traceBy should receive an instance of Type')
+          throwError('HelloType.typeof.traceBy should receive an instance of Type')
         }
         if (mode === 'strict') {
           type = type.strict()
@@ -133,6 +135,9 @@ export const HelloType = {
   mode: 'none',
   get strict() {
     return Object.assign({}, HelloType, { mode: 'strict' })
+  },
+  set slient(mode) {
+    throwError.slient = mode
   },
 }
 

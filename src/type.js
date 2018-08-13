@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray, isConstructor } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toFlatObject, isEmpty, inArray, isConstructor, throwError } from './utils'
 import Rule from './rule'
 import Enum from './enum'
 
@@ -35,7 +35,7 @@ export default class Type {
         return true
       }
       else {
-        throw new Error('argument not match custom rule')
+        throwError('argument not match custom rule')
       }
     }
 
@@ -82,7 +82,7 @@ export default class Type {
       let ruleLen = rule.length
 
       if (this.mode === 'strict' && argLen !== ruleLen) {
-        throw new Error('array length should be ' + ruleLen + ', but receive ' + argLen)
+        throwError('array length should be ' + ruleLen + ', but receive ' + argLen)
       }
 
       let patterns = rule
@@ -133,14 +133,14 @@ export default class Type {
               return
             }
 
-            throw new Error(`key "${rulePath}" in your argument is not allowed in strict mode`)
+            throwError(`key "${rulePath}" in your argument is not allowed in strict mode`)
           }
         })
       }
       
       rulePaths.forEach((rulePath) => {
         if (!inArray(rulePath, argPaths)) {
-          throw new Error(`can't find key "${rulePath}" in your argument`)
+          throwError(`can't find key "${rulePath}" in your argument`)
         }
 
         let type = rule[rulePath]
@@ -182,11 +182,11 @@ export default class Type {
     else if (typeof arg === 'object') {
       argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
     }
-    throw new Error('"' + argName + '" not match type of "' + typeName + '"')
+    throwError('"' + argName + '" not match type of "' + typeName + '"')
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
-      throw new Error('arguments length not match type')
+      throwError('arguments length not match type')
     }
 
     args.forEach((arg, i) => {

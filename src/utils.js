@@ -52,3 +52,12 @@ export function isConstructor(f) {
   instance = null
   return true
 }
+
+export function throwError(message) {
+  if (throwError.slient) {
+    console.error(message)
+  }
+  else {
+    throw new Error(message)
+  }
+}

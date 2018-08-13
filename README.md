@@ -245,30 +245,30 @@ It is a set of APIs.
 1. assert
 
 ```js
-HelloType.expect(book).typeof(BookType) // BookType.assert(book)
-@HelloType.decorator.expect.typeof(BookType) // use as Decorator on class or its member
+HelloType.typeof(book).expect(BookType) // BookType.assert(book)
+@HelloType.decorator.expect(BookType) // use as Decorator on class or its member
 
-HelloType.strict.expect(book).typeof(BookType) // strict mode
-@HelloType.strict.decorator.expect.typeof(BookType)
+HelloType.strict.typeof(book).expect(BookType) // strict mode
+@HelloType.strict.decorator.expect(BookType)
 ```
 
 2. judgement
 
 ```js
-HelloType.is(book).typeof(BookType) // BookType.meet(book)
-HelloType.strict.is(book).typeof(BookType) // strict mode
+HelloType.typeof(book).is(BookType) // BookType.meet(book)
+HelloType.strict.typeof(book).is(BookType) // strict mode
 
-HelloType.catch(book).by(BookType) // BookType.catch(book)
-HelloType.strict.catch(book).by(BookType) // strict mode
+HelloType.typeof(book).catchBy(BookType) // BookType.catch(book)
+HelloType.strict.typeof(book).catchBy(BookType) // strict mode
 ```
 
 3. track
 
 ```js
-HelloType.trace(book).by(BookType).catch((reports) => {}) // BookType.trace(book).catch((reports) => {})
-@HelloType.decorator.trace.by(BookType) // use as Decorator on class or its member
+HelloType.typeof(book).traceBy(BookType).catch((reports) => {}) // BookType.trace(book).catch((reports) => {})
+@HelloType.decorator.traceBy(BookType, function(error) { ... }) // use as Decorator on class or its member
 
-HelloType.strict.trace(book).by(BookType).catch((reports) => {}) // strict mode
+HelloType.strict.typeof(book).by(BookType).catch((reports) => {}) // strict mode
 @HelloType.strict.decorator.trace.by(BookType)
 ```
 
