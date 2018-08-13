@@ -73,6 +73,16 @@ A type instance have methods:
 Assert whether the args match the type.
 If not match, it will use `throw` to break the assert.
 
+**test(...args)**
+
+Assert whether the args match the type.
+Return true if match, and return false if not match.
+
+**catch(...args)**
+
+Assert whether the args match the type.
+Return null if match, and return error object if not match.
+
 **trace(...args)**
 
 Assert whether the args match the type.
@@ -82,16 +92,6 @@ If not match, it will rejected. You can do like:
 ```js
 PersonType.trace(person).catch((error) => console.log(error))
 ```
-
-**meet(...args)**
-
-Assert whether the args match the type.
-Return true if match, and return false if not match.
-
-**catch(...args)**
-
-Assert whether the args match the type.
-Return null if match, and return error object if not match.
 
 **strict**
 
@@ -245,42 +245,58 @@ It is a set of APIs.
 1. assert
 
 ```js
-HelloType.typeof(book).expect(BookType) // BookType.assert(book)
-@HelloType.decorator.expect(BookType) // use as Decorator on class or its member
+// BookType.assert(book)
+HelloType.expect(BookType).to.be.typeof(book)
+HelloType.expect(BookType).to.stritly.be.typeof(book)
 
-HelloType.strict.typeof(book).expect(BookType) // strict mode
-@HelloType.strict.decorator.expect(BookType)
+HelloType.expect(book).to.match(BookType)
+HelloType.expect(book).to.strictly.match(BookType)
 ```
 
-2. judgement
+2. test
 
 ```js
-HelloType.typeof(book).is(BookType) // BookType.meet(book)
-HelloType.strict.typeof(book).is(BookType) // strict mode
-
-HelloType.typeof(book).catchBy(BookType) // BookType.catch(book)
-HelloType.strict.typeof(book).catchBy(BookType) // strict mode
-```
-
-3. track
-
-```js
-HelloType.typeof(book).traceBy(BookType).catch((reports) => {}) // BookType.trace(book).catch((reports) => {})
-@HelloType.decorator.traceBy(BookType, function(error) { ... }) // use as Decorator on class or its member
-
-HelloType.strict.typeof(book).by(BookType).catch((reports) => {}) // strict mode
-@HelloType.strict.decorator.trace.by(BookType)
+// BookType.test(book)
+HelloType.expect(BookType).to.test(book)
+HelloType.expect(BookType).to.strictly.test(book)
 ```
 
 ```js
-HelloType.decorator.trace.onerror = function(error) {
-  // when trace catch error
+if (HelloType.expect(BookType).to.test(book)) {
+  //...
 }
 ```
 
+3. catch
+
 ```js
-let logs = HelloType.decorator.trace.report()
+// BookType.catch(book)
+HelloType.expect(BookType).to.catch(book)
+HelloType.expect(BookType).to.strictly.catch(book)
 ```
+
+```js
+let error = HelloType.expect(BookType).to.catch(book)
+```
+
+4. track
+
+```js
+// BookType.trace(book).catch((error) => {})
+HelloType.expect(BookType).to.trace(book).catch((error) => {})
+HelloType.expect(BookType).to.strictly.trace(book).catch((error) => {})
+```
+
+5. decorator
+
+```js
+@HelloType.expect.to.be.strictly.matched.with(BookType)
+@HelloType.expect.to.be.strictly.matched.with(BookType)
+
+@HelloType.expect.to.be.strictly.traced.by(BookType)
+@HelloType.expect.to.be.strictly.traced.by(BookType)
+```
+
 
 ## MIT License
 

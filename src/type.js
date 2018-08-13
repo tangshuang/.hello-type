@@ -35,7 +35,7 @@ export default class Type {
         return true
       }
       else {
-        throwError('argument not match custom rule')
+        return throwError('argument not match custom rule')
       }
     }
 
@@ -82,7 +82,7 @@ export default class Type {
       let ruleLen = rule.length
 
       if (this.mode === 'strict' && argLen !== ruleLen) {
-        throwError('array length should be ' + ruleLen + ', but receive ' + argLen)
+        return throwError('array length should be ' + ruleLen + ', but receive ' + argLen)
       }
 
       let patterns = rule
@@ -117,7 +117,7 @@ export default class Type {
       let argPaths = Object.keys(flatArg)
 
       if (this.mode === 'strict') {
-        argPaths.forEach((argPath) => {
+        for (let argPath of argPaths) {
           if (!inArray(argPath, rulePaths)) {
             // here, arg may be a deep level object, which contained by Type, so I have to check reverse
             let exists = rulePaths.find((item) => {
@@ -133,20 +133,20 @@ export default class Type {
               return
             }
 
-            throwError(`key "${rulePath}" in your argument is not allowed in strict mode`)
+            return throwError(`key "${rulePath}" in your argument is not allowed in strict mode`)
           }
-        })
+        }
       }
       
-      rulePaths.forEach((rulePath) => {
+      for (let rulePath of rulePaths) {
         if (!inArray(rulePath, argPaths)) {
-          throwError(`can't find key "${rulePath}" in your argument`)
+          return throwError(`can't find key "${rulePath}" in your argument`)
         }
 
         let type = rule[rulePath]
         let value = flatArg[rulePath]
         this.vaildate(value, type)
-      })
+      }
 
       return true
     }
@@ -182,11 +182,11 @@ export default class Type {
     else if (typeof arg === 'object') {
       argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
     }
-    throwError('"' + argName + '" not match type of "' + typeName + '"')
+    return throwError('"' + argName + '" not match type of "' + typeName + '"')
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
-      throwError('arguments length not match type')
+      return throwError('arguments length not match type')
     }
 
     args.forEach((arg, i) => {
@@ -203,7 +203,7 @@ export default class Type {
       return e
     }
   }
-  meet(...args) {
+  test(...args) {
     try {
       this.assert(...args)
       return true
