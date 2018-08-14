@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toShallowObject, isEmpty, inArray, isFunction, isConstructor, throwError } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toShallowObject, isFunction, isConstructor } from './utils'
 import Rule from './rule'
 import Dict from './dict'
 import List from './list'
@@ -31,12 +31,16 @@ export default class Type {
   }
   vaildate(arg, rule) {
     // custom rule
-    // i.e. (new Type((value) => value === true)).assert(true)
-    // notice, this rule should must be bebind `instance` rule
+    // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
       let e = isFunction(rule.factory) && rule.factory(arg)
       if (e !== true) {
-        return e instanceof Error ? e : new Error(result || 'argument not match custom rule')
+        if(e instanceof Error) {
+          throw e
+        }
+        else {
+          throw new Error(result || 'argument not match custom rule')
+        }
       }
       return true
     }
@@ -106,7 +110,7 @@ export default class Type {
     else if (typeof arg === 'object') {
       argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
     }
-    return new Error(argName + ' not match type of "' + typeName + '"')
+    throw new Error(argName + ' not match type of "' + typeName + '"')
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
@@ -116,10 +120,7 @@ export default class Type {
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
       let rule = this.rules[i]
-      let e = this.vaildate(arg, rule)
-      if (e !== true) {
-        throw e
-      }
+      this.vaildate(arg, rule)
     }
 
     return true

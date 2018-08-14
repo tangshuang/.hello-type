@@ -1,5 +1,4 @@
 import Type from './type'
-import { throwError } from './utils'
 
 export default function Enum(...patterns) {
   let EnumType = new Type(...patterns)
@@ -13,7 +12,7 @@ export default function Enum(...patterns) {
       }
     }
     
-    return throwError(`"${arg}" is not match Enum(${this.patterns.join(',')})`)
+    throw new Error(`"${arg}" is not match Enum(${this.patterns.join(',')})`)
   }
   return EnumType
 }

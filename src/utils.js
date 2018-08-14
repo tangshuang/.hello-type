@@ -68,15 +68,37 @@ export function toShallowObject(obj, factory) {
   return result
 }
 
-export function throwError(message) {
-  if (message instanceof Error) {
-    message = message.message
-  }
-  if (throwError.slient) {
-    console.error(message)
-    return new Error(message)
-  }
-  else {
-    throw new Error(message)
+export function decorate(factory) {
+  return function(target, prop, descriptor) {
+    // decorate class constructor function
+    if (target && !prop) {
+      return class extends target {
+        constructor(...args) {
+          isFunction(factory) && factory(...args)
+          super(...args)
+        }
+      }
+    }
+    // decorate class member function
+    else if (prop) {
+      let property = descriptor.value
+      if (typeof property === 'function') {
+        let wrapper = function(...args) {
+          isFunction(factory) && factory(...args)
+          property.call(this, ...args)
+        }
+        descriptor.value = wrapper
+      }
+      else {
+        descriptor.set = (value) => {
+          isFunction(factory) && factory(value)
+          descriptor.value = value
+        }
+      }
+      return descriptor
+    }
+    else {
+      return descriptor
+    }
   }
 }

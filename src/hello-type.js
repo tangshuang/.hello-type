@@ -6,19 +6,123 @@ export { default as Enum } from './enum'
 export { default as Range } from './range'
 export { default as Rule, Any } from './rule'
 
-import { throwError } from './utils'
-import Assertion from './assertion'
-import Decorator from './decorator'
+import { decorate } from './utils'
 
-export const HelloType = {
-  expect(...args) {
-    let assertion = new Assertion(...args)
-    return assertion.expect(...args)
-  },
-  decorator: new Decorator(),
-  set slient(mode) {
-    throwError.slient = mode
-  },
+export class HelloType {
+  constructor() {
+    this.paths = []
+    this.mode = 'none'
+  }
+
+  expect(type) {
+    this.paths.push('expect')
+    this.type = type
+    return this
+  }
+  is(type) {
+    this.paths.push('is')
+    this.type = type
+    return this
+  }
+  trace(...targets) {
+    this.paths.push('trace')
+    this.targets = targets
+    return this
+  }
+  catch(...targets) {
+    this.paths.push('catch')
+    this.targets = targets
+    return this
+  }
+
+  by(type) {
+    this.paths.push('by')
+    this.type = type
+    return this.emit()
+  }
+  typeof(...targets) {
+    this.paths.push('typeof')
+    this.targets = targets
+    return this.emit()
+  }
+
+  emit() {
+    let path = this.paths.join('.')
+    let type = this.mode === 'strict' ? this.type.strict : this.type
+    let targets = this.targets
+    switch (path) {
+      case 'expect.typeof': return type.assert(...targets)
+      case 'is.typeof': return type.test(...targets)
+      case 'trace.by': return type.trace(...targets)
+      case 'catch.by': return type.catch(...targets)
+      default: return null
+    }
+  }
+
+  get strict() {
+    this.mode = 'strict'
+    return this
+  }
+
+  get decorator() {
+    let decorator = new Decorator()
+    decorator.mode = this.mode
+    return decorator
+  }
+}
+
+export class Decorator {
+  constructor() {
+    this.paths = []
+    this.mode = 'none'
+  }
+
+  expect(type) {
+    this.paths.push('expect')
+    this.type = type
+    return this.emit
+  }
+
+  get trace() {
+    this.paths.push('trace')
+    return this
+  }
+  by(type) {
+    this.paths.push('by')
+    this.type = type
+    return this
+  }
+  catch(fn) {
+    this.paths.push('catch')
+    this.fn = fn
+    return this.emit()
+  }
+
+  emit() {
+    let path = this.paths.join('.')
+    let type = this.mode === 'strict' ? this.type.strict : this.type
+    if (path === 'expect') {
+      return decorate(function(...args) {
+        type.assert(...args)
+      })
+    }
+    else if (path === 'trace.by.catch') {
+      let fn = this.fn
+      return decorate(function(...args) {
+        type.trace(...args).catch((error) => {
+          let obj = {
+            args,
+            type,
+            error,
+          }
+          fn(obj)
+        })
+      })
+    }
+    else {
+      return decorate()
+    }
+  }
 }
 
 export default HelloType

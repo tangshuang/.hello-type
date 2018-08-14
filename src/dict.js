@@ -1,5 +1,5 @@
 import Type from './type'
-import { isObject, isEmpty, toShallowObject, throwError } from './utils'
+import { isObject, isEmpty } from './utils'
 
 export default function Dict(pattern) {
   // if pattern is not an object, it treated undefined
@@ -15,7 +15,7 @@ export default function Dict(pattern) {
   let DictType = new Type(pattern)
   DictType.assert = function(args) {
     if (!isObject(args)) {
-      return throwError(`"${typeof(args)}" is not match Dict type`)
+      throw new Error(`"${typeof(args)}" is not match Dict type`)
     }
 
     let rules = this.rules[0]
@@ -29,7 +29,7 @@ export default function Dict(pattern) {
         
         // args has key beyond rules
         if (ruleKeys.indexOf(argKey) === -1) {
-          return throwError(`"${argKey}" should not be in Dict, only ${ruleKeys.join(',')} allowed in strict mode`)
+          throw new Error(`"${argKey}" should not be in Dict, only ${ruleKeys.join(',')} allowed in strict mode`)
         }
       }
     }
@@ -39,7 +39,7 @@ export default function Dict(pattern) {
 
       // not found some key in arg
       if (argKeys.indexOf(ruleKey) === -1) {
-        return throwError(`"${ruleKey}" is not in Dict, needs ${ruleKeys.join(',')}`)
+        throw new Error(`"${ruleKey}" is not in Dict, needs ${ruleKeys.join(',')}`)
       }
 
       let argKey = ruleKey

@@ -1,5 +1,5 @@
 import Type from './type'
-import { isArray, throwError } from './utils'
+import { isArray } from './utils'
 import Enum from './enum'
 
 export default function List(pattern) {
@@ -16,7 +16,7 @@ export default function List(pattern) {
   let ListType = new Type(...pattern)
   ListType.assert = function(args) {
     if (!isArray(args)) {
-      return throwError(`"${typeof(args)}" is not match List type`)
+      throw new Error(`"${typeof(args)}" is not match List type`)
     }
 
     let rules = this.rules
@@ -26,7 +26,7 @@ export default function List(pattern) {
     if (this.mode === 'strict') {
       // array length should equal in strict mode
       if (ruleLen !== argLen) {
-        return throwError(`List requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
+        throw new Error(`List requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
       }
     }
 

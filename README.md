@@ -286,19 +286,31 @@ The api `HelloType` is a set of methods to use type assertions more unified.
 
 **HelloType.expect(type).typeof(...targets)**
 
+It is the same as `type.assert(...targets)`:
+
+```js
+export const SomeType = Dict()
+```
+
+```js
+import { SomeType } from './types'
+
+HelloType.expect(SomeType).typeof(someobject)
+```
+
 **HelloType.is(type).typeof(...targets)**
 
 **HelloType.catch(...targets).by(type)**
 
-**HelloType.trace(...targets).catch(fn).by(type)**
-
-**HelloType.strict**
+**HelloType.trace(...targets).by(type)**
 
 **HelloType.decorator**
 
 _decorator.expect(type)_
 
-_decorator.catch(fn).by(type)_
+_decorator.trace.by(type).catch(fn)_
+
+**HelloType.strict**
 
 ## MIT License
 
