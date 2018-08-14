@@ -1,17 +1,58 @@
 import Type from './type'
-import { isObject, throwError } from './utils'
+import { isObject, isEmpty, toShallowObject, throwError } from './utils'
 
 export default function Dict(pattern) {
+  // if pattern is not an object, it treated undefined
   if (!isObject(pattern)) {
-    pattern = Object
+    return new Type(Object)
   }
+
+  // if pattern is an empty object, it treated to be an Object
+  if (isEmpty(pattern)) {
+    return new Type(Object)
+  }
+
   let DictType = new Type(pattern)
-  DictType.assert = function(arg) {
-    if (!isObject(arg)) {
-      return throwError(`"${typeof(arg)}" is not match Dict type`)
+  DictType.assert = function(args) {
+    if (!isObject(args)) {
+      return throwError(`"${typeof(args)}" is not match Dict type`)
     }
-    let pattern = this.patterns[0]
-    return this.vaildate(arg, pattern)
+
+    let rules = this.rules[0]
+    let ruleKeys = Object.keys(rules).sort()
+    let argKeys = Object.keys(args).sort()
+    
+    if (this.mode === 'strict') {
+      // properties should be absolutely same
+      for (let i = 0, len = argKeys.length; i < len; i ++) {
+        let argKey = argKeys[i]
+        
+        // args has key beyond rules
+        if (ruleKeys.indexOf(argKey) === -1) {
+          return throwError(`"${argKey}" should not be in Dict, only ${ruleKeys.join(',')} allowed in strict mode`)
+        }
+      }
+    }
+
+    for (let i = 0, len = ruleKeys.length; i < len; i ++) {
+      let ruleKey = ruleKeys[i]
+
+      // not found some key in arg
+      if (argKeys.indexOf(ruleKey) === -1) {
+        return throwError(`"${ruleKey}" is not in Dict, needs ${ruleKeys.join(',')}`)
+      }
+
+      let argKey = ruleKey
+      let rule = rules[ruleKey]
+      let value = args[argKey]
+
+      let result = this.vaildate(value, rule)
+      if (result !== true) {
+        return result
+      }
+    }
+
+    return true
   }
   return DictType
 }

@@ -22,20 +22,8 @@ export function isEmpty(obj) {
   return Object.keys(obj).length === 0
 }
 
-export function toFlatObject(obj, parentPath = '', result = {}) {
-  let keys = Object.keys(obj)
-  keys.sort() // make sure the output are the same order
-  keys.forEach((key) => {
-    let path = parentPath ? parentPath + '.' + key : key
-    let value = obj[key]
-    if (isObject(value)) {
-      toFlatObject(value, path, result)
-    }
-    else {
-      result[path] = value
-    }
-  })
-  return result
+export function isFunction(fn) {
+  return typeof fn === 'function'
 }
 
 export function isConstructor(f) {
@@ -53,10 +41,40 @@ export function isConstructor(f) {
   return true
 }
 
+export function toFlatObject(obj, parentPath = '', result = {}) {
+  let keys = Object.keys(obj)
+  keys.sort() // make sure the output are the same order
+  keys.forEach((key) => {
+    let path = parentPath ? parentPath + '.' + key : key
+    let value = obj[key]
+    if (isObject(value)) {
+      toFlatObject(value, path, result)
+    }
+    else {
+      result[path] = value
+    }
+  })
+  return result
+}
+
+export function toShallowObject(obj, factory) {
+  let result = {}
+  let keys = Object.keys(obj)
+  keys.sort() // make sure the output are the same order
+  keys.forEach((key) => {
+    let value = obj[key]
+    result[key] = isFunction(factory) ? factory(obj) || value : value
+  })
+  return result
+}
+
 export function throwError(message) {
+  if (message instanceof Error) {
+    message = message.message
+  }
   if (throwError.slient) {
     console.error(message)
-    return message
+    return new Error(message)
   }
   else {
     throw new Error(message)

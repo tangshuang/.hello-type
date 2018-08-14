@@ -35,8 +35,8 @@ const PersonType = new Type({
     neck: NeckType,
     foot: FootType,
   },
-  family: Enum(3, 4, 5), // use `Enum()` to make a type
-  classmetas: List(Object),
+  friends: [FriendType],
+  familyCount: Enum(3, 4, 5), // use `Enum()` to make a Enum type
 })
 ```
 
@@ -48,25 +48,25 @@ function welcome(person) {
 }
 ```
 
-Check rules:
+Rules:
 
-- String: should be string
-- Number: should be finite number, `NaN` `"123"` and `Finite` will not match
-- Boolean: should be `true` or `false`
-- Object: should be normal object like `{}`, instance of class, array and Object self will not match
+- String: should be a string
+- Number: should be a finite number, `NaN` `"123"` and `Finite` will not match
+- Boolean: should be one of `true` or `false`
+- Object: should be a normal object like `{}`, instance of class, array and Object self will not match
 - Array: should be an array
 - Function: should be a function
 - RegExp: should be a regexp
-- List(?): should be an array which has same sturcted item
-- Enum(?, ?, ?): should be one of these values
+- ... any other js data prototype
 - Dict(?): should be structed with passed value
+- List(?, ?, ?): should be an array which has certain sturcted item
+- Enum(?, ?, ?): should be one of these values
 - Tuple(?, ?, ?): should be same number and structure with each value, always used for function parameters
-- ?: any class constructor which a data can be an instance of
-- ?: any value to be equaled
+- ?: any value to equal, i.e. new Type({ name: 'tomy' }), name should must be 'tomy'
 - ?: an instance of `Type`, will flow the rules of it
-- Rule(?): a custom rule
+- new Rule(factory): a custom rule
 
-A type instance have methods:
+A type instance have members:
 
 **assert(...args)**
 
@@ -82,6 +82,21 @@ Return true if match, and return false if not match.
 
 Assert whether the args match the type.
 Return null if match, and return error object if not match.
+
+```js
+let error = PersonType.catch(person)
+```
+
+If there is no error, `null` will be returned.
+Error structure:
+
+```js
+{
+  targets, // an array, i.e. [person]
+  type, // PersonType
+  error, // Error instance
+}
+```
 
 **trace(...args)**
 
@@ -116,7 +131,11 @@ MyType.strict.assert([1]) // array length should be 2, but here just passed only
 
 ## Dict
 
-A dict is a type of object. `Dict` is a function which return an instance of `Type`:
+A Dict is a type of object which has only one level properties.
+
+- @type function
+- @param object
+- @return an instance of `Type`
 
 ```js
 const DictType = Dict({
@@ -125,25 +144,67 @@ const DictType = Dict({
 })
 ```
 
-It is an easy/quick way to create an object type.
+Do not pass nested object, use another Dict instead:
+
+```js
+const BodyType = Dict({
+  head: Object,
+  foot: Object,
+})
+const PersonType = Dict({
+  name: String,
+  age: Number,
+  body: BodyType,
+})
+```
 
 _What's the difference between Dict and Object?_
 
 An Object match any structure of object. However, a Dict match certain structure of object.
-For example, `new Type(Object)` and `new Type(Dict({ name: String }))` is different.
 
 _What's the difference between Dict and new Type?_
 
-Dict receive only one parameter.
-If you pass only one parameter into `new Type`, they are the same.
-For example, `Dict({ name: String })` is the same with `new Type({ name: String })`.
-However, `new Type` can receive several parameters, it is the same as `Tuple`.
+- _Dict_ receive only one parameter. 
+- _Dict_ only receive object, _new Type_ receive any.
+- If you pass only one object into _new Type_, they are the same.
+
+## List
+
+A list is an array in which each item has certain structure.
+
+- @type function
+- @param array
+- @return an instance of `Type`
+
+```js
+const ListType = List([String, Number])
+```
+
+The pending verify array's items should be right data type as the given order. 
+If the array length is longer than the rule's length, the overflow ones should be one of these rules. 
+For example, the 3th item should be Enum(String, Number):
+
+```js
+ListType.test(['string', 1, 'str']) // true
+ListType.test(['string', 1, 2]) // true
+ListType.test(['string', 1, {}]) // false
+```
+
+_What's the difference between List and Array?_
+
+An Array match any structure for its item. However, a List match certain structure for each item.
+
+_What's the difference between List and Tuple?_
+
+Tuple has no relation with array, it is a group of scattered items with certain order.
 
 ## Tuple
 
-A tuple is a list of certain order items, the length of the list can not be changed, each item can have different structure.
+A tuple is a group of scattered items with certain order, the length of tuple can not be changed, each item can have different structure.
 
-Notice, only Tuple can receive multiple parameters.
+- @type function
+- @params any
+- @return an instance of `Type`
 
 ```js
 const ParamsType = Tuple(Object, Number, String)
@@ -154,29 +215,40 @@ _What's the difference between Tuple and new Type?_
 
 They are absolutely the same.
 
-## List
-
-A list is an array in which every item has same structure. So it receive only one parameter:
-
-```js
-const ListType = List(Object)
-```
-
-_What's the difference between List and Array?_
-
-In a list, every item has same structure, in an array, each item can have different structure.
-
-_What's the difference between List and Tuple?_
-
-A tuple does not typeof array, it is a group of scattered items with certain order.
-
 ## Enum
 
-A enum is a set of values from which the assert value should pick.
+A enum is a set of values from which the given value should pick.
+
+- @type function
+- @params any
+- @return an instance of `Type`
+
 
 ```js
 const ColorType = Enum('red', 'white', 'green')
-ColorType.assert('black')
+ColorType.test('black') // false
+```
+
+```js
+const ColorType = Enum(String, Number)
+ColorType.test('black') // true
+ColorType.test(2) // true
+ColorType.test([]) // false
+```
+
+## Range
+
+A range is a threshold of numbers. The given value should be a nunmber and in the range.
+
+- @type function
+- @params number, only two
+- @return an instance of `Type`
+
+```js
+const RangeType = Range(0, 1)
+RangeType.test(0.5) // true
+RangeType.test(3) // false
+RangeType.test(0) // true, 0 and 1 is in range
 ```
 
 ## Rule
@@ -191,112 +263,42 @@ const CustomType = new Type(CustomRule)
 CustomType.assert('ok')
 ```
 
-The function which you passed inot `new Rule()` should have a parameter and return true or false.
+The function which you passed into `new Rule()` should have a parameter and return true or false.
 `true` means match, `false` means not match.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
-Rules priority:
+**Any**
 
-- custom rule: notice here, custom rule comes firstly
-- equal: 'a' === 'a'
-- NaN
-- Number
-- Boolean
-- String
-- Array
-- Object
-- instanceof: [] instanceof Array
-- instanceof (nested) Type: new Type(Dict(...), List(...))
-
-**rule of 'object'**
-
-HelloType will check the structure and property value type of object:
+There is a special rule called `Any`, it means your given value can be any type:
 
 ```js
-const MyType = new Type({
-  obj: {
-    name: String,
-    Sub: {
-      title: String,
-    },
-  },
+import { Dict, Any } from 'hello-type'
+
+const MyType = Dict({
+  top: Any,
 })
 ```
-
-In this case, the pending verify object should have the same structure.
-
-**rule of 'array'**
-
-HelloType will check the array's each item's type with the given rule:
-
-```js
-const MyType = new Type({
-  arr: [Number, String, Function, CustomType],
-})
-```
-
-The pending verify array's items should be right data type as the given order. If the array length is longer than the rule's length, the overflow ones should be one of these rules. For example, the 5th item should be Enum(Number, String, Function, CustomType).
 
 ## HelloType
 
-It is a set of APIs.
+The api `HelloType` is a set of methods to use type assertions more unified.
 
-1. assert
+**HelloType.expect(type).typeof(...targets)**
 
-```js
-// BookType.assert(book)
-HelloType.expect(BookType).to.be.typeof(book)
-HelloType.expect(BookType).to.stritly.be.typeof(book)
+**HelloType.is(type).typeof(...targets)**
 
-HelloType.expect(book).to.match(BookType)
-HelloType.expect(book).to.strictly.match(BookType)
-```
+**HelloType.catch(...targets).by(type)**
 
-2. test
+**HelloType.trace(...targets).catch(fn).by(type)**
 
-```js
-// BookType.test(book)
-HelloType.expect(BookType).to.test(book)
-HelloType.expect(BookType).to.strictly.test(book)
-```
+**HelloType.strict**
 
-```js
-if (HelloType.expect(BookType).to.test(book)) {
-  //...
-}
-```
+**HelloType.decorator**
 
-3. catch
+_decorator.expect(type)_
 
-```js
-// BookType.catch(book)
-HelloType.expect(BookType).to.catch(book)
-HelloType.expect(BookType).to.strictly.catch(book)
-```
-
-```js
-let error = HelloType.expect(BookType).to.catch(book)
-```
-
-4. track
-
-```js
-// BookType.trace(book).catch((error) => {})
-HelloType.expect(BookType).to.trace(book).catch((error) => {})
-HelloType.expect(BookType).to.strictly.trace(book).catch((error) => {})
-```
-
-5. decorator
-
-```js
-@HelloType.expect.to.be.strictly.matched.with(BookType)
-@HelloType.expect.to.be.strictly.matched.with(BookType)
-
-@HelloType.expect.to.be.strictly.traced.by(BookType)
-@HelloType.expect.to.be.strictly.traced.by(BookType)
-```
-
+_decorator.catch(fn).by(type)_
 
 ## MIT License
 

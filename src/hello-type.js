@@ -3,10 +3,11 @@ export { default as Dict } from './dict'
 export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
-export { default as Rule } from './rule'
+export { default as Range } from './range'
+export { default as Rule, Any } from './rule'
 
-import Assertion from './assertion'
 import { throwError } from './utils'
+import Assertion from './assertion'
 import Decorator from './decorator'
 
 export const HelloType = {

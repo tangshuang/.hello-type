@@ -1,13 +1,19 @@
 import Type from './type'
-import { inArray, throwError } from './utils'
+import { throwError } from './utils'
 
 export default function Enum(...patterns) {
   let EnumType = new Type(...patterns)
   EnumType.assert = function(arg) {
-    if (!inArray(arg, this.patterns)) {
-      return throwError(`"${arg}" is not match Enum(${this.patterns.join(',')}) type`)
+    let rules = this.rules
+    for (let i = 0, len = rules.length; i < len; i ++) {
+      let rule = rules[i]
+      let result = this.vaildate(arg, rule)
+      if (result === true) {
+        return true
+      }
     }
-    return true
+    
+    return throwError(`"${arg}" is not match Enum(${this.patterns.join(',')})`)
   }
   return EnumType
 }

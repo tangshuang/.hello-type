@@ -3,3 +3,5 @@ export default class Rule {
     this.factory = factory
   }
 }
+
+export const Any = new Rule(() => true)
