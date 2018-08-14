@@ -4,11 +4,11 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Range } from './range'
-export { default as Rule, Any } from './rule'
+export { default as Rule, Any, Self } from './rule'
 
 import { decorate } from './utils'
 
-export class HelloType {
+class HelloTypeChains {
   constructor() {
     this.paths = []
     this.mode = 'none'
@@ -65,13 +65,13 @@ export class HelloType {
   }
 
   get decorator() {
-    let decorator = new Decorator()
+    let decorator = new HelloTypeDecorator()
     decorator.mode = this.mode
     return decorator
   }
 }
 
-export class Decorator {
+class HelloTypeDecorator {
   constructor() {
     this.paths = []
     this.mode = 'none'
@@ -125,4 +125,5 @@ export class Decorator {
   }
 }
 
+export const HelloType = new HelloTypeChains()
 export default HelloType

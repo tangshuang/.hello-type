@@ -5,3 +5,7 @@ export default class Rule {
 }
 
 export const Any = new Rule(() => true)
+
+export const Self = new Rule(function() {
+  return this
+})

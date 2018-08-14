@@ -280,37 +280,77 @@ const MyType = Dict({
 })
 ```
 
+**Self**
+
+A referer to type self:
+
+```js
+import { Dict, Self } from 'hello-type'
+
+const PersonType = Dict({
+  son: Self, // person.son should match to PersonType too
+})
+```
+
+Notice, `Self` should not be used in nested Dict, because SELF is referered to its scope, not to the root type scope.
+
 ## HelloType
 
 The api `HelloType` is a set of methods to use type assertions more unified.
 
-**HelloType.expect(type).typeof(...targets)**
 
-It is the same as `type.assert(...targets)`:
+**expect**
 
 ```js
-export const SomeType = Dict()
+HelloType.expect(SomeType).typeof(someobject) // it is the same as `SomeType.assert(someobject)`
+```
+
+**is**
+
+```js
+if (HelloType.is(SomeType).typeof(someobject)) { // it is the same as `SomeType.test(someobject)`
+  // ...
+}
+```
+
+**catch.by**
+
+```js
+let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeType.catch(someobject)`
+```
+
+**trace.by**
+
+```js
+HelloType.trace(someobject).by(SomeType).catch((error) => { // it is the same as `SomeType.trace(someobject)`
+  // ...
+}) 
+```
+
+**decorator**
+
+Use to decorate class and its members:
+
+```js
+@HelloType.decorator.expect(SomeType)
+class SomeClass {}
 ```
 
 ```js
-import { SomeType } from './types'
-
-HelloType.expect(SomeType).typeof(someobject)
+@HelloType.decorator.trace.by(SomeType).catch(fn)
+class SomeClass {}
 ```
-
-**HelloType.is(type).typeof(...targets)**
-
-**HelloType.catch(...targets).by(type)**
-
-**HelloType.trace(...targets).by(type)**
-
-**HelloType.decorator**
-
-_decorator.expect(type)_
-
-_decorator.trace.by(type).catch(fn)_
 
 **HelloType.strict**
+
+```js
+HelloType.strict.expect(SomeType).typeof(someobject) // it is the same as `SomeType.strict.assert(someobject)`
+```
+
+```js
+@HelloType.strict.decorator.expect(SomeType)
+class SomeClass {}
+```
 
 ## MIT License
 

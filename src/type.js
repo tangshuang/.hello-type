@@ -33,7 +33,7 @@ export default class Type {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
-      let e = isFunction(rule.factory) && rule.factory(arg)
+      let e = isFunction(rule.factory) && rule.factory.call(this, arg)
       if (e !== true) {
         if(e instanceof Error) {
           throw e
