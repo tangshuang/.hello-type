@@ -7,10 +7,17 @@ export default function List(pattern) {
     if (!isArray(arr)) {
       return throwError(`"${arr}" is not match List type`)
     }
+    
     let pattern = this.patterns[0]
-    arr.forEach((item) => {
-      this.vaildate(item, pattern)
-    })
+    for (let i = 0, len = arr.length; i < len; i ++) {
+      let item = arr[i]
+      let result = this.vaildate(item, pattern)
+      if (result !== true) {
+        return result
+      }
+    }
+
+    return true
   }
   return ListType
 }

@@ -15,10 +15,7 @@ export default class Type {
     this.rules = patterns.map((rule) => {
       if (isObject(rule)) {
         let flatObj = toFlatObject(rule)
-        return isEmpty(flatObj) ? Object : flatObj
-      }
-      else if (isArray(rule)) {
-        return isEmpty(rule) ? Array : rule
+        return flatObj
       }
       else {
         return rule
@@ -85,6 +82,10 @@ export default class Type {
         return throwError('array length should be ' + ruleLen + ', but receive ' + argLen)
       }
 
+      if (ruleLen === 0 && argLen !== 0) {
+        return true
+      }
+
       let patterns = rule
       if (argLen > ruleLen) {
         for (let i = ruleLen; i < argLen; i ++) {
@@ -92,10 +93,14 @@ export default class Type {
           patterns = patterns.contact([SpreadRule])
         }
       }
-      arg.forEach((value, i) => {
+      for (let i = 0, len = arg.length; i < len; i ++) {
+        let value = arg[i]
         let pattern = patterns[i]
-        this.vaildate(value, pattern)
-      })
+        let result = this.vaildate(value, pattern)
+        if (result !== true) {
+          return result
+        }
+      }
       return true
     }
     
@@ -112,6 +117,13 @@ export default class Type {
     // })
     // BookType.assert({ name: 'Hamlet', price: 120.34 })
     if (isObject(arg) && isObject(rule)) {
+      if (isEmpty(rule) && !isEmpty(rule)) {
+        if (this.mode === 'strict') {
+          return throwError(`argument should be an empty object`)
+        }
+        return true
+      }
+
       let flatArg = toFlatObject(arg)
       let rulePaths = Object.keys(rule)
       let argPaths = Object.keys(flatArg)
@@ -130,9 +142,8 @@ export default class Type {
               return false
             })
             if (exists) {
-              return
+              continue
             }
-
             return throwError(`key "${rulePath}" in your argument is not allowed in strict mode`)
           }
         }
@@ -145,7 +156,10 @@ export default class Type {
 
         let type = rule[rulePath]
         let value = flatArg[rulePath]
-        this.vaildate(value, type)
+        let result = this.vaildate(value, type)
+        if (result !== true) {
+          return result
+        }
       }
 
       return true
@@ -189,15 +203,21 @@ export default class Type {
       return throwError('arguments length not match type')
     }
 
-    args.forEach((arg, i) => {
+    for (let i = 0, len = args.length; i < len; i ++) {
+      let arg = args[i]
       let rule = this.rules[i]
-      this.vaildate(arg, rule)
-    })
+      let result = this.vaildate(arg, rule)
+      if (result !== true) {
+        return result
+      }
+    }
+
+    return true
   }
   catch(...args) {
     try {
-      this.assert(...args)
-      return null
+      let result = this.assert(...args)
+      return result === true ? null : result
     }
     catch(e) {
       return e
@@ -205,8 +225,8 @@ export default class Type {
   }
   test(...args) {
     try {
-      this.assert(...args)
-      return true
+      let result = this.assert(...args)
+      return result === true
     }
     catch(e) {
       return false
@@ -214,7 +234,10 @@ export default class Type {
   }
   trace(...args) {
     return Promise.resolve().then(() => {
-      this.assert(...args)
+      let result = this.assert(...args)
+      if (result !== true) {
+        throw new Error(result)
+      }
     })
   }
 

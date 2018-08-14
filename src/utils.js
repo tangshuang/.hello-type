@@ -56,6 +56,7 @@ export function isConstructor(f) {
 export function throwError(message) {
   if (throwError.slient) {
     console.error(message)
+    return message
   }
   else {
     throw new Error(message)

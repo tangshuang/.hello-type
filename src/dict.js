@@ -11,7 +11,7 @@ export default function Dict(pattern) {
       return throwError(`"${typeof(arg)}" is not match Dict type`)
     }
     let pattern = this.patterns[0]
-    this.vaildate(arg, pattern)
+    return this.vaildate(arg, pattern)
   }
   return DictType
 }

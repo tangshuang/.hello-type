@@ -7,6 +7,7 @@ export default function Enum(...patterns) {
     if (!inArray(arg, this.patterns)) {
       return throwError(`"${arg}" is not match Enum(${this.patterns.join(',')}) type`)
     }
+    return true
   }
   return EnumType
 }
