@@ -6,10 +6,6 @@ export default class Type {
   constructor(...patterns) {
     this.id = Date.now()  + '.' + parseInt(Math.random() * 10000)
     this.mode = 'none'
-    
-    if (!patterns.length) {
-      return
-    }
 
     this.patterns = patterns
     this.rules = patterns.map((rule) => {
@@ -32,7 +28,7 @@ export default class Type {
         return true
       }
       else {
-        return throwError('argument not match custom rule')
+        return throwError(result || 'argument not match custom rule')
       }
     }
 
