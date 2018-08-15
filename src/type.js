@@ -223,9 +223,27 @@ export default class Type {
       return false
     }
   }
+
+  /**
+   * track args with type
+   * @param {*} args 
+   * @example
+   * SomeType.trace(arg).with((error, [arg], type) => { ... })
+   */
   trace(...args) {
-    return Promise.resolve().then(() => {
-      this.assert(...args)
+    let defer = new Promise((resolve) => {
+      Promise.resolve().then(() => {
+        this.assert(...args)
+      }).then(resolve).catch(resolve)
     })
+    return {
+      with(fn) {
+        defer.then((error) => {
+          if (error) {
+            fn(error, args, this)
+          }
+        })
+      }
+    }
   }
 }

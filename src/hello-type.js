@@ -111,14 +111,25 @@ export const HelloType = {
       }
     })
   },
+
+  /**
+   * track args by SomeType
+   * @param {*} targets 
+   * @example
+   * HelloType.trace(arg).by(SomeType).with(fn)
+   */
   trace(...targets) {
     let mode = false
     let runner = {
       by(type) {
-        if (mode) {
-          type = type.strict
+        return {
+          with(fn) {
+            if (mode) {
+              type = type.strict
+            }
+            type.trace(...targets).with(fn)
+          }
         }
-        return type.trace(...targets)
       }
     }
     return Object.assign({}, runner, {
