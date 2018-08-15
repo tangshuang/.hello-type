@@ -74,5 +74,42 @@ describe('new Type', () => {
         })
       }).toThrowError()
     })
+    test('equal', () => {
+      const MyType = new Type('value')
+      expect(() => { MyType.assert('value') }).not.toThrowError()
+      expect(() => { MyType.assert('not') }).toThrowError()
+    })
+  })
+  describe('test', () => {
+    test('object', () => {
+      const DictType = new Type({
+        name: String,
+        age: Number,
+      })
+      expect(DictType.test({
+        name: null,
+        age: 10,
+      })).toBeFalsy()
+      expect(DictType.test({
+        name: 'tomy',
+        age: 10,
+      })).toBeTruthy()
+    })
+  })
+  describe('catch', () => {
+    test('Number', () => {
+      const NumberType = new Type(Number)
+      expect(NumberType.catch(1)).toBeUndefined()
+      expect(NumberType.catch('')).toBeInstanceOf(Error)
+    })
+  })
+  describe('trace', () => {
+    test('Number', (done) => {
+      const NumberType = new Type(Number)
+      NumberType.trace('').catch((e) => {
+        expect(e).toBeInstanceOf(Error)
+        done()
+      })
+    })
   })
 })

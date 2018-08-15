@@ -64,8 +64,9 @@ class HelloTypeChains {
   }
 
   get strict() {
-    this.mode = 'strict'
-    return this
+    let chains = new HelloTypeChains()
+    chains.mode = 'strict'
+    return chains
   }
 
   get decorator() {
