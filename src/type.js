@@ -2,6 +2,7 @@ import { isArray, isBoolean, isNumber, isObject, toShallowObject, isFunction, is
 import Rule from './rule'
 import Dict from './dict'
 import List from './list'
+import Enum from './enum'
 
 export default class Type {
   constructor(...patterns) {
@@ -18,7 +19,7 @@ export default class Type {
       }
       // if rule is an array, it will be converted to be a 'List'
       else if (isArray(rule)) {
-        return List(rule)
+        return rule.map(item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
       }
       else {
         return rule
@@ -79,10 +80,78 @@ export default class Type {
     if (isArray(arg) && rule === Array) {
       return true
     }
+
+    if (isArray(arg) && isArray(rule)) {
+      let rules = rule
+      let args = arg
+      let ruleLen = rules.length
+      let argLen = args.length
+
+      if (this.mode === 'strict') {
+        // array length should equal in strict mode
+        if (ruleLen !== argLen) {
+          throw new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
+        }
+      }
+
+      let patterns = [].concat(rules)
+
+      // if arguments.length is bigger than rules.length, use Enum to match left items
+      if (argLen > ruleLen) {
+        let EnumType = Enum(...rules)
+        for (let i = ruleLen; i < argLen; i ++) {
+          patterns.push(EnumType)
+        }
+      }
+
+      for (let i = 0; i < argLen; i ++) {
+        let rule = patterns[i]
+        let value = args[i]
+        this.vaildate(value, rule)
+      }
+      
+      return true
+    }
     
     // object
     // i.e. (new Type(Object).assert({}))
     if (isObject(arg) && rule === Object) {
+      return true
+    }
+
+    if (isObject(arg) && isObject(rule)) {
+      let rules = rule
+      let args = arg
+      let ruleKeys = Object.keys(rules).sort()
+      let argKeys = Object.keys(args).sort()
+      
+      if (this.mode === 'strict') {
+        // properties should be absolutely same
+        for (let i = 0, len = argKeys.length; i < len; i ++) {
+          let argKey = argKeys[i]
+          
+          // args has key beyond rules
+          if (ruleKeys.indexOf(argKey) === -1) {
+            throw new Error(`"${argKey}" should not be in object, only ${ruleKeys.join(',')} allowed in strict mode`)
+          }
+        }
+      }
+
+      for (let i = 0, len = ruleKeys.length; i < len; i ++) {
+        let ruleKey = ruleKeys[i]
+
+        // not found some key in arg
+        if (argKeys.indexOf(ruleKey) === -1) {
+          throw new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+        }
+
+        let argKey = ruleKey
+        let rule = rules[ruleKey]
+        let value = args[argKey]
+
+        this.vaildate(value, rule)
+      }
+
       return true
     }
 
@@ -96,7 +165,8 @@ export default class Type {
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
     if (rule instanceof Type) {
-      return rule.assert(arg)
+      rule.assert(arg)
+      return true
     }
 
     let typeName = rule
@@ -122,8 +192,6 @@ export default class Type {
       let rule = this.rules[i]
       this.vaildate(arg, rule)
     }
-
-    return true
   }
   catch(...args) {
     try {

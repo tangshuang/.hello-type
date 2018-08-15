@@ -32,7 +32,7 @@ export function isConstructor(f) {
     instance = new f()
   }
   catch (e) {
-    if (err.message.indexOf('is not a constructor') > -1) {
+    if (e.message.indexOf('is not a constructor') > -1) {
       instance = null
       return false
     }
@@ -63,7 +63,7 @@ export function toShallowObject(obj, factory) {
   keys.sort() // make sure the output are the same order
   keys.forEach((key) => {
     let value = obj[key]
-    result[key] = isFunction(factory) ? factory(obj) || value : value
+    result[key] = isFunction(factory) ? factory(value) || value : value
   })
   return result
 }

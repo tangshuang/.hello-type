@@ -13,44 +13,13 @@ export default function List(pattern) {
     return new Type(Array)
   }
 
-  let ListType = new Type(...pattern)
-  ListType.assert = function(args) {
-    if (!isArray(args)) {
-      throw new Error(`"${typeof(args)}" is not match List type`)
+  let ListType = new Type(pattern)
+  ListType.assert = function(arg) {
+    if (!isArray(arg)) {
+      throw new Error(`"${typeof(arg)}" is not match List type`)
     }
 
-    let rules = this.rules
-    let ruleLen = rules.length
-    let argLen = args.length
-
-    if (this.mode === 'strict') {
-      // array length should equal in strict mode
-      if (ruleLen !== argLen) {
-        throw new Error(`List requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
-      }
-    }
-
-    let patterns = [].concat(rules)
-
-    // if arguments.length is bigger than rules.length, use Enum to match left items
-    if (argLen > ruleLen) {
-      let EnumType = Enum(...rules)
-      for (let i = ruleLen; i < argLen; i ++) {
-        patterns.push(EnumType)
-      }
-    }
-
-    for (let i = 0; i < argLen; i ++) {
-      let rule = patterns[i]
-      let value = args[i]
-
-      let result = this.vaildate(value, rule)
-      if (result !== true) {
-        return result
-      }
-    }
-
-    return true
+    this.vaildate(arg, this.rules[0])
   }
   return ListType
 }
