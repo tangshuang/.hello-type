@@ -19,6 +19,10 @@ class HelloTypeChains {
     this.type = type
     return this
   }
+  get toBe() {
+    this.paths.push('toBe')
+    return this
+  }
   is(type) {
     this.paths.push('is')
     this.type = type
@@ -51,7 +55,7 @@ class HelloTypeChains {
     let type = this.mode === 'strict' ? this.type.strict : this.type
     let targets = this.targets
     switch (path) {
-      case 'expect.typeof': return type.assert(...targets)
+      case 'expect.toBe.typeof': return type.assert(...targets)
       case 'is.typeof': return type.test(...targets)
       case 'trace.by': return type.trace(...targets)
       case 'catch.by': return type.catch(...targets)

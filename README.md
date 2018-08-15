@@ -12,13 +12,13 @@ npm i -S hello-type
 ## Usage
 
 ```js
-import HelloType, { Dict, Enum, Tuple, List, Type, Rule } from 'hello-type'
+import HelloType, { Dict, Enum, Tuple, List, Type, Rule, Self } from 'hello-type'
 ```
 
 or
 
 ```js
-const { Dict, Enum, Tuple, List, Type, Rule, HelloType } = require('hello-type')
+const { Dict, Enum, Tuple, List, Type, Rule, Self, HelloType } = require('hello-type')
 ```
 
 ## Type
@@ -65,13 +65,14 @@ Rules:
 - ?: any value to equal, i.e. new Type({ name: 'tomy' }), name should must be 'tomy'
 - ?: an instance of `Type`, will flow the rules of it
 - new Rule(factory): a custom rule
+- Any, Self
 
 A type instance have members:
 
 **assert(...args)**
 
 Assert whether the args match the type.
-If not match, it will use `throw` to break the assert.
+If not match, it will use `throw` to break the program.
 
 **test(...args)**
 
@@ -296,13 +297,12 @@ Notice, `Self` should not be used in nested Dict, because SELF is referered to i
 
 ## HelloType
 
-The api `HelloType` is a set of methods to use type assertions more unified.
-
+The `HelloType` is a set of methods to use type assertions more unified.
 
 **expect**
 
 ```js
-HelloType.expect(SomeType).typeof(someobject) // it is the same as `SomeType.assert(someobject)`
+HelloType.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.assert(someobject)`
 ```
 
 **is**
@@ -344,7 +344,7 @@ class SomeClass {}
 **HelloType.strict**
 
 ```js
-HelloType.strict.expect(SomeType).typeof(someobject) // it is the same as `SomeType.strict.assert(someobject)`
+HelloType.strict.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.strict.assert(someobject)`
 ```
 
 ```js
