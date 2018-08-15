@@ -293,7 +293,45 @@ const PersonType = Dict({
 })
 ```
 
-Notice, `Self` should not be used in nested Dict, because SELF is referered to its scope, not to the root type scope.
+Notice, `Self` should not be used in nested Dict, because  `Self` is referered to its scope, not to the root type scope.
+
+**IfExists**
+
+Only the value exists will the rule works.
+If there is no value, or the value is undefined, this rule can be ignored.
+
+- @type function
+- @param any rule
+- @return instance of Type/Rule
+
+```js
+import { Dict, IfExists } from 'hello-type'
+
+const PersonType = Dict({
+  name: String,
+  age: IfExists(Number),
+})
+```
+
+If there is `age` property, PersonType will use PersonType self to check its value.
+If `age` property does not exist, the checking will be ignored.
+
+```js
+PersonType.test({
+  name: 'tomy',
+}) // true
+```
+
+However, this rule will not work in strict mode!
+
+```js
+PersonType.strict.test({
+  name: 'tomy',
+}) // false
+```
+
+This will return false, because there is no `age` property.
+And in fact, it only works for object rules, don't use IfExists in any other rules/types.
 
 ## HelloType
 

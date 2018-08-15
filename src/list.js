@@ -1,6 +1,5 @@
 import Type from './type'
-import { isArray } from './utils'
-import Enum from './enum'
+import { isArray, isEmpty } from './utils'
 
 export default function List(pattern) {
   // if pattern is not an array, it treated undefined

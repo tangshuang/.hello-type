@@ -34,13 +34,18 @@ export default class Type {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
+      // if can be not exists
+      if (rule.if_exists && typeof arg === 'undefined') {
+        return true
+      }
+
       let e = isFunction(rule.factory) && rule.factory.call(this, arg)
       if (e !== true) {
         if(e instanceof Error) {
           throw e
         }
         else {
-          throw new Error(result || 'argument not match custom rule')
+          throw new Error(e || 'argument not match custom rule')
         }
       }
       return true
@@ -105,9 +110,9 @@ export default class Type {
       }
 
       for (let i = 0; i < argLen; i ++) {
-        let rule = patterns[i]
+        let pattern = patterns[i]
         let value = args[i]
-        this.vaildate(value, rule)
+        this.vaildate(value, pattern)
       }
       
       return true
@@ -129,7 +134,6 @@ export default class Type {
         // properties should be absolutely same
         for (let i = 0, len = argKeys.length; i < len; i ++) {
           let argKey = argKeys[i]
-          
           // args has key beyond rules
           if (ruleKeys.indexOf(argKey) === -1) {
             throw new Error(`"${argKey}" should not be in object, only ${ruleKeys.join(',')} allowed in strict mode`)
@@ -139,17 +143,21 @@ export default class Type {
 
       for (let i = 0, len = ruleKeys.length; i < len; i ++) {
         let ruleKey = ruleKeys[i]
+        let pattern = rules[ruleKey]
+        let argKey = ruleKey
+        let value = args[argKey]
+
+        // can be not exists
+        if ((pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && argKeys.indexOf(ruleKey) === -1) {
+          continue
+        }
 
         // not found some key in arg
         if (argKeys.indexOf(ruleKey) === -1) {
           throw new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
         }
 
-        let argKey = ruleKey
-        let rule = rules[ruleKey]
-        let value = args[argKey]
-
-        this.vaildate(value, rule)
+        this.vaildate(value, pattern)
       }
 
       return true
@@ -165,6 +173,11 @@ export default class Type {
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
     if (rule instanceof Type) {
+      // can be not exists
+      if (rule.if_exists && typeof arg === 'undefined') {
+        return true
+      }
+
       rule.assert(arg)
       return true
     }
@@ -189,8 +202,8 @@ export default class Type {
 
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
-      let rule = this.rules[i]
-      this.vaildate(arg, rule)
+      let pattern = this.rules[i]
+      this.vaildate(arg, pattern)
     }
   }
   catch(...args) {

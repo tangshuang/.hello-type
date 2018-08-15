@@ -79,4 +79,80 @@ describe('Dict', () => {
       }).toThrowError()
     })
   })
+  describe('test', () => {
+    test('nested object', () => {
+      const DictType = Dict({
+        name: String,
+        age: Number,
+        parents: {
+          father: Object,
+          mother: Object,
+        },
+      })
+      expect(DictType.test({
+        name: 'tomy',
+        age: 10,
+        parents: {
+          father: {},
+          mother: {},
+        },
+      })).toBeTruthy()
+      expect(DictType.test({
+        name: 'tomy',
+        age: 10,
+        parents: {
+          father: {},
+        },
+      })).toBeFalsy()
+    })
+  })
+  describe('catch', () => {
+    test('nested object', () => {
+      const DictType = Dict({
+        name: String,
+        age: Number,
+        parents: {
+          father: Object,
+          mother: Object,
+        },
+      })
+      expect(DictType.catch({
+        name: 'tomy',
+        age: 10,
+        parents: {
+          father: {},
+          mother: {},
+        },
+      })).toBeUndefined()
+      expect(DictType.catch({
+        name: 'tomy',
+        age: 10,
+        parents: {
+          father: {},
+        },
+      })).toBeInstanceOf(Error)
+    })
+  })
+  describe('trace', () => {
+    test('nested object', (done) => {
+      const DictType = Dict({
+        name: String,
+        age: Number,
+        parents: {
+          father: Object,
+          mother: Object,
+        },
+      })
+      DictType.trace({
+        name: 'tomy',
+        age: 10,
+        parents: {
+          father: {},
+        },
+      }).catch((error) => {
+        expect(error).toBeInstanceOf(Error)
+        done()
+      })
+    })
+  })
 })

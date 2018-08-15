@@ -4,131 +4,130 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Range } from './range'
-export { default as Rule, Any, Self } from './rule'
+export { default as Rule, Any, Self, IfExists } from './rule'
 
 import { decorate } from './utils'
 
-class HelloTypeChains {
-  constructor() {
-    this.paths = []
-    this.mode = 'none'
-  }
-
+const decorator = {
   expect(type) {
-    this.paths.push('expect')
-    this.type = type
-    return this
-  }
-  get toBe() {
-    this.paths.push('toBe')
-    return this
-  }
-  is(type) {
-    this.paths.push('is')
-    this.type = type
-    return this
-  }
-  trace(...targets) {
-    this.paths.push('trace')
-    this.targets = targets
-    return this
-  }
-  catch(...targets) {
-    this.paths.push('catch')
-    this.targets = targets
-    return this
-  }
-
-  by(type) {
-    this.paths.push('by')
-    this.type = type
-    return this.emit()
-  }
-  typeof(...targets) {
-    this.paths.push('typeof')
-    this.targets = targets
-    return this.emit()
-  }
-
-  emit() {
-    let path = this.paths.join('.')
-    let type = this.mode === 'strict' ? this.type.strict : this.type
-    let targets = this.targets
-    switch (path) {
-      case 'expect.toBe.typeof': return type.assert(...targets)
-      case 'is.typeof': return type.test(...targets)
-      case 'trace.by': return type.trace(...targets)
-      case 'catch.by': return type.catch(...targets)
-      default: return null
-    }
-  }
-
-  get strict() {
-    let chains = new HelloTypeChains()
-    chains.mode = 'strict'
-    return chains
-  }
-
-  get decorator() {
-    let decorator = new HelloTypeDecorator()
-    decorator.mode = this.mode
-    return decorator
-  }
-}
-
-class HelloTypeDecorator {
-  constructor() {
-    this.paths = []
-    this.mode = 'none'
-  }
-
-  expect(type) {
-    this.paths.push('expect')
-    this.type = type
-    return this.emit
-  }
-
-  get trace() {
-    this.paths.push('trace')
-    return this
-  }
-  by(type) {
-    this.paths.push('by')
-    this.type = type
-    return this
-  }
-  catch(fn) {
-    this.paths.push('catch')
-    this.fn = fn
-    return this.emit()
-  }
-
-  emit() {
-    let path = this.paths.join('.')
-    let type = this.mode === 'strict' ? this.type.strict : this.type
-    if (path === 'expect') {
-      return decorate(function(...args) {
-        type.assert(...args)
-      })
-    }
-    else if (path === 'trace.by.catch') {
-      let fn = this.fn
-      return decorate(function(...args) {
-        type.trace(...args).catch((error) => {
-          let obj = {
-            args,
-            type,
-            error,
-          }
-          fn(obj)
+    let mode = false
+    let runner = {
+      get typeof() {
+        if (mode) {
+          type = type.strict
+        }
+        return decorate(function(...args) {
+          type.assert(...args)
         })
+      },
+    }
+    return {
+      toBe: Object.assign({}, runner, {
+        get strict() {
+          mode = true
+          return runner
+        },
       })
     }
-    else {
-      return decorate()
+  },
+  get trace() {
+    let mode = false
+    let runner = {
+      by(type) {
+        return {
+          catch(fn) {
+            if (mode) {
+              type = type.strict
+            }
+            return decorate(function(...args) {
+              type.trace(...args).catch((error) => {
+                fn(error, args)
+              })
+            })
+          }
+        }
+      },
     }
-  }
+    return Object.assign({}, runner, {
+      get strictly() {
+        mode = true
+        return runner
+      },
+    })
+  },
 }
 
-export const HelloType = new HelloTypeChains()
+export const HelloType = {
+  expect(type) {
+    let mode = false
+    let runner = {
+      typeof(...targets) {
+        if (mode) {
+          type = type.strict
+        }
+        type.assert(...targets)
+      },
+    }
+    return {
+      toBe: Object.assign({}, runner, {
+        get strict() {
+          mode = true
+          return runner
+        },
+      })
+    }
+  },
+  is(type) {
+    let mode = false
+    let runner = {
+      typeof(...targets) {
+        if (mode) {
+          type = type.strict
+        }
+        return type.test(...targets)
+      }
+    }
+    return Object.assign({}, runner, {
+      get strict() {
+        mode = true
+        return runner
+      }
+    })
+  },
+  catch(...targets) {
+    let mode = false
+    let runner = {
+      by(type) {
+        if (mode) {
+          type = type.strict
+        }
+        return type.catch(...targets)
+      }
+    }
+    return Object.assign({}, runner, {
+      get strictly() {
+        mode = true
+        return runner
+      }
+    })
+  },
+  trace(...targets) {
+    let mode = false
+    let runner = {
+      by(type) {
+        if (mode) {
+          type = type.strict
+        }
+        return type.trace(...targets)
+      }
+    }
+    return Object.assign({}, runner, {
+      get strictly() {
+        mode = true
+        return runner
+      }
+    })
+  },
+}
+
 export default HelloType
