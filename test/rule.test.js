@@ -1,5 +1,6 @@
 import Type from '../src/type'
-import Rule, { Any, Self, IfExists } from '../src/rule'
+import Rule, { Any, IfExists } from '../src/rule'
+import Tuple from '../src/tuple'
 
 describe('Rule', () => {
   test('create a rule match object', () => {
@@ -18,25 +19,26 @@ describe('Rule', () => {
     expect(() => { AnyType.assert('') }).not.toThrowError()
     expect(() => { AnyType.assert(1) }).not.toThrowError()
   })
-  test('IfExists', () => {
+  test('IfExists for object', () => {
     const IfExistsType = new Type({
       name: String,
       age: IfExists(Number),
     })
     expect(() => { IfExistsType.assert({ name: 'tomy' }) }).not.toThrowError()
   })
-  test('Self', () => {
-    const PersonType = new Type({
+  test('IfExists for array', () => {
+    const IfExistsType = new Type({
       name: String,
-      child: IfExists(Self),
+      children: [IfExists(Object)], // children should be an array, but array length can be 0
     })
-    expect(() => { 
-      PersonType.assert({
-        name: 'john',
-        child: {
-          name: 'tomy',
-        },
-      }) 
-    }).not.toThrowError()
+    expect(() => { IfExistsType.assert({ name: 'tomy', children: [] }) }).not.toThrowError()
+    expect(() => { IfExistsType.assert({ name: 'tomy', children: null }) }).toThrowError()
+    expect(() => { IfExistsType.assert({ name: 'tomy', children: [{}] }) }).not.toThrowError()
+  })
+  test('IfExists for tuples', () => {
+    const IfExistsType = Tuple(String, IfExists(Number))
+    expect(() => { IfExistsType.assert('name') }).not.toThrowError()
+    expect(() => { IfExistsType.assert('name', 10) }).not.toThrowError()
+    expect(() => { IfExistsType.assert('name', '10') }).toThrowError()
   })
 })

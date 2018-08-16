@@ -4,7 +4,7 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Range } from './range'
-export { default as Rule, Any, Self, IfExists } from './rule'
+export { default as Rule, Any, IfExists } from './rule'
 
 import { decorate } from './utils'
 

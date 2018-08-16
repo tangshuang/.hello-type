@@ -281,20 +281,6 @@ const MyType = Dict({
 })
 ```
 
-**Self**
-
-A referer to type self:
-
-```js
-import { Dict, Self } from 'hello-type'
-
-const PersonType = Dict({
-  son: Self, // person.son should match to PersonType too
-})
-```
-
-Notice, `Self` should not be used in nested Dict, because  `Self` is referered to its scope, not to the root type scope.
-
 **IfExists**
 
 Only the value exists will the rule works.
@@ -331,7 +317,21 @@ PersonType.strictly.test({
 ```
 
 Even through there is no `age` property, it is allowed.
-And in fact, it only works for object rules, don't use IfExists in any other rules/types.
+
+And in fact, it should work for object rules, don't use IfExists in any other rules/types.
+
+```js
+const PersonType = Dict({
+  name: String,
+  children: [IfExists(Object)], // => can be '[]' or '[{...}, ...]'
+})
+```
+
+```js
+const ParamsType = Tuple(String, IfExists(Number)) // => can be ('name') or ('name', 10)
+```
+
+In Tuple, only the rest items can be if_exists.
 
 ## HelloType
 

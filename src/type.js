@@ -39,7 +39,7 @@ export default class Type {
         return true
       }
 
-      let e = isFunction(rule.factory) && rule.factory.call(this, arg)
+      let e = isFunction(rule.factory) && rule.factory(arg)
       if (e !== true) {
         if(e instanceof Error) {
           throw e
@@ -112,6 +112,12 @@ export default class Type {
       for (let i = 0; i < argLen; i ++) {
         let pattern = patterns[i]
         let value = args[i]
+      
+        // if can be not exists
+        if ((pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && typeof value === 'undefined') {
+          return true
+        }
+
         this.vaildate(value, pattern)
       }
       

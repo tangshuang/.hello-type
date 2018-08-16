@@ -9,7 +9,7 @@ describe('Tuple', () => {
     })
   })
   describe('test', () => {
-    test('sting', () => {
+    test('basic', () => {
       const TupleType = Tuple(String, Number)
       expect(TupleType.test('name', 10)).toBeTruthy()
       expect(TupleType.test('name', null)).toBeFalsy()
