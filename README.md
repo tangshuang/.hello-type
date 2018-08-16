@@ -118,7 +118,7 @@ const MyType = new Type({
   name: String,
   age: Number,
 })
-MyType.strictly.assert({
+MyType.strict.assert({
   name: 'tomy',
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
@@ -127,7 +127,7 @@ MyType.strictly.assert({
 
 ```js
 const MyType = new Type([Number, Number])
-MyType.strictly.assert([1]) // array length should be 2, but here just passed only one
+MyType.strict.assert([1]) // array length should be 2, but here just passed only one
 ```
 
 ## Dict
@@ -311,7 +311,7 @@ PersonType.test({
 And, this rule will work in strict mode, too!
 
 ```js
-PersonType.strictly.test({
+PersonType.strict.test({
   name: 'tomy',
 }) // true
 ```
@@ -337,35 +337,31 @@ In Tuple, only the rest items can be if_exists.
 
 The `HelloType` is a set of methods to use type assertions more unified.
 
-**expect**
+**expect.toBe.typeof**
 
 ```js
 HelloType.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.assert(someobject)`
-HelloType.expect(SomeType).toBe.strictly.typeof(someobject)
 ```
 
-**is**
+**is.typeof**
 
 ```js
 let bool = HelloType.is(SomeType).typeof(someobject)
-let bool2 = HelloType.is(SomeType).strictly.typeof(someobject)
 ```
 
 **catch.by**
 
 ```js
 let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeType.catch(someobject)`
-let error = HelloType.catch(someobject).strictly.by(SomeType)
 ```
 
-**trace.by**
+**trace.by.with**
 
 ```js
 HelloType.trace(someobject).by(SomeType).with((error) => { 
   // it is the same as `SomeType.trace(someobject).with(fn)`
   // ...
 }) 
-HelloType.trace(someobject).strictly.by(SomeType).with((error) => {}) 
 ```
 
 **decorate**

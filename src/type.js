@@ -26,9 +26,10 @@ export default class Type {
       }
     })
   }
-  get strictly() {
-    this.mode = 'strict'
-    return this
+  get strict() {
+    let ins = new Type(...this.patterns)
+    ins.mode = 'strict'
+    return ins
   }
   vaildate(arg, rule) {
     // custom rule
