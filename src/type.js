@@ -26,7 +26,7 @@ export default class Type {
       }
     })
   }
-  get strict() {
+  get strictly() {
     this.mode = 'strict'
     return this
   }

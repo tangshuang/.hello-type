@@ -31,7 +31,7 @@ describe('Enum', () => {
   describe('trace', () => {
     test('basic', (done) => {
       const EnumType = Enum('red', 'blue', 'yellow')
-      EnumType.trace(null).catch((error) => {
+      EnumType.trace(null).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })

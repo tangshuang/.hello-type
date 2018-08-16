@@ -25,7 +25,7 @@ describe('Tuple', () => {
   describe('trace', () => {
     test('basic', (done) => {
       const TupleType = Tuple(String, Number)
-      TupleType.trace(null).catch((error) => {
+      TupleType.trace(null).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })

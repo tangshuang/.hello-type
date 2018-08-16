@@ -28,7 +28,7 @@ describe('List', () => {
   describe('trace', () => {
     test('basic', (done) => {
       const ListType = List([String, Number])
-      ListType.trace(['tomy', '10']).catch((error) => {
+      ListType.trace(['tomy', '10']).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })

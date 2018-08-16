@@ -8,98 +8,69 @@ export { default as Rule, Any, Self, IfExists } from './rule'
 
 import { decorate } from './utils'
 
-const decorator = {
-  expect(type) {
-    let mode = false
-    let runner = {
-      get typeof() {
-        if (mode) {
-          type = type.strict
-        }
-        return decorate(function(...args) {
-          type.assert(...args)
-        })
-      },
-    }
-    return {
-      toBe: Object.assign({}, runner, {
-        get strict() {
-          mode = true
-          return runner
-        },
-      })
-    }
-  },
-  get trace() {
-    let mode = false
-    let runner = {
-      by(type) {
-        return {
-          catch(fn) {
-            if (mode) {
-              type = type.strict
-            }
-            return decorate(function(...args) {
-              type.trace(...args).catch((error) => {
-                fn(error, args)
-              })
-            })
-          }
-        }
-      },
-    }
-    return Object.assign({}, runner, {
-      get strictly() {
-        mode = true
-        return runner
-      },
-    })
-  },
-}
-
 export const HelloType = {
+  /**
+   * assert
+   * @param {Type} type 
+   * @example
+   * HelloType.expect(SomeType).toBe.strictly.typeof(arg)
+   */
   expect(type) {
     let mode = false
     let runner = {
       typeof(...targets) {
         if (mode) {
-          type = type.strict
+          type = type.strictly
         }
         type.assert(...targets)
       },
     }
     return {
       toBe: Object.assign({}, runner, {
-        get strict() {
+        get strictly() {
           mode = true
           return runner
         },
       })
     }
   },
+
+  /**
+   * determine whether type match
+   * @param {Type} type 
+   * @example
+   * let bool = HelloType.is(SomeType).strictly.typeof(arg)
+   */
   is(type) {
     let mode = false
     let runner = {
       typeof(...targets) {
         if (mode) {
-          type = type.strict
+          type = type.strictly
         }
         return type.test(...targets)
       }
     }
     return Object.assign({}, runner, {
-      get strict() {
+      get strictly() {
         mode = true
         return runner
       }
     })
   },
+
+  /**
+   * catch error by SomeType
+   * @param {*} targets 
+   * @example
+   * let error = HelloType.catch(arg).strictly.by(SomeType)
+   */
   catch(...targets) {
     let mode = false
     let runner = {
       by(type) {
         if (mode) {
-          type = type.strict
+          type = type.strictly
         }
         return type.catch(...targets)
       }
@@ -116,7 +87,7 @@ export const HelloType = {
    * track args by SomeType
    * @param {*} targets 
    * @example
-   * HelloType.trace(arg).by(SomeType).with(fn)
+   * HelloType.trace(arg).strictly.by(SomeType).with(fn)
    */
   trace(...targets) {
     let mode = false
@@ -125,7 +96,7 @@ export const HelloType = {
         return {
           with(fn) {
             if (mode) {
-              type = type.strict
+              type = type.strictly
             }
             type.trace(...targets).with(fn)
           }
@@ -139,6 +110,20 @@ export const HelloType = {
       }
     })
   },
+
+  /**
+   * @example
+   * @HelloType.decorate.with((arg) => HelloType.expect(SomeType).toBe.typeof(arg))
+   */
+  get decorate() {
+    return {
+      with(fn) {
+        return decorate(function(...args) {
+          fn(...args)
+        })
+      },
+    }
+  }
 }
 
 export default HelloType

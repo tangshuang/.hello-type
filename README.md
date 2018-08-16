@@ -99,26 +99,26 @@ Error structure:
 }
 ```
 
-**trace(...args)**
+**trace(...args).with(fn)**
 
 Assert whether the args match the type.
-It will run async, and return a promise.
-If not match, it will rejected. You can do like:
+It will run async.
+If not match, `fn` will run. You can do like:
 
 ```js
-PersonType.trace(person).catch((error) => console.log(error))
+PersonType.trace(person).with((error) => console.log(error))
 ```
 
 **strict**
 
-Whether use strict mode, default mode is false. If you use strict mode, object properties which not in type defined will be treated as not matching, array length should match.
+Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match. (Not in strict mode.)
 
 ```js
 const MyType = new Type({
   name: String,
   age: Number,
 })
-MyType.strict.assert({
+MyType.strictly.assert({
   name: 'tomy',
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
@@ -127,7 +127,7 @@ MyType.strict.assert({
 
 ```js
 const MyType = new Type([Number, Number])
-MyType.strict.assert([1]) // array length should be 2, but here just passed only one
+MyType.strictly.assert([1]) // array length should be 2, but here just passed only one
 ```
 
 ## Dict
@@ -322,15 +322,15 @@ PersonType.test({
 }) // true
 ```
 
-However, this rule will not work in strict mode!
+And, this rule will work in strict mode, too!
 
 ```js
-PersonType.strict.test({
+PersonType.strictly.test({
   name: 'tomy',
-}) // false
+}) // true
 ```
 
-This will return false, because there is no `age` property.
+Even through there is no `age` property, it is allowed.
 And in fact, it only works for object rules, don't use IfExists in any other rules/types.
 
 ## HelloType
@@ -341,52 +341,39 @@ The `HelloType` is a set of methods to use type assertions more unified.
 
 ```js
 HelloType.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.assert(someobject)`
+HelloType.expect(SomeType).toBe.strictly.typeof(someobject)
 ```
 
 **is**
 
 ```js
-if (HelloType.is(SomeType).typeof(someobject)) { // it is the same as `SomeType.test(someobject)`
-  // ...
-}
+let bool = HelloType.is(SomeType).typeof(someobject)
+let bool2 = HelloType.is(SomeType).strictly.typeof(someobject)
 ```
 
 **catch.by**
 
 ```js
 let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeType.catch(someobject)`
+let error = HelloType.catch(someobject).strictly.by(SomeType)
 ```
 
 **trace.by**
 
 ```js
-HelloType.trace(someobject).by(SomeType).catch((error) => { // it is the same as `SomeType.trace(someobject)`
+HelloType.trace(someobject).by(SomeType).with((error) => { 
+  // it is the same as `SomeType.trace(someobject).with(fn)`
   // ...
 }) 
+HelloType.trace(someobject).strictly.by(SomeType).with((error) => {}) 
 ```
 
-**decorator**
+**decorate**
 
 Use to decorate class and its members:
 
 ```js
-@HelloType.decorator.expect(SomeType)
-class SomeClass {}
-```
-
-```js
-@HelloType.decorator.trace.by(SomeType).catch(fn)
-class SomeClass {}
-```
-
-**HelloType.strict**
-
-```js
-HelloType.strict.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.strict.assert(someobject)`
-```
-
-```js
-@HelloType.strict.decorator.expect(SomeType)
+@HelloType.decorate.with((arg) => SomeType.assert(arg))
 class SomeClass {}
 ```
 

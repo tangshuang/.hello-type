@@ -106,7 +106,7 @@ describe('new Type', () => {
   describe('trace', () => {
     test('Number', (done) => {
       const NumberType = new Type(Number)
-      NumberType.trace('').catch((e) => {
+      NumberType.trace('').with((e) => {
         expect(e).toBeInstanceOf(Error)
         done()
       })

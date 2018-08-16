@@ -149,7 +149,7 @@ describe('Dict', () => {
         parents: {
           father: {},
         },
-      }).catch((error) => {
+      }).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })

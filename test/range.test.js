@@ -27,7 +27,7 @@ describe('Range', () => {
   describe('trace', () => {
     test('basic', (done) => {
       const RangeType = Range(0, 1)
-      RangeType.trace(-5).catch((error) => {
+      RangeType.trace(-5).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })
