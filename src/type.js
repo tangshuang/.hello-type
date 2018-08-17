@@ -241,17 +241,17 @@ export default class Type {
    * SomeType.trace(arg).with((error, [arg], type) => { ... })
    */
   trace(...args) {
-    let defer = new Promise((resolve) => {
-      Promise.resolve().then(() => {
-        this.assert(...args)
-      }).then(resolve).catch(resolve)
-    })
     return {
       with(fn) {
-        defer.then((error) => {
-          if (error) {
-            fn(error, args, this)
-          }
+        return new Promise((resolve) => {
+          Promise.resolve().then(() => {
+            this.assert(...args)
+          }).then(resolve).catch((error) => {
+            if (error && fn) {
+              fn(error, args, this)
+            }
+            resolve(error)
+          })
         })
       }
     }

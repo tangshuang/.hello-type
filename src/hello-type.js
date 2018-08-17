@@ -49,9 +49,7 @@ export const HelloType = {
    */
   trace: (...targets) => ({
     by: (type) => ({
-      with(fn) {
-        type.trace(...targets).with(fn)
-      },
+      with: (fn) => type.trace(...targets).with(fn),
     }),
   }),
 

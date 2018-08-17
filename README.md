@@ -123,6 +123,12 @@ PersonType.trace(person).with((error, [person], type) => {
 })
 ```
 
+It will return a resolved promise anyway:
+
+```js
+let error = await PersonType.trace(person).with(fn)
+```
+
 **strict/Strict**
 
 Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match. (Not in strict mode.)
