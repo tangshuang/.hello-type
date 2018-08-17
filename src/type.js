@@ -1,5 +1,5 @@
 import { isArray, isBoolean, isNumber, isObject, toShallowObject, isFunction, isConstructor } from './utils'
-import Rule from './rule'
+import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
 import Enum from './enum'
@@ -108,9 +108,9 @@ export default class Type {
 
       // if arguments.length is bigger than rules.length, use Enum to match left items
       if (argLen > ruleLen) {
-        let EnumType = Enum(...rules)
+        let ItemType = ruleLen > 1 ? Enum(...rules) : ruleLen ? rules[0] : Any
         for (let i = ruleLen; i < argLen; i ++) {
-          patterns.push(EnumType)
+          patterns.push(ItemType)
         }
       }
 
