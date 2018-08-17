@@ -73,11 +73,12 @@ A type instance have members:
 
 Assert whether the args match the type.
 If not match, it will use `throw` to break the program.
+Return undefined.
 
 **test(...args)**
 
 Assert whether the args match the type.
-Return true if match, and return false if not match.
+Return true if match, return false if not match.
 
 **catch(...args)**
 
@@ -89,15 +90,6 @@ let error = PersonType.catch(person)
 ```
 
 If there is no error, `null` will be returned.
-Error structure:
-
-```js
-{
-  targets, // an array, i.e. [person]
-  type, // PersonType
-  error, // Error instance
-}
-```
 
 **trace(...args).with(fn)**
 
@@ -131,7 +123,7 @@ let error = await PersonType.trace(person).with(fn)
 
 **strict/Strict**
 
-Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match. (Not in strict mode.)
+Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match, even you use `IfExists`.
 
 ```js
 const MyType = new Type({
@@ -147,7 +139,7 @@ MyType.Strict.assert({
 
 ```js
 const MyType = new Type([Number, Number])
-MyType.strict.assert([1]) // array length should be 2, but here just passed only one
+MyType.Strict.assert([1]) // array length should be 2, but here just passed only one
 ```
 
 ## Dict
@@ -165,7 +157,7 @@ const DictType = Dict({
 })
 ```
 
-Do not pass nested object, use another Dict instead:
+You can pass nested object, but are recommended to use another Dict instead:
 
 ```js
 const BodyType = Dict({
@@ -234,7 +226,15 @@ ParamsType.assert({}, 1, 'ok')
 
 _What's the difference between Tuple and new Type?_
 
-They are absolutely the same.
+Tuple can use `IfExists` at the end of parameters, so that you can assert less arguments. However _new Type_ assert method should must receive given count of arguments:
+
+```js
+const ParamsType = Tuple(Object, IfExists(Number), IfExists(String))
+ParamsType.test({}, 1) // true
+
+const SomeType = Tuple(Object, IfExists(Number), IfExists(String))
+SomeType.test({}, 1) // false, arguments length not match
+```
 
 ## Enum
 
@@ -278,14 +278,16 @@ Create a custom rule:
 
 ```js
 const CustomRule = new Rule(function(value) {
-  return value === 'ok'
+  if (value !== 'ok') {
+    return new Error(value + ' not equal `ok`')
+  }
 })
 const CustomType = new Type(CustomRule)
-CustomType.assert('ok')
+CustomType.test('ok') // true
 ```
 
-The function which you passed into `new Rule()` should have a parameter and return true or false.
-`true` means match, `false` means not match.
+The function which you passed into `new Rule()` should have a parameter.
+If you want to make assert fail, you should must return an instance of Error.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
@@ -303,7 +305,7 @@ const MyType = Dict({
 
 **IfExists**
 
-Only the value exists will the rule works.
+Only when the value exists will the rule works.
 If there is no value, or the value is undefined, this rule can be ignored.
 
 - @type function
@@ -317,28 +319,23 @@ const PersonType = Dict({
   name: String,
   age: IfExists(Number),
 })
+PersonType.test({ name: 'tomy' }) // true
+PersonType.test({ name: 'tomy', age: 10 }) // true
+PersonType.test({ name: 'tomy', age: null }) // false
 ```
 
-If there is `age` property, PersonType will use PersonType self to check its value.
+If there is `age` property, PersonType will check its value.
 If `age` property does not exist, the checking will be ignored.
 
-```js
-PersonType.test({
-  name: 'tomy',
-}) // true
-```
-
-And, this rule will work in strict mode, too!
+This rule will work in strict mode, too!
 
 ```js
-PersonType.strict.test({
-  name: 'tomy',
-}) // true
+PersonType.Strict.test({ name: 'tomy' }) // false
 ```
 
-Even through there is no `age` property, it is allowed.
+In strict mode, IfExists will be ignored, you must pass certain type of data to assert.
 
-And in fact, it should work for object rules, don't use IfExists in any other rules/types.
+`IfExists` only works for Dict, List and Tuple.
 
 ```js
 const PersonType = Dict({
@@ -379,6 +376,7 @@ let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeT
 
 ```js
 HelloType.trace(someobject).by(SomeType.Strict).with((error, [args], type) => { 
+  // strict mode
   // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
   // ...
 }) 

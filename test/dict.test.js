@@ -123,7 +123,7 @@ describe('Dict', () => {
           father: {},
           mother: {},
         },
-      })).toBeUndefined()
+      })).toBeNull()
       expect(DictType.catch({
         name: 'tomy',
         age: 10,

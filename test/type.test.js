@@ -99,7 +99,7 @@ describe('new Type', () => {
   describe('catch', () => {
     test('Number', () => {
       const NumberType = new Type(Number)
-      expect(NumberType.catch(1)).toBeUndefined()
+      expect(NumberType.catch(1)).toBeNull()
       expect(NumberType.catch('')).toBeInstanceOf(Error)
     })
   })

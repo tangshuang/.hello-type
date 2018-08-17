@@ -40,54 +40,55 @@ export default class Type {
     if (rule instanceof Rule) {
       // if can be not exists
       if (rule.if_exists && typeof arg === 'undefined') {
-        return true
+        return null
       }
 
-      let e = isFunction(rule.factory) && rule.factory(arg)
-      if (e !== true) {
-        if(e instanceof Error) {
-          throw e
-        }
-        else {
-          throw new Error(e || 'argument not match custom rule')
+      if (!isFunction(rule.factory)) {
+        return new Error('new Rule should receive a function')
+      }
+      else {
+        let error = rule.factory(arg)
+        if (error instanceof Error) {
+          return error
         }
       }
-      return true
+
+      return null
     }
 
     // is the given value
     // i.e. (new Type('name')).assert('name')
     if (arg === rule) {
-      return true
+      return null
     }
 
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
     if (typeof arg === 'number' && isNaN(arg) && typeof rule === 'number' && isNaN(rule)) {
-      return true
+      return null
     }
 
     // number
     // i.e. (new Type(Number).assert(1))
     if (isNumber(arg) && rule === Number) {
-      return true
+      return null
     }
 
     // boolean
     // i.e. (new Type(Boolean)).assert(true)
     if (isBoolean(arg) && rule === Boolean) {
-      return true
+      return null
     }
 
     // string
     if (typeof arg === 'string' && rule === String) {
-      return true
+      return null
     }
 
     // array
     // i.e. (new Type(Array)).assert([])
     if (isArray(arg) && rule === Array) {
-      return true
+      return null
     }
 
     if (isArray(arg) && isArray(rule)) {
@@ -99,7 +100,7 @@ export default class Type {
       if (this.mode === 'strict') {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
-          throw new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
+          return new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
         }
       }
 
@@ -119,19 +120,22 @@ export default class Type {
       
         // if can be not exists
         if ((pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && typeof value === 'undefined') {
-          return true
+          return null
         }
 
-        this.vaildate(value, pattern)
+        let error = this.vaildate(value, pattern)
+        if (error) {
+          return error
+        }
       }
       
-      return true
+      return null
     }
     
     // object
     // i.e. (new Type(Object).assert({}))
     if (isObject(arg) && rule === Object) {
-      return true
+      return null
     }
 
     if (isObject(arg) && isObject(rule)) {
@@ -146,7 +150,7 @@ export default class Type {
           let argKey = argKeys[i]
           // args has key beyond rules
           if (ruleKeys.indexOf(argKey) === -1) {
-            throw new Error(`"${argKey}" should not be in object, only ${ruleKeys.join(',')} allowed in strict mode`)
+            return new Error(`"${argKey}" should not be in object, only ${ruleKeys.join(',')} allowed in strict mode`)
           }
         }
       }
@@ -157,26 +161,29 @@ export default class Type {
         let argKey = ruleKey
         let value = args[argKey]
 
-        // can be not exists
-        if ((pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && argKeys.indexOf(ruleKey) === -1) {
+        // can be not exists by using IfExists() in non-strict mode
+        if (this.mode !== 'strict' && (pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && argKeys.indexOf(ruleKey) === -1) {
           continue
         }
 
         // not found some key in arg
         if (argKeys.indexOf(ruleKey) === -1) {
-          throw new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+          return new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
         }
 
-        this.vaildate(value, pattern)
+        let error = this.vaildate(value, pattern)
+        if (error) {
+          return error
+        }
       }
 
-      return true
+      return null
     }
 
     // instance of a class
     // i.e. (new Type(Person)).assert(person)
     if (isConstructor(rule) && arg instanceof rule) {
-      return true
+      return null
     }
 
     // instance of Type
@@ -185,11 +192,11 @@ export default class Type {
     if (rule instanceof Type) {
       // can be not exists
       if (rule.if_exists && typeof arg === 'undefined') {
-        return true
+        return null
       }
 
       rule.assert(arg)
-      return true
+      return null
     }
 
     let typeName = rule
@@ -200,38 +207,41 @@ export default class Type {
     if (isFunction(arg)) {
       argName = 'function ' + arg.name
     }
+    else if (arg === null) {
+      argName = 'null'
+    }
     else if (typeof arg === 'object') {
       argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
     }
-    throw new Error(argName + ' not match type of "' + typeName + '"')
+    return new Error(argName + ' not match type of "' + typeName + '"')
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
       throw new Error('arguments length not match type')
     }
 
+    let rules = this.rules
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
-      let pattern = this.rules[i]
-      this.vaildate(arg, pattern)
+      let pattern = rules[i]
+      let error = this.vaildate(arg, pattern)
+      if (error) {
+        throw error
+      }
     }
   }
   catch(...args) {
     try {
       this.assert(...args)
+      return null
     }
-    catch(e) {
-      return e
+    catch(error) {
+      return error
     }
   }
   test(...args) {
-    try {
-      this.assert(...args)
-      return true
-    }
-    catch(e) {
-      return false
-    }
+    let error = this.catch(...args)
+    return !error
   }
 
   /**
@@ -242,18 +252,15 @@ export default class Type {
    */
   trace(...args) {
     return {
-      with(fn) {
-        return new Promise((resolve) => {
-          Promise.resolve().then(() => {
-            this.assert(...args)
-          }).then(resolve).catch((error) => {
-            if (error && fn) {
-              fn(error, args, this)
-            }
-            resolve(error)
-          })
+      with: (fn) => new Promise((resolve) => {
+        Promise.resolve().then(() => {
+          let error = this.catch(...args)
+          if (error && isFunction(fn)) {
+            fn(error, args, this)
+          }
+          resolve(error)
         })
-      }
+      }),
     }
   }
 }

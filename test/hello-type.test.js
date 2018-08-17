@@ -15,7 +15,7 @@ describe('HelloType', () => {
     })
     test('HelloType.catch.by', () => {
       const NumberType = new Type(Number)
-      expect(HelloType.catch(1).by(NumberType)).toBeUndefined()
+      expect(HelloType.catch(1).by(NumberType)).toBeNull()
       expect(HelloType.catch('1').by(NumberType)).toBeInstanceOf(Error)
     })
     test('HelloType.trace.by.with', (done) => {

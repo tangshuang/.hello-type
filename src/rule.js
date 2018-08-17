@@ -6,7 +6,7 @@ export default class Rule {
   }
 }
 
-export const Any = new Rule(() => true)
+export const Any = new Rule(() => null)
 
 export const IfExists = function(pattern) {
   if (!(pattern instanceof Rule) && !(pattern instanceof Type)) {

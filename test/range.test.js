@@ -20,7 +20,7 @@ describe('Range', () => {
   describe('catch', () => {
     test('basic', () => {
       const RangeType = Range(0, 1)
-      expect(RangeType.catch(0.5)).toBeUndefined()
+      expect(RangeType.catch(0.5)).toBeNull()
       expect(RangeType.catch(-2)).toBeInstanceOf(Error)
     })
   })

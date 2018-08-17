@@ -21,10 +21,14 @@ export default function Tuple(...patterns) {
       throw new Error('arguments length not match Tuple')
     }
 
+    let rules = this.rules
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
-      let pattern = this.rules[i]
-      this.vaildate(arg, pattern)
+      let pattern = rules[i]
+      let error = this.vaildate(arg, pattern)
+      if (error) {
+        throw error
+      }
     }
   }
   return TupleType

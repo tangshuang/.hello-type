@@ -5,7 +5,9 @@ import Tuple from '../src/tuple'
 describe('Rule', () => {
   test('create a rule match object', () => {
     const ObjectRule = new Rule(function(value) {
-      return typeof value === 'object'
+      if (typeof value !== 'object') {
+        return new Error(value + ' is not an object')
+      }
     })
     const ObjectType = new Type(ObjectRule)
     expect(() => { ObjectType.assert({}) }).not.toThrowError()

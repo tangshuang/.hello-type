@@ -24,7 +24,7 @@ describe('Enum', () => {
   describe('catch', () => {
     test('basic', () => {
       const EnumType = Enum('red', 'blue', 'yellow')
-      expect(EnumType.catch('red')).toBeUndefined()
+      expect(EnumType.catch('red')).toBeNull()
       expect(EnumType.catch('black')).toBeInstanceOf(Error)
     })
   })

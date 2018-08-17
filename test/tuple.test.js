@@ -18,7 +18,7 @@ describe('Tuple', () => {
   describe('catch', () => {
     test('basic', () => {
       const TupleType = Tuple(String, Number)
-      expect(TupleType.catch('name', 10)).toBeUndefined()
+      expect(TupleType.catch('name', 10)).toBeNull()
       expect(TupleType.catch('name', null)).toBeInstanceOf(Error)
     })
   })

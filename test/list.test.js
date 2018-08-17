@@ -21,7 +21,7 @@ describe('List', () => {
   describe('catch', () => {
     test('basic', () => {
       const ListType = List([String, Number])
-      expect(ListType.catch(['tomy', 10])).toBeUndefined()
+      expect(ListType.catch(['tomy', 10])).toBeNull()
       expect(ListType.catch(['tomy', '10'])).toBeInstanceOf(Error)
     })
   })
