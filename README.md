@@ -12,13 +12,13 @@ npm i -S hello-type
 ## Usage
 
 ```js
-import HelloType, { Dict, Enum, Tuple, List, Type, Rule, Self } from 'hello-type'
+import HelloType, { Dict, Enum, Tuple, List, Type, Rule, Self, IfExists } from 'hello-type'
 ```
 
 or
 
 ```js
-const { Dict, Enum, Tuple, List, Type, Rule, Self, HelloType } = require('hello-type')
+const { Dict, Enum, Tuple, List, Type, Rule, Self, HelloType, IfExists } = require('hello-type')
 ```
 
 ## Type
@@ -109,7 +109,21 @@ If not match, `fn` will run. You can do like:
 PersonType.trace(person).with((error) => console.log(error))
 ```
 
-**strict**
+`fn` has three parameters:
+
+- error: the catched error, if pass, it will be undefined
+- args: array, targets to match
+- type: which type be used to match
+
+```js
+PersonType.trace(person).with((error, [person], type) => {
+  if (error) {
+    console.log(person, 'not match', type, 'error:', error)
+  }
+})
+```
+
+**strict/Strict**
 
 Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match. (Not in strict mode.)
 
@@ -118,7 +132,7 @@ const MyType = new Type({
   name: String,
   age: Number,
 })
-MyType.strict.assert({
+MyType.Strict.assert({
   name: 'tomy',
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
@@ -358,8 +372,8 @@ let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeT
 **trace.by.with**
 
 ```js
-HelloType.trace(someobject).by(SomeType).with((error) => { 
-  // it is the same as `SomeType.trace(someobject).with(fn)`
+HelloType.trace(someobject).by(SomeType.Strict).with((error, [args], type) => { 
+  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
   // ...
 }) 
 ```
@@ -371,6 +385,12 @@ Use to decorate class and its members:
 ```js
 @HelloType.decorate.with((arg) => SomeType.assert(arg))
 class SomeClass {}
+```
+
+## Test
+
+```
+npm test
 ```
 
 ## MIT License

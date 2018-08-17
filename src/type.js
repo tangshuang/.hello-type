@@ -31,6 +31,9 @@ export default class Type {
     ins.mode = 'strict'
     return ins
   }
+  get Strict() {
+    return this.strict
+  }
   vaildate(arg, rule) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)

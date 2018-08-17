@@ -9,6 +9,7 @@ describe('strict mode', () => {
       age: IfExists(Number),
     })
     expect(() => SomeType.strict.assert({ name: 'tomy', age: 10 })).not.toThrowError()
+    expect(() => SomeType.Strict.assert({ name: 'tomy', age: 10 })).not.toThrowError()
     expect(() => SomeType.strict.assert({ name: 'tomy', age: 10, height: 170 })).toThrowError()
     expect(() => SomeType.strict.assert({ name: 'tomy' })).not.toThrowError()
   })
