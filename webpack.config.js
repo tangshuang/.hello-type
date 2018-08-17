@@ -4,7 +4,7 @@ module.exports = {
   output: {
     path: __dirname + '/dist',
     filename: 'hello-type.js',
-    library: 'HelloType',
+    library: 'HelloTypeLib',
     libraryTarget: 'umd',
   },
   module: {
