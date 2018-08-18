@@ -303,7 +303,7 @@ const MyType = Dict({
 })
 ```
 
-**IfExists**
+**IfExists()**
 
 Only when the value exists will the rule works.
 If there is no value, or the value is undefined, this rule can be ignored.
@@ -349,6 +349,33 @@ const ParamsType = Tuple(String, IfExists(Number)) // => can be ('name') or ('na
 ```
 
 In Tuple, only the rest items can be if_exists.
+
+**InstanceOf()**
+
+The value should be an instance of given class:
+
+```js
+class MyPattern {}
+const MyType = Dict({
+  someObj: InstanceOf(MyPattern),
+  age: InstanceOf(Number),
+})
+
+let myins = new MyPattern()
+let age = new Number(10)
+MyType.test({ somObj: myins, age }) // true
+```
+
+**Equal()**
+
+The value should equal to the given value, the given value can be anything.
+
+```js
+const MyType = Dict({
+  type: Equal(Number)
+})
+MyType.assert({ type: Number })
+```
 
 ## HelloType
 

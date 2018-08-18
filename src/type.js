@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toShallowObject, isFunction, isConstructor } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isConstructor } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
@@ -34,7 +34,7 @@ export default class Type {
   get Strict() {
     return this.strict
   }
-  vaildate(arg, rule) {
+  vaildate(arg, rule, pattern) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
@@ -44,7 +44,10 @@ export default class Type {
       }
 
       if (!isFunction(rule.factory)) {
-        return new Error('new Rule should receive a function')
+        let error = new Error('new Rule should receive a function')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
       }
       else {
         let error = rule.factory(arg)
@@ -56,42 +59,105 @@ export default class Type {
       return null
     }
 
-    // is the given value
-    // i.e. (new Type('name')).assert('name')
-    if (arg === rule) {
-      return null
-    }
-
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
-    if (typeof arg === 'number' && isNaN(arg) && typeof rule === 'number' && isNaN(rule)) {
-      return null
+    if (typeof rule === 'number' && isNaN(rule)) {
+      if (typeof arg === 'number' && isNaN(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match NaN')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
     }
 
-    // number
+    // Number
     // i.e. (new Type(Number).assert(1))
-    if (isNumber(arg) && rule === Number) {
-      return null
+    if (rule === Number) {
+      if (isNumber(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match Number')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
     }
 
-    // boolean
+    // Boolean
     // i.e. (new Type(Boolean)).assert(true)
-    if (isBoolean(arg) && rule === Boolean) {
-      return null
+    if (rule === Boolean) {
+      if (isBoolean(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(rule) + ' does not match Boolean')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
     }
 
-    // string
-    if (typeof arg === 'string' && rule === String) {
-      return null
+    // String
+    // i.e. (new Type(String)).assert('name')
+    if (rule === String) {
+      if (isString(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match String')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
     }
 
-    // array
+    // Function
+    // i.e. (new Type(Function)).assert(() => {})
+    if (rule === Function) {
+      if (isFunction(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match Function')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
+    }
+
+    // Array
     // i.e. (new Type(Array)).assert([])
-    if (isArray(arg) && rule === Array) {
-      return null
+    if (rule === Array) {
+      if (isArray(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match Array')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
     }
 
-    if (isArray(arg) && isArray(rule)) {
+    // object
+    // i.e. (new Type(Object).assert({}))
+    if (rule === Object) {
+      if (isObject(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match Object')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
+    }
+
+    if (isArray(rule) && isArray(arg)) {
       let rules = rule
       let args = arg
       let ruleLen = rules.length
@@ -100,7 +166,10 @@ export default class Type {
       if (this.mode === 'strict') {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
-          return new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
+          let error = new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
+          error.arguments = [arg]
+          error.pattern = pattern
+          return error
         }
       }
 
@@ -131,14 +200,8 @@ export default class Type {
       
       return null
     }
-    
-    // object
-    // i.e. (new Type(Object).assert({}))
-    if (isObject(arg) && rule === Object) {
-      return null
-    }
 
-    if (isObject(arg) && isObject(rule)) {
+    if (isObject(rule) && isObject(arg)) {
       let rules = rule
       let args = arg
       let ruleKeys = Object.keys(rules).sort()
@@ -150,7 +213,10 @@ export default class Type {
           let argKey = argKeys[i]
           // args has key beyond rules
           if (ruleKeys.indexOf(argKey) === -1) {
-            return new Error(`"${argKey}" should not be in object, only ${ruleKeys.join(',')} allowed in strict mode`)
+            let error = new Error(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
+            error.arguments = [arg]
+            error.pattern = pattern
+            return error
           }
         }
       }
@@ -168,7 +234,10 @@ export default class Type {
 
         // not found some key in arg
         if (argKeys.indexOf(ruleKey) === -1) {
-          return new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+          let error = new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+          error.arguments = [arg]
+          error.pattern = pattern
+          return error
         }
 
         let error = this.vaildate(value, pattern)
@@ -177,6 +246,12 @@ export default class Type {
         }
       }
 
+      return null
+    }
+
+    // is the given value, rule should be a string, a number or a boolean
+    // i.e. (new Type('name')).assert('name')
+    if (!(rule instanceof Object) && arg === rule) {
       return null
     }
 
@@ -199,32 +274,26 @@ export default class Type {
       return null
     }
 
-    let typeName = rule
-    let argName = arg
-    if (isFunction(rule)) {
-      typeName = rule.name
-    }
-    if (isFunction(arg)) {
-      argName = 'function ' + arg.name
-    }
-    else if (arg === null) {
-      argName = 'null'
-    }
-    else if (typeof arg === 'object') {
-      argName = 'argument is an instance of ' + arg.constructor ? arg.constructor.name : 'some type'
-    }
-    return new Error(argName + ' not match type of "' + typeName + '"')
+    let error = new Error(typeof(arg) + ' does not match type of "' + pattern.toString() + '"')
+    error.arguments = [arg]
+    error.pattern = pattern
+    return error
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
-      throw new Error('arguments length not match type')
+      let error = new Error('arguments length not match type')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
     }
 
     let rules = this.rules
+    let patterns = this.patterns
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
-      let pattern = rules[i]
-      let error = this.vaildate(arg, pattern)
+      let rule = rules[i]
+      let pattern = patterns[i]
+      let error = this.vaildate(arg, rule, pattern)
       if (error) {
         throw error
       }

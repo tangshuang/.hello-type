@@ -18,7 +18,10 @@ export default function Tuple(...patterns) {
     }
 
     if (args.length < len || args.length > patterns.length) {
-      throw new Error('arguments length not match Tuple')
+      let error = new Error('arguments length not match Tuple')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
     }
 
     let rules = this.rules

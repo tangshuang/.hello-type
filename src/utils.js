@@ -1,13 +1,21 @@
-export function isObject(value) {
-  return value && typeof value === 'object' && value.constructor === Object
-}
-
 export function isNumber(value) {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
 export function isBoolean(value) {
   return value === true || value === false
+}
+
+export function isString(value) {
+  return typeof value === 'string'
+}
+
+export function isFunction(value) {
+  return typeof value === 'function'
+}
+
+export function isObject(value) {
+  return value && typeof value === 'object' && value.constructor === Object
 }
 
 export function isArray(value) {
@@ -20,10 +28,6 @@ export function inArray(value, arr) {
 
 export function isEmpty(obj) {
   return Object.keys(obj).length === 0
-}
-
-export function isFunction(fn) {
-  return typeof fn === 'function'
 }
 
 export function isConstructor(f) {

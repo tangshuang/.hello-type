@@ -4,7 +4,10 @@ export default function Enum(...patterns) {
   let EnumType = new Type(...patterns)
   EnumType.assert = function(...args) {
     if (args.length !== 1) {
-      throw new Error('arguments length not match Enum')
+      let error = new Error('arguments length not match Enum')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
     }
 
     let arg = args[0]
@@ -18,7 +21,10 @@ export default function Enum(...patterns) {
       }
     }
     
-    throw new Error(`"${arg}" is not match Enum(${this.patterns.join(',')})`)
+    let error = new Error(typeof(arg) + ' does not match Enum(' + this.patterns.join(',') + ')')
+    error.arguments = args
+    error.pattern = pattern
+    throw error
   }
   return EnumType
 }

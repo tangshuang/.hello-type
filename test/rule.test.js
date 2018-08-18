@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, IfExists } from '../src/rule'
+import Rule, { Any, IfExists, InstanceOf, Equal } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -42,5 +42,28 @@ describe('Rule', () => {
     expect(() => { IfExistsType.assert('name') }).not.toThrowError()
     expect(() => { IfExistsType.assert('name', 10) }).not.toThrowError()
     expect(() => { IfExistsType.assert('name', '10') }).toThrowError()
+  })
+  test('InstanceOf', () => {
+    const InstanceOfType = new Type({
+      num: InstanceOf(Number),
+      str: InstanceOf(String),
+    })
+    expect(() => { 
+      InstanceOfType.assert({
+        num: new Number(4),
+        str: new String('this is ok'),
+      }) 
+    }).not.toThrowError()
+  })
+  test('Equal', () => {
+    const name = new String('tomy')
+    const EqualType = new Type({
+      name: Equal(name)
+    })
+    expect(() => { 
+      EqualType.assert({
+        name: name,
+      }) 
+    }).not.toThrowError()
   })
 })

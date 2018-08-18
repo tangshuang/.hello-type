@@ -15,12 +15,18 @@ export default function List(pattern) {
   let ListType = new Type(pattern)
   ListType.assert = function(...args) {
     if (args.length !== 1) {
-      throw new Error('arguments length not match List')
+      let error = new Error('arguments length not match List')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
     }
 
     let arg = args[0]
     if (!isArray(arg)) {
-      throw new Error(`"${typeof(arg)}" not match List`)
+      let error = new Error(typeof(arg) + ' does not match List')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
     }
 
     let rule = this.rules[0]
