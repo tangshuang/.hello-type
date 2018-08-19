@@ -1,6 +1,7 @@
 import HelloType from '../src/hello-type'
 import Type from '../src/type'
 import { IfExists } from '../src/rule'
+import Tuple from '../src/tuple'
 
 describe('strict mode', () => {
   test('new Type', () => {
@@ -13,6 +14,11 @@ describe('strict mode', () => {
     expect(() => SomeType.strict.assert({ name: 'tomy', age: 10, height: 170 })).toThrowError()
     expect(() => SomeType.strict.assert({ name: 'tomy' })).toThrowError()
   })
+  test('Tuple', () => {
+    const SomeType = Tuple(String, Number, IfExists(Object))
+    expect(() => SomeType.assert('tomy', 10)).not.toThrowError()
+    expect(() => SomeType.Strict.assert('tomy', 10)).toThrowError()
+  })
   test('HelloType', () => {
     const SomeType = new Type({
       name: String,
@@ -21,5 +27,10 @@ describe('strict mode', () => {
     expect(() => HelloType.expect(SomeType.Strict).toBe.typeof({ name: 'tomy', age: 10 })).not.toThrowError()
     expect(() => HelloType.expect(SomeType.Strict).toBe.typeof({ name: 'tomy', age: 10, height: 170 })).toThrowError()
     expect(() => HelloType.expect(SomeType.Strict).toBe.typeof({ name: 'tomy' })).toThrowError()
+  })
+  test('toBeStrict', () => {
+    const SomeType = new Type(Number)
+    expect(SomeType).toEqual(SomeType.toBeStrict())
+    expect(SomeType).not.toEqual(SomeType.Strict)
   })
 })

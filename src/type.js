@@ -26,14 +26,6 @@ export default class Type {
       }
     })
   }
-  get strict() {
-    let ins = new Type(...this.patterns)
-    ins.mode = 'strict'
-    return ins
-  }
-  get Strict() {
-    return this.strict
-  }
   vaildate(arg, rule, pattern) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
@@ -347,5 +339,18 @@ export default class Type {
         })
       }),
     }
+  }
+
+  toBeStrict() {
+    this.mode = 'strict'
+    return this
+  }
+  get strict() {
+    let ins = new Type(...this.patterns)
+    ins.mode = 'strict'
+    return ins
+  }
+  get Strict() {
+    return this.strict
   }
 }

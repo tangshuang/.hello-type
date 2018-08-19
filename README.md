@@ -129,9 +129,14 @@ It will return a resolved promise anyway:
 let error = await PersonType.trace(person).with(fn)
 ```
 
-**strict/Strict**
+**toBeStrict()/strict/Strict**
 
 Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match, even you use `IfExists`.
+
+```js
+const MyType = new Type([Number, Number])
+MyType.Strict.assert([1]) // array length should be 2, but here just passed only one
+```
 
 ```js
 const MyType = new Type({
@@ -143,11 +148,21 @@ MyType.Strict.assert({
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
 })
+MyType.toBeStrict().assert({
+  name: 'tomy',
+  age: 10,
+  height: 172,
+})
 ```
 
+However, `MyType.Strict` is different from `MyType.toBeStrict()`, `.toBeStrict()` is to covert current instance to be in strict mode, but `.Strict` or `.strict` will get a _new_ instance which is in strict mode. If you want to use a type container instance only one in strict mode, you can use `.toBeStrict()`, if you want to use multiple times, use `.Strict` instead.
+
 ```js
-const MyType = new Type([Number, Number])
-MyType.Strict.assert([1]) // array length should be 2, but here just passed only one
+const MyType = new Type({
+  body: Dict({
+    head: Object,
+  }).toBeStrict(), // here I will use Dict directly in strict mode
+})
 ```
 
 ## Dict

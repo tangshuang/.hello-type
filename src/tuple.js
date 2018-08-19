@@ -7,6 +7,13 @@ export default function Tuple(...patterns) {
     let patterns = this.patterns
     let len = patterns.length
 
+    if (this.mode === 'strict' && args.length !== len) {
+      let error = new Error('arguments length not match Tuple in strict mode')
+      error.arguments = args
+      error.pattern = pattern
+      throw error
+    }
+
     for (let i = len - 1; i > -1; i --) {
       let pattern = patterns[i]
       if ((pattern instanceof Type || pattern instanceof Rule) && pattern.if_exists) {
