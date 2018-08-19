@@ -341,8 +341,8 @@ export default class Type {
     }
   }
 
-  toBeStrict() {
-    this.mode = 'strict'
+  toBeStrict(mode = true) {
+    this.mode = mode ? 'strict' : 'none'
     return this
   }
   get strict() {
