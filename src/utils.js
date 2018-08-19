@@ -14,6 +14,10 @@ export function isFunction(value) {
   return typeof value === 'function'
 }
 
+export function isSymbol(value) {
+  return typeof value === 'symbol'
+}
+
 export function isObject(value) {
   return value && typeof value === 'object' && value.constructor === Object
 }

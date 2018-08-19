@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isConstructor } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
@@ -157,6 +157,18 @@ export default class Type {
       }
     }
 
+    if (rule === Symbol) {
+      if (isSymbol(arg)) {
+        return null
+      }
+      else {
+        let error = new Error(typeof(arg) + ' does not match Symbol')
+        error.arguments = [arg]
+        error.pattern = pattern
+        return error
+      }
+    }
+
     if (isArray(rule) && isArray(arg)) {
       let rules = rule
       let args = arg
@@ -249,7 +261,7 @@ export default class Type {
       return null
     }
 
-    // is the given value, rule should be a string, a number or a boolean
+    // is the given value, rule should not be an object/instance
     // i.e. (new Type('name')).assert('name')
     if (!(rule instanceof Object) && arg === rule) {
       return null
@@ -270,7 +282,11 @@ export default class Type {
         return null
       }
 
-      rule.assert(arg)
+      let error = rule.catch(arg)
+      if (error) {
+        return error
+      }
+
       return null
     }
 

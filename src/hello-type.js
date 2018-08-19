@@ -4,7 +4,11 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Range } from './range'
-export { default as Rule, Any, IfExists, Equal, InstanceOf } from './rule'
+export { 
+  default as Rule, 
+  Any, Null, Undefined, 
+  IfExists, Equal, InstanceOf,
+} from './rule'
 
 import { decorate } from './utils'
 

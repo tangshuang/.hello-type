@@ -50,22 +50,30 @@ function welcome(person) {
 
 Rules:
 
-- String: should be a string
-- Number: should be a finite number, `NaN` `"123"` and `Finite` will not match
+- String
+- Number: should be a finite number, `NaN` `"123"` and `Infinity` will not match
 - Boolean: should be one of `true` or `false`
 - Object: should be a normal object like `{}`, instance of class, array and Object self will not match
-- Array: should be an array
-- Function: should be a function
-- RegExp: should be a regexp
-- ... any other js data prototype
-- Dict(?): should be structed with passed value
-- List(?, ?, ?): should be an array which has certain sturcted item
-- Enum(?, ?, ?): should be one of these values
-- Tuple(?, ?, ?): should be same number and structure with each value, always used for function parameters
-- ?: any value to equal, i.e. new Type({ name: 'tomy' }), name should must be 'tomy'
-- ?: an instance of `Type`, will flow the rules of it
-- new Rule(factory): a custom rule
-- Any, Self
+- Array
+- Function
+- RegExp
+- Symbol
+- NaN
+- Infinity
+- Date
+- Dict()
+- List()
+- Enum()
+- Tuple()
+- new Type
+- Null
+- Undefined
+- Any
+- IfExists()
+- InstanceOf()
+- Equal()
+- new Rule
+- *: any value to equal
 
 A type instance have members:
 
@@ -302,6 +310,14 @@ const MyType = Dict({
   top: Any,
 })
 ```
+
+**Null**
+
+Your given value should be `null`.
+
+**Undefined**
+
+Your given value should be `undefined`.
 
 **IfExists()**
 

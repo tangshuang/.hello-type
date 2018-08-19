@@ -1,11 +1,14 @@
 import Type from './type'
-import { equal } from 'assert';
 
 export default class Rule {
   constructor(factory) {
     this.factory = factory
   }
 }
+
+export const Null = new Rule(value => value === null)
+
+export const Undefined = new Rule(value => value === undefined)
 
 export const Any = new Rule(() => null)
 
