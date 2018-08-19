@@ -7,11 +7,6 @@ export default function Dict(pattern) {
     pattern = Object
   }
 
-  // if pattern is an empty object, it treated to be an Object
-  if (isEmpty(pattern)) {
-    pattern = Object
-  }
-
   let DictType = new Type(pattern)
   DictType.assert = function(...args) {
     if (args.length !== 1) {

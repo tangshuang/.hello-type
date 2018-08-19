@@ -7,11 +7,6 @@ export default function List(pattern) {
     pattern = Array
   }
 
-  // if pattern is an empty object, it treated to be an Object
-  if (isEmpty(pattern)) {
-    pattern = Array
-  }
-
   let ListType = new Type(pattern)
   ListType.assert = function(...args) {
     if (args.length !== 1) {

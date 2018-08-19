@@ -10,6 +10,12 @@ describe('List', () => {
       expect(() => { ListType.assert(['tomy', 10, 10]) }).not.toThrowError()
       expect(() => { ListType.assert(['tomy', 10, null]) }).toThrowError()
     })
+    test('empty array', () => {
+      const ListType = List([])
+      expect(() => { ListType.assert([]) }).not.toThrowError()
+      expect(() => { ListType.assert([1]) }).not.toThrowError()
+      expect(() => { ListType.Strict.assert([1]) }).toThrowError()
+    })
   })
   describe('test', () => {
     test('basic', () => {
