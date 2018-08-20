@@ -62,6 +62,16 @@ export const HelloType = {
    * @HelloType.decorate.with((arg) => SomeType.assertf(arg))
    */
   decorate: {
+    input: {
+      with: (fn) => decorate(function(...args) {
+        fn(...args)
+      }, 'input'),
+    },
+    output: {
+      with: (fn) => decorate(function(...args) {
+        fn(...args)
+      }, 'output'),
+    },
     with: (fn) => decorate(function(...args) {
       fn(...args)
     }),

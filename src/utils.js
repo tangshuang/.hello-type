@@ -76,33 +76,45 @@ export function toShallowObject(obj, factory) {
   return result
 }
 
-export function decorate(factory) {
+export function decorate(factory, method = 'input') {
   return function(target, prop, descriptor) {
     // decorate class constructor function
     if (target && !prop) {
       return class extends target {
         constructor(...args) {
-          isFunction(factory) && factory(...args)
+          if (isFunction(factory) && method !== 'input' && method !== 'output') {
+            factory(...args)
+          }
           super(...args)
         }
       }
     }
-    // decorate class member function
+    // decorate class member
     else if (prop) {
+      // change the property
+      descriptor.set = (value) => {
+        if (isFunction(factory) && method !== 'input' && method !== 'output') {
+          factory(value)
+        }
+        descriptor.value = value
+      }
+      
+      // method
       let property = descriptor.value
       if (typeof property === 'function') {
         let wrapper = function(...args) {
-          isFunction(factory) && factory(...args)
-          property.call(this, ...args)
+          if (isFunction(factory) && method === 'input') {
+            factory(...args)
+          }
+          let result = property.call(this, ...args)
+          if (isFunction(factory) && method === 'output') {
+            factory(result)
+          }
+          return result
         }
         descriptor.value = wrapper
       }
-      else {
-        descriptor.set = (value) => {
-          isFunction(factory) && factory(value)
-          descriptor.value = value
-        }
-      }
+
       return descriptor
     }
     else {

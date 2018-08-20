@@ -445,8 +445,16 @@ HelloType.trace(someobject).by(SomeType.Strict).with((error, [args], type) => {
 Use to decorate class and its members:
 
 ```js
-@HelloType.decorate.with((arg) => SomeType.assert(arg))
-class SomeClass {}
+@HelloType.decorate.with((...args) => SomeTupleType.assert(...args)) // decorate constructor
+class SomeClass {
+  @HelloType.decorate.with((value) => SomeType.assert(value)) // decorate a property member
+  propertyName = null
+
+  @HelloType.decorate.input.with((...args) => SomeTupleType.assert(...args)) // decorate the parameters of a property method
+  @HelloType.decorate.output.with((value) => SomeType.assert(value)) // decorate the return value of a property method
+  @HelloType.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
+  methodName(...args) {}
+}
 ```
 
 ## Test
