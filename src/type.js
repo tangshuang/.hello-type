@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError } from './utils'
+import { isArray, inArray, isBoolean, isNumber, isObject, inObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
@@ -26,27 +26,18 @@ export default class Type {
       }
     })
   }
-  vaildate(arg, rule, pattern, prop, target) {
+  vaildate(arg, rule, prop, target) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
-      // if can be not exists
-      if (rule.if_exists && typeof arg === 'undefined') {
-        return null
-      }
-
       if (!isFunction(rule.factory)) {
         let error = new Error('new Rule should receive a function')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
       else {
-        let error = rule.factory(arg)
-        if (error instanceof Error) {
-          return error
-        }
+        let error = rule.factory(arg, prop, target)
+        return xError(error, [arg], [rule])
       }
-
-      return null
     }
 
     // NaN
@@ -57,7 +48,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match NaN')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -69,7 +60,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Number')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -81,7 +72,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(rule) + ' does not match Boolean')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -93,7 +84,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match String')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -105,7 +96,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Function')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -117,7 +108,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Array')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -129,7 +120,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Object')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -139,7 +130,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Symbol')
-        return xError(error, [arg], [pattern])
+        return xError(error, [arg], [rule])
       }
     }
 
@@ -153,7 +144,7 @@ export default class Type {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
           let error = new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
-          return xError(error, [arg], [pattern])
+          return xError(error, [arg], [rule])
         }
       }
       
@@ -169,15 +160,10 @@ export default class Type {
       for (let i = 0; i < argLen; i ++) {
         let rule = clonedRules[i]
         let arg = args[i]
-      
-        // if can be not exists
-        if ((rule instanceof Rule || rule instanceof Type) && rule.if_exists && typeof arg === 'undefined') {
-          return null
-        }
 
-        let error = this.vaildate(arg, rule, pattern, i, args)
+        let error = this.vaildate(arg, rule, i, args)
         if (error) {
-          return error
+          return xError(error, [arg], [rule])
         }
       }
       
@@ -195,11 +181,9 @@ export default class Type {
         for (let i = 0, len = argKeys.length; i < len; i ++) {
           let argKey = argKeys[i]
           // args has key beyond rules
-          if (ruleKeys.indexOf(argKey) === -1) {
+          if (!inArray(argKey, ruleKeys)) {
             let error = new Error(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
-            error.arguments = [arg]
-            error.pattern = pattern
-            return error
+            return xError(error, [arg], [rule])
           }
         }
       }
@@ -208,24 +192,19 @@ export default class Type {
         let ruleKey = ruleKeys[i]
         let rule = rules[ruleKey]
         let argKey = ruleKey
-        let value = args[argKey]
+        let arg = args[argKey]
 
-        // can be not exists by using IfExists() in non-strict mode
-        if (this.mode !== 'strict' && (rule instanceof Rule || rule instanceof Type) && rule.if_exists && argKeys.indexOf(ruleKey) === -1) {
-          continue
+        let error = this.vaildate(arg, rule, argKey, args)
+        if (error) {
+          return xError(error, [arg], [rule])
         }
 
         // not found some key in arg
-        if (argKeys.indexOf(ruleKey) === -1) {
+        // however, Rule.factory may modify args[argKey], so here I should check args[argKey]
+        // Notice, modify original data may cause error, so be careful
+        if (!inArray(ruleKey, argKeys) && !inObject(argKey, args)) {
           let error = new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
-          error.arguments = [arg]
-          error.pattern = pattern
-          return error
-        }
-
-        let error = this.vaildate(value, rule)
-        if (error) {
-          return error
+          return xError(error, [arg], [rule])
         }
       }
 
@@ -248,41 +227,30 @@ export default class Type {
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
     if (rule instanceof Type) {
-      // can be not exists
-      if (rule.if_exists && typeof arg === 'undefined') {
-        return null
-      }
-
       let error = rule.catch(arg)
       if (error) {
-        return error
+        return xError(error, [arg], [rule])
       }
 
       return null
     }
 
     let error = new Error(typeof(arg) + ' does not match type of "' + pattern.toString() + '"')
-    error.arguments = [arg]
-    error.pattern = pattern
-    return error
+    return xError(error, [arg], [rule])
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
       let error = new Error('arguments length not match type')
-      error.arguments = args
-      error.patterns = this.patterns
-      throw error
+      throw xError(error, args, rules)
     }
 
     let rules = this.rules
-    let patterns = this.patterns
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
       let rule = rules[i]
-      let pattern = patterns[i]
-      let error = this.vaildate(arg, rule, pattern)
+      let error = this.vaildate(arg, rule)
       if (error) {
-        throw error
+        throw xError(error, args, rules)
       }
     }
   }

@@ -30,6 +30,10 @@ export function inArray(value, arr) {
   return arr.indexOf(value) > -1
 }
 
+export function inObject(key, obj) {
+  return inArray(key, Object.keys(obj))
+}
+
 export function isEmpty(obj) {
   return Object.keys(obj).length === 0
 }
@@ -123,12 +127,12 @@ export function decorate(factory, method = 'input') {
   }
 }
 
-export function xError(error, args, pattens) {
-  if (!error) {
-    return null
+export function xError(error, args, rules) {
+  if (error instanceof Error) {
+    error.arguments = args
+    error.rules = rules
+    return error
   }
   
-  error.arguments = args
-  error.pattens = pattens
-  return error
+  return null
 }
