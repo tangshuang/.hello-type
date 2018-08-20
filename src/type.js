@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor } from './utils'
+import { isArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
@@ -26,7 +26,7 @@ export default class Type {
       }
     })
   }
-  vaildate(arg, rule, pattern) {
+  vaildate(arg, rule, pattern, prop, target) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
@@ -37,9 +37,7 @@ export default class Type {
 
       if (!isFunction(rule.factory)) {
         let error = new Error('new Rule should receive a function')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
       else {
         let error = rule.factory(arg)
@@ -59,9 +57,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match NaN')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -73,9 +69,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Number')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -87,9 +81,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(rule) + ' does not match Boolean')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -101,9 +93,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match String')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -115,9 +105,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Function')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -129,9 +117,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Array')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -143,9 +129,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Object')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -155,9 +139,7 @@ export default class Type {
       }
       else {
         let error = new Error(typeof(arg) + ' does not match Symbol')
-        error.arguments = [arg]
-        error.pattern = pattern
-        return error
+        return xError(error, [arg], [pattern])
       }
     }
 
@@ -171,32 +153,29 @@ export default class Type {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
           let error = new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
-          error.arguments = [arg]
-          error.pattern = pattern
-          return error
+          return xError(error, [arg], [pattern])
         }
       }
-
-      let patterns = [].concat(rules)
-
+      
       // if arguments.length is bigger than rules.length, use Enum to match left items
+      let clonedRules = [].concat(rules)
       if (argLen > ruleLen) {
         let ItemType = ruleLen > 1 ? Enum(...rules) : ruleLen ? rules[0] : Any
         for (let i = ruleLen; i < argLen; i ++) {
-          patterns.push(ItemType)
+          clonedRules.push(ItemType)
         }
       }
 
       for (let i = 0; i < argLen; i ++) {
-        let pattern = patterns[i]
-        let value = args[i]
+        let rule = clonedRules[i]
+        let arg = args[i]
       
         // if can be not exists
-        if ((pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && typeof value === 'undefined') {
+        if ((rule instanceof Rule || rule instanceof Type) && rule.if_exists && typeof arg === 'undefined') {
           return null
         }
 
-        let error = this.vaildate(value, pattern)
+        let error = this.vaildate(arg, rule, pattern, i, args)
         if (error) {
           return error
         }
@@ -227,12 +206,12 @@ export default class Type {
 
       for (let i = 0, len = ruleKeys.length; i < len; i ++) {
         let ruleKey = ruleKeys[i]
-        let pattern = rules[ruleKey]
+        let rule = rules[ruleKey]
         let argKey = ruleKey
         let value = args[argKey]
 
         // can be not exists by using IfExists() in non-strict mode
-        if (this.mode !== 'strict' && (pattern instanceof Rule || pattern instanceof Type) && pattern.if_exists && argKeys.indexOf(ruleKey) === -1) {
+        if (this.mode !== 'strict' && (rule instanceof Rule || rule instanceof Type) && rule.if_exists && argKeys.indexOf(ruleKey) === -1) {
           continue
         }
 
@@ -244,7 +223,7 @@ export default class Type {
           return error
         }
 
-        let error = this.vaildate(value, pattern)
+        let error = this.vaildate(value, rule)
         if (error) {
           return error
         }
@@ -291,7 +270,7 @@ export default class Type {
     if (args.length !== this.rules.length) {
       let error = new Error('arguments length not match type')
       error.arguments = args
-      error.pattern = pattern
+      error.patterns = this.patterns
       throw error
     }
 
@@ -341,14 +320,15 @@ export default class Type {
     }
   }
 
+  clone() {
+    return new Type(...this.patterns)
+  }
   toBeStrict(mode = true) {
     this.mode = mode ? 'strict' : 'none'
     return this
   }
   get strict() {
-    let ins = new Type(...this.patterns)
-    ins.mode = 'strict'
-    return ins
+    return this.clone().toBeStrict()
   }
   get Strict() {
     return this.strict
