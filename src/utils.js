@@ -122,3 +122,13 @@ export function decorate(factory, method = 'input') {
     }
   }
 }
+
+export function xError(error, args, pattens) {
+  if (!error) {
+    return null
+  }
+  
+  error.arguments = args
+  error.pattens = pattens
+  return error
+}
