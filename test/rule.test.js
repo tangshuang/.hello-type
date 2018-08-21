@@ -36,6 +36,7 @@ describe('Rule', () => {
     expect(() => { IfExistsType.assert({ name: 'tomy', children: [] }) }).not.toThrowError()
     expect(() => { IfExistsType.assert({ name: 'tomy', children: null }) }).toThrowError()
     expect(() => { IfExistsType.assert({ name: 'tomy', children: [{}] }) }).not.toThrowError()
+    expect(() => { IfExistsType.assert({ name: 'tomy', children: [0] }) }).toThrowError()
   })
   test('IfExists for tuples', () => {
     const IfExistsType = Tuple(String, IfExists(Number))

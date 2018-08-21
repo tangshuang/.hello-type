@@ -6,7 +6,7 @@ export default class Rule {
     if (args.length > 1) {
       this.name = args[0]
       this.vaildate = args[1]
-      this.override = args[3]
+      this.override = args[2]
     }
     else if (args.length > 0) {
       this.vaildate = args[0]
@@ -79,7 +79,7 @@ export const IfNotMatch = function(rule, defaultValue) {
   }
 
   rule = new Type(rule)
-  return IfNotMatch(rule)
+  return IfNotMatch(rule, defaultValue)
 }
 
 /**

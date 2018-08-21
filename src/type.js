@@ -161,18 +161,26 @@ export default class Type {
         let rule = clonedRules[i]
 
         // use rule to override property when not match
-        if (rule instanceof Rule && isFunction(rule.override)) {
+        if (rule instanceof Rule) {
           let error = rule.vaildate(arg)
           if (error) {
+            if (!isFunction(rule.override)) {
+              return xError(error, { arg, rule, key: argKey })
+            }
+
+            // override
             rule.override(args, i)
+            arg = args[argKey]
+          }
+          else {
+            continue
           }
         }
+        
         // normal vaildate
-        else {
-          let error = this.vaildate(arg, rule)
-          if (error) {
-            return xError(error, { arg, rule, index: i })
-          }
+        let error = this.vaildate(arg, rule)
+        if (error) {
+          return xError(error, { arg, rule, index: i })
         }
       }
       
@@ -203,25 +211,42 @@ export default class Type {
         let argKey = ruleKey
         let arg = args[argKey]
 
-        // use rule to override property when not match
-        if (rule instanceof Rule && isFunction(rule.override)) {
-          let error = rule.vaildate(arg)
-          if (error) {
-            rule.override(args, argKey)
-          }
-        }
         // not found some key in arg
-        // i.e. should be { name: String, age: Number } but give { name: 'tomy' }
-        else if (!inArray(ruleKey, argKeys)) {
+        // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
+        if (!inArray(ruleKey, argKeys)) {
+          // IfExists:
+          if (rule instanceof Rule && this.mode !== 'strict') {
+            let error = rule.vaildate(arg)
+            if (!error) {
+              continue
+            }
+          }
+
           let error = new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
           return xError(error, { arg, rule, key: ruleKey })
         }
-        // normal vaildate
-        else {
-          let error = this.vaildate(arg, rule)
+
+        // use rule to override property when not match
+        if (rule instanceof Rule) {
+          let error = rule.vaildate(arg)
           if (error) {
-            return xError(error, { arg, rule, key: argKey })
+            if (!isFunction(rule.override)) {
+              return xError(error, { arg, rule, key: argKey })
+            }
+            
+            // override
+            rule.override(args, argKey)
+            arg = args[argKey]
           }
+          else {
+            continue
+          }
+        }
+        
+        // normal vaildate
+        let error = this.vaildate(arg, rule)
+        if (error) {
+          return xError(error, { arg, rule, key: argKey })
         }
       }
 
@@ -265,7 +290,7 @@ export default class Type {
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
       let rule = rules[i]
-      let error = this.vaildate(rule, arg, i, args)
+      let error = this.vaildate(arg, rule)
       if (error) {
         throw xError(error, { arg, rule, index: i, args, rules })
       }
