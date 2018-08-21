@@ -61,6 +61,7 @@ Rules:
 - NaN
 - Infinity
 - Date
+- Promise
 - Dict()
 - List()
 - Enum()
@@ -380,6 +381,26 @@ const ParamsType = Tuple(String, IfExists(Number)) // => can be ('name') or ('na
 ```
 
 In Tuple, only the rest items can be if_exists.
+
+**IfNotMatch()**
+
+If the target not match passed rule, you can set a default value to replace.
+Only works for object.
+
+```js
+const SomeType = Dict({
+  name: String,
+  age: IfNotMatch(Number, 0),
+})
+const some = {
+  name: 'tomy',
+}
+
+SomeType.assert(some) // without any error
+// => some.age === 0
+```
+
+Notice, this method will change your original data, so be careful when you use it.
 
 **InstanceOf()**
 
