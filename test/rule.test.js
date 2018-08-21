@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, IfExists, InstanceOf, Equal } from '../src/rule'
+import Rule, { Any, IfExists, InstanceOf, Equal, IfNotMatch } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -65,5 +65,17 @@ describe('Rule', () => {
         name: name,
       }) 
     }).not.toThrowError()
+  })
+  test('IfNotMatch', () => {
+    const SomeType = new Type({
+      name: String,
+      age: IfNotMatch(Number, 0),
+    })
+    const obj = {
+      name: 'tomy',
+      age: null,
+    }
+    expect(() => { SomeType.assert(obj) }).not.toThrowError()
+    expect(obj.age).toEqual(0)
   })
 })

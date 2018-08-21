@@ -1,43 +1,41 @@
 import Type from './type'
 import Rule from './rule'
+import { xError } from './utils'
 
 export default function Tuple(...patterns) {
   let TupleType = new Type(...patterns)
   TupleType.assert = function(...args) {
-    let patterns = this.patterns
-    let len = patterns.length
+    let rules = this.rules
+    let ruleLen = rules.length
+    let argLen = args.length
+    let minLen = ruleLen
 
-    if (this.mode === 'strict' && args.length !== len) {
+    if (this.mode === 'strict' && argLen !== ruleLen) {
       let error = new Error('arguments length not match Tuple in strict mode')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      throw xError(error, { args, rules, type: 'Tuple' })
     }
 
-    for (let i = len - 1; i > -1; i --) {
-      let pattern = patterns[i]
-      if ((pattern instanceof Type || pattern instanceof Rule) && pattern.if_exists) {
-        len --
+    for (let i = ruleLen - 1; i > -1; i --) {
+      let rule = rules[i]
+      if (rule instanceof Rule && rule.name === 'IfExists') {
+        minLen --
       }
       else {
         break
       }
     }
 
-    if (args.length < len || args.length > patterns.length) {
+    if (argLen < minLen || argLen > ruleLen) {
       let error = new Error('arguments length not match Tuple')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      throw xError(error, { args, rules, type: 'Tuple' })
     }
-
-    let rules = this.rules
-    for (let i = 0, len = args.length; i < len; i ++) {
+    
+    for (let i = 0; i < argLen; i ++) {
       let arg = args[i]
-      let pattern = rules[i]
-      let error = this.vaildate(arg, pattern)
+      let rule = rules[i]
+      let error = this.vaildate(arg, rule)
       if (error) {
-        throw error
+        throw xError(error, { arg, rule, index: i, args, rules, type: 'Tuple' })
       }
     }
   }

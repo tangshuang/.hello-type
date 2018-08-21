@@ -1,5 +1,5 @@
 import Type from './type'
-import { isArray, isEmpty } from './utils'
+import { isArray, xError } from './utils'
 
 export default function List(pattern) {
   // if pattern is not an array, it treated undefined
@@ -11,23 +11,19 @@ export default function List(pattern) {
   ListType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match List')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      throw xError(error, { args, type: 'List' })
     }
 
     let arg = args[0]
     if (!isArray(arg)) {
-      let error = new Error(typeof(arg) + ' does not match List')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      let error = new Error('%arg does not match List')
+      throw xError(error, { arg, type: 'List' })
     }
 
     let rule = this.rules[0]
     let error = this.vaildate(arg, rule)
     if (error) {
-      throw error
+      throw xError(error, { arg, rule, type: 'List' })
     }
   }
   return ListType

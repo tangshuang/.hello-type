@@ -7,7 +7,7 @@ export { default as Range } from './range'
 export { 
   default as Rule, 
   Any, Null, Undefined, 
-  IfExists, Equal, InstanceOf,
+  IfExists, IfNotMatch, Equal, InstanceOf,
 } from './rule'
 
 import { decorate } from './utils'

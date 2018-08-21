@@ -1,16 +1,27 @@
 import Type from './type'
-import { xError, inObject } from './utils'
+import { isFunction, xError } from './utils'
 
 export default class Rule {
-  constructor(fn) {
-    this.vaildate = fn
+  constructor(...args) {
+    if (args.length > 1) {
+      this.name = args[0]
+      this.vaildate = args[1]
+      this.override = args[3]
+    }
+    else if (args.length > 0) {
+      this.vaildate = args[0]
+    }
+    if (!isFunction(this.vaildate)) {
+      this.vaildate = () => null
+    }
+    if (this.override && !isFunction(this.override)) {
+      this.override = () => null
+    }
   }
 }
 
 export const Null = new Rule(value => value === null)
-
 export const Undefined = new Rule(value => value === undefined)
-
 export const Any = new Rule(() => null)
 
 /**
@@ -19,27 +30,23 @@ export const Any = new Rule(() => null)
  */
 export const IfExists = function(rule) {
   if (rule instanceof Rule) {
-    let newRule = new Rule(function(value, prop, target) {
-      if (!inObject(prop, target)) {
+    return new Rule('IfExists', function(value) {
+      if (value === undefined) {
         return null
       }
       let error = rule.vaildate(value)
-      return xError(error, [value], [rule])
+      return xError(error, { value, rule, name: 'IfExists' })
     })
-    newRule.factory = 'if_exists'
-    return newRule
   }
   
   if (rule instanceof Type) {
-    let newRule = new Rule(function(value, prop, target) {
-      if (!inObject(prop, target)) {
+    return new Rule('IfExists', function(value) {
+      if (value === undefined) {
         return null
       }
       let error = rule.catch(value)
-      return xError(error, [value], [rule])
+      return xError(error, { value, rule, name: 'IfExists' })
     })
-    newRule.factory = 'if_exists'
-    return newRule
   }
 
   rule = new Type(rule)
@@ -54,27 +61,21 @@ export const IfExists = function(rule) {
  */
 export const IfNotMatch = function(rule, defaultValue) {
   if (rule instanceof Rule) {
-    let newRule = new Rule(function(value, prop, target) {
+    return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
-      if (error) {
-        target[prop] = defaultValue
-      }
-      return null
+      return xError(error, { value, rule, name: 'IfNotMatch' })
+    }, function(target, prop) {
+      target[prop] = defaultValue
     })
-    newRule.factory = 'if_not_match'
-    return newRule
   }
   
   if (rule instanceof Type) {
-    let newRule = new Rule(function(value, prop, target) {
+    return new Rule('IfNotMatch', function(value) {
       let error = rule.catch(value)
-      if (error) {
-        target[prop] = defaultValue
-      }
-      return null
+      return xError(error, { value, rule, name: 'IfNotMatch' })
+    }, function(target, prop) {
+      target[prop] = defaultValue
     })
-    newRule.factory = 'if_not_match'
-    return newRule
   }
 
   rule = new Type(rule)
@@ -86,17 +87,15 @@ export const IfNotMatch = function(rule, defaultValue) {
  * @param {*} rule should be a class constructor
  */
 export const InstanceOf = function(rule) {
-  let newRule = new Rule(function(value) {
+  return new Rule('InstanceOf', function(value) {
     if (value instanceof rule && value.constructor === rule) {
       return null
     }
     else {
-      let error = new Error('argument is not an instance of ' + rule.name)
-      return xError(error, [value], [rule])
+      let error = new Error('argument is not an instance of ' + (rule.name || 'unknow'))
+      return xError(error, { value, rule, name: 'InstanceOf' })
     }
   })
-  newRule.factory = 'instance_of'
-  return newRule
 }
 
 /**
@@ -104,15 +103,13 @@ export const InstanceOf = function(rule) {
  * @param {*} rule 
  */
 export const Equal = function(rule) {
-  let newRule = new Rule(function(value) {
+  return new Rule('Equal', function(value) {
     if (value === rule) {
       return null
     }
     else {
       let error = new Error('argument does not equal rule')
-      return xError(error, [value], [rule])
+      return xError(error, { value, rule, name: 'Equal' })
     }
   })
-  newRule.factory = 'equal'
-  return newRule
 }

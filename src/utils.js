@@ -127,10 +127,11 @@ export function decorate(factory, method = 'input') {
   }
 }
 
-export function xError(error, args, rules) {
+export function xError(error, info) {
   if (error instanceof Error) {
-    error.arguments = args
-    error.rules = rules
+    let trace = Object.assign({ message: error.message }, info)
+    error.trace = error.trace || []
+    error.trace.shift(trace)
     return error
   }
   

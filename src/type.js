@@ -28,23 +28,15 @@ export default class Type {
   }
   /**
    * vaildate whether the argument match the rule
+   * @param {*} arg
    * @param {*} rule 
-   * @param {*} arg 
-   * @param {*} prop the property name of arg
-   * @param {*} target the host of arg
    */
-  vaildate(rule, arg, prop, target) {
+  vaildate(arg, rule) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
-      if (!isFunction(rule.vaildate)) {
-        let error = new Error('new Rule should receive a function')
-        return xError(error, [arg], [rule])
-      }
-      else {
-        let error = rule.vaildate(arg, prop, target)
-        return xError(error, [arg], [rule])
-      }
+      let error = rule.vaildate(arg)
+      return xError(error, { arg, rule })
     }
 
     // NaN
@@ -54,8 +46,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match NaN')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match NaN')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -66,8 +58,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match Number')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Number')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -78,8 +70,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(rule) + ' does not match Boolean')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Boolean')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -90,8 +82,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match String')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match String')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -102,8 +94,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match Function')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Function')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -114,8 +106,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match Array')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Array')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -126,8 +118,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match Object')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Object')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -136,8 +128,8 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error(typeof(arg) + ' does not match Symbol')
-        return xError(error, [arg], [rule])
+        let error = new Error('%arg does not match Symbol')
+        return xError(error, { arg, rule })
       }
     }
 
@@ -150,8 +142,8 @@ export default class Type {
       if (this.mode === 'strict') {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
-          let error = new Error(`type requires array with ${ruleLen} items in strict mode, but receive ${argLen}`)
-          return xError(error, [arg], [rule])
+          let error = new Error(`array's length should be ${ruleLen} in strict mode, but receive ${argLen}`)
+          return xError(error, { arg, rule })
         }
       }
       
@@ -165,12 +157,22 @@ export default class Type {
       }
 
       for (let i = 0; i < argLen; i ++) {
-        let rule = clonedRules[i]
         let arg = args[i]
+        let rule = clonedRules[i]
 
-        let error = this.vaildate(arg, rule, i, args)
-        if (error) {
-          return xError(error, [arg], [rule])
+        // use rule to override property when not match
+        if (rule instanceof Rule && isFunction(rule.override)) {
+          let error = rule.vaildate(arg)
+          if (error) {
+            rule.override(args, i)
+          }
+        }
+        // normal vaildate
+        else {
+          let error = this.vaildate(arg, rule)
+          if (error) {
+            return xError(error, { arg, rule, index: i })
+          }
         }
       }
       
@@ -190,7 +192,7 @@ export default class Type {
           // args has key beyond rules
           if (!inArray(argKey, ruleKeys)) {
             let error = new Error(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
-            return xError(error, [arg], [rule])
+            return xError(error, { arg, rule, key: argKey })
           }
         }
       }
@@ -201,17 +203,25 @@ export default class Type {
         let argKey = ruleKey
         let arg = args[argKey]
 
-        let error = this.vaildate(arg, rule, argKey, args)
-        if (error) {
-          return xError(error, [arg], [rule])
+        // use rule to override property when not match
+        if (rule instanceof Rule && isFunction(rule.override)) {
+          let error = rule.vaildate(arg)
+          if (error) {
+            rule.override(args, argKey)
+          }
         }
-
         // not found some key in arg
-        // however, Rule.factory may modify args[argKey], so here I should check args[argKey]
-        // Notice, modify original data may cause error, so be careful
-        if (!inArray(ruleKey, argKeys) && !inObject(argKey, args)) {
+        // i.e. should be { name: String, age: Number } but give { name: 'tomy' }
+        else if (!inArray(ruleKey, argKeys)) {
           let error = new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
-          return xError(error, [arg], [rule])
+          return xError(error, { arg, rule, key: ruleKey })
+        }
+        // normal vaildate
+        else {
+          let error = this.vaildate(arg, rule)
+          if (error) {
+            return xError(error, { arg, rule, key: argKey })
+          }
         }
       }
 
@@ -236,28 +246,28 @@ export default class Type {
     if (rule instanceof Type) {
       let error = rule.catch(arg)
       if (error) {
-        return xError(error, [arg], [rule])
+        return xError(error, { arg, rule })
       }
 
       return null
     }
 
-    let error = new Error(typeof(arg) + ' does not match type of "' + pattern.toString() + '"')
-    return xError(error, [arg], [rule])
+    let error = new Error('%arg does not match type of %rule')
+    return xError(error, { arg, rule })
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
       let error = new Error('arguments length not match type')
-      throw xError(error, args, rules)
+      throw xError(error, { args, rules })
     }
 
     let rules = this.rules
     for (let i = 0, len = args.length; i < len; i ++) {
       let arg = args[i]
       let rule = rules[i]
-      let error = this.vaildate(arg, rule)
+      let error = this.vaildate(rule, arg, i, args)
       if (error) {
-        throw xError(error, args, rules)
+        throw xError(error, { arg, rule, index: i, args, rules })
       }
     }
   }

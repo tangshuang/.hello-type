@@ -1,5 +1,5 @@
 import Type from './type'
-import { isObject, isEmpty } from './utils'
+import { isObject, xError } from './utils'
 
 export default function Dict(pattern) {
   // if pattern is not an object, it treated undefined
@@ -11,23 +11,19 @@ export default function Dict(pattern) {
   DictType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match Dict')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      throw xError(error, { args, type: 'Dict' })
     }
 
     let arg = args[0]
     if (!isObject(arg)) {
-      let error = new Error(typeof(arg) + ' does not match Dict')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      let error = new Error('%arg does not match Dict')
+      throw xError(error, { arg, type: 'Dict' })
     }
 
     let rule = this.rules[0]
     let error = this.vaildate(arg, rule)
     if (error) {
-      throw error
+      throw xError(error, { arg, rule, type: 'Dict' })
     }
   }
   return DictType

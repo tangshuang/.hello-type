@@ -1,5 +1,5 @@
 import Type from './type'
-import { isNumber } from './utils'
+import { isNumber, xError } from './utils'
 
 export default function Range(min, max) {
   if (!isNumber(min)) {
@@ -17,17 +17,13 @@ export default function Range(min, max) {
   RangeType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match Range')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      throw xError(error, { args, type: 'Range' })
     }
 
     let arg = args[0]
     if (!isNumber(arg)) {
-      let error = new Error(typeof(arg) + ' is not a number for Range')
-      error.arguments = args
-      error.pattern = pattern
-      throw error
+      let error = new Error('%arg is not a number for Range')
+      throw xError(error, { arg, type: 'Range' })
     }
 
     let [min, max] = this.patterns
@@ -35,10 +31,8 @@ export default function Range(min, max) {
       return
     }
     
-    let error = new Error(typeof(arg) + ` does not match Range(${min}, ${max})`)
-    error.arguments = args
-    error.pattern = pattern
-    throw error
+    let error = new Error(`%arg does not match Range(${min}, ${max})`)
+    throw xError(error, { arg, rule: [min, max], type: 'Range' })
   }
   return RangeType
 }
