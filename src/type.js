@@ -26,16 +26,23 @@ export default class Type {
       }
     })
   }
-  vaildate(arg, rule, prop, target) {
+  /**
+   * vaildate whether the argument match the rule
+   * @param {*} rule 
+   * @param {*} arg 
+   * @param {*} prop the property name of arg
+   * @param {*} target the host of arg
+   */
+  vaildate(rule, arg, prop, target) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (rule instanceof Rule) {
-      if (!isFunction(rule.factory)) {
+      if (!isFunction(rule.vaildate)) {
         let error = new Error('new Rule should receive a function')
         return xError(error, [arg], [rule])
       }
       else {
-        let error = rule.factory(arg, prop, target)
+        let error = rule.vaildate(arg, prop, target)
         return xError(error, [arg], [rule])
       }
     }
@@ -288,15 +295,13 @@ export default class Type {
     }
   }
 
-  clone() {
-    return new Type(...this.patterns)
-  }
   toBeStrict(mode = true) {
     this.mode = mode ? 'strict' : 'none'
     return this
   }
   get strict() {
-    return this.clone().toBeStrict()
+    let ins = new Type(...this.patterns)
+    return ins.toBeStrict()
   }
   get Strict() {
     return this.strict

@@ -2,11 +2,8 @@ import Type from './type'
 import { xError, inObject } from './utils'
 
 export default class Rule {
-  constructor(factory) {
-    this.factory = factory
-  }
-  clone() {
-    return new Rule(this.factory)
+  constructor(fn) {
+    this.vaildate = fn
   }
 }
 
@@ -22,23 +19,27 @@ export const Any = new Rule(() => null)
  */
 export const IfExists = function(rule) {
   if (rule instanceof Rule) {
-    return new Rule(function(value, prop, target) {
+    let newRule = new Rule(function(value, prop, target) {
       if (!inObject(prop, target)) {
         return null
       }
-      let error = rule.factory(value)
+      let error = rule.vaildate(value)
       return xError(error, [value], [rule])
     })
+    newRule.factory = 'if_exists'
+    return newRule
   }
   
   if (rule instanceof Type) {
-    return new Rule(function(value, prop, target) {
+    let newRule = new Rule(function(value, prop, target) {
       if (!inObject(prop, target)) {
         return null
       }
       let error = rule.catch(value)
       return xError(error, [value], [rule])
     })
+    newRule.factory = 'if_exists'
+    return newRule
   }
 
   rule = new Type(rule)
@@ -53,23 +54,27 @@ export const IfExists = function(rule) {
  */
 export const IfNotMatch = function(rule, defaultValue) {
   if (rule instanceof Rule) {
-    return new Rule(function(value, prop, target) {
-      let error = rule.factory(value)
+    let newRule = new Rule(function(value, prop, target) {
+      let error = rule.vaildate(value)
       if (error) {
         target[prop] = defaultValue
       }
       return null
     })
+    newRule.factory = 'if_not_match'
+    return newRule
   }
   
   if (rule instanceof Type) {
-    return new Rule(function(value, prop, target) {
+    let newRule = new Rule(function(value, prop, target) {
       let error = rule.catch(value)
       if (error) {
         target[prop] = defaultValue
       }
       return null
     })
+    newRule.factory = 'if_not_match'
+    return newRule
   }
 
   rule = new Type(rule)
@@ -81,7 +86,7 @@ export const IfNotMatch = function(rule, defaultValue) {
  * @param {*} rule should be a class constructor
  */
 export const InstanceOf = function(rule) {
-  return new Rule(function(value) {
+  let newRule = new Rule(function(value) {
     if (value instanceof rule && value.constructor === rule) {
       return null
     }
@@ -90,6 +95,8 @@ export const InstanceOf = function(rule) {
       return xError(error, [value], [rule])
     }
   })
+  newRule.factory = 'instance_of'
+  return newRule
 }
 
 /**
@@ -97,7 +104,7 @@ export const InstanceOf = function(rule) {
  * @param {*} rule 
  */
 export const Equal = function(rule) {
-  return new Rule(function(value) {
+  let newRule = new Rule(function(value) {
     if (value === rule) {
       return null
     }
@@ -106,4 +113,6 @@ export const Equal = function(rule) {
       return xError(error, [value], [rule])
     }
   })
+  newRule.factory = 'equal'
+  return newRule
 }
