@@ -7,7 +7,8 @@ export default function List(pattern) {
     pattern = Array
   }
 
-  let ListType = new Type(pattern)
+  const ListType = new Type(pattern)
+  ListType.name = 'List'
   ListType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match List')

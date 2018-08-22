@@ -3,27 +3,39 @@ import Type from '../src/type'
 
 describe('HelloType', () => {
   describe('helpers', () => {
-    test('HelloType.expect.toBe.typeof', () => {
+    beforeAll(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined)
+    })
+    afterAll(() => {
+      console.error.mockRestore()
+    })
+    test('HelloType.expect.toMatch', () => {
       const NumberType = new Type(Number)
-      expect(() => { HelloType.expect(NumberType).toBe.typeof(1) }).not.toThrowError()
-      expect(() => { HelloType.expect(NumberType).toBe.typeof(null) }).toThrowError()
+      expect(() => { HelloType.expect(1).toMatch(NumberType) }).not.toThrowError()
+      expect(() => { HelloType.expect(null).toMatch(NumberType) }).toThrowError()
     })
     test('HelloType.is.typeof', () => {
       const NumberType = new Type(Number)
       expect(HelloType.is(NumberType).typeof(1)).toBeTruthy()
       expect(HelloType.is(NumberType).typeof('1')).toBeFalsy()
     })
-    test('HelloType.catch.by', () => {
+    test('HelloType.expect.toBeCatchedBy', () => {
       const NumberType = new Type(Number)
-      expect(HelloType.catch(1).by(NumberType)).toBeNull()
-      expect(HelloType.catch('1').by(NumberType)).toBeInstanceOf(Error)
+      expect(HelloType.expect(1).toBeCatchedBy(NumberType)).toBeNull()
+      expect(HelloType.expect('1').toBeCatchedBy(NumberType)).toBeInstanceOf(Error)
     })
-    test('HelloType.trace.by.with', (done) => {
+    test('HelloType.expect.toBeTracedBy.with', (done) => {
       const NumberType = new Type(Number)
-      HelloType.trace('1').by(NumberType).with((error) => {
+      HelloType.expect('1').toBeTracedBy(NumberType).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })
+    })
+    test('HelloType.slient', () => {
+      HelloType.slient = true
+      const NumberType = new Type(Number)
+      expect(() => { HelloType.expect(null).toMatch(NumberType) }).not.toThrowError()
+      HelloType.slient = false
     })
   })
 })

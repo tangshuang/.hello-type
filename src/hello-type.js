@@ -7,7 +7,7 @@ export { default as Range } from './range'
 export { 
   default as Rule, 
   Any, Null, Undefined, 
-  IfExists, IfNotMatch, Equal, InstanceOf,
+  IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
 } from './rule'
 
 import { decorate } from './utils'
@@ -17,12 +17,26 @@ export const HelloType = {
    * assert
    * @param {Type} type 
    * @example
-   * HelloType.expect(SomeType).toBe.typeof(arg)
+   * HelloType.expect(arg).toMatch(SomeType)
    */
-  expect: (type) => ({
-    toBe: {
-      typeof: (...targets) => type.assert(...targets),
+  expect: (...targets) => ({
+    toMatch: (type) => {
+      try {
+        type.assert(...targets)
+      }
+      catch(e) {
+        if (HelloType.slient) {
+          console.error(e)
+        }
+        else {
+          throw e
+        }
+      }
     },
+    toBeCatchedBy: (type) => type.catch(...targets),
+    toBeTracedBy: (type) => ({
+      with: (fn) => type.trace(...targets).with(fn),
+    }),
   }),
 
   /**
@@ -33,28 +47,6 @@ export const HelloType = {
    */
   is: (type) =>  ({
     typeof: (...targets) => type.test(...targets),
-  }),
-
-  /**
-   * catch error by SomeType
-   * @param {*} targets 
-   * @example
-   * let error = HelloType.catch(arg).by(SomeType)
-   */
-  catch: (...targets) => ({
-    by: (type) => type.catch(...targets),
-  }),
-
-  /**
-   * track args by SomeType
-   * @param {*} targets 
-   * @example
-   * HelloType.trace(arg).by(SomeType).with(fn)
-   */
-  trace: (...targets) => ({
-    by: (type) => ({
-      with: (fn) => type.trace(...targets).with(fn),
-    }),
   }),
 
   /**
@@ -76,6 +68,11 @@ export const HelloType = {
       fn(...args)
     }),
   },
+
+  /**
+   * whether to use console.error instead of throw when using HelloType.expect.toMatch
+   */
+  slient: false,
 }
 
 export default HelloType

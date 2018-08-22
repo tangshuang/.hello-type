@@ -2,7 +2,8 @@ import Type from './type'
 import { xError } from './utils'
 
 export default function Enum(...patterns) {
-  let EnumType = new Type(...patterns)
+  const EnumType = new Type(...patterns)
+  EnumType.name = 'Enum'
   EnumType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match Enum')

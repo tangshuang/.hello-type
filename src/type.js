@@ -160,17 +160,18 @@ export default class Type {
         let arg = args[i]
         let rule = clonedRules[i]
 
-        // use rule to override property when not match
         if (rule instanceof Rule) {
           let error = rule.vaildate(arg)
-          if (error) {
-            if (!isFunction(rule.override)) {
-              return xError(error, { arg, rule, key: argKey })
-            }
+          
+          // use rule to override property when not match
+          // override value and check again
+          if (isFunction(rule.override)) {
+            arg = rule.override(error, args, i) || args[i]
+            error = rule.vaildate(arg)
+          }
 
-            // override
-            rule.override(args, i)
-            arg = args[argKey]
+          if (error) {
+            return xError(error, { arg, rule, key: argKey })
           }
           else {
             continue
@@ -226,17 +227,18 @@ export default class Type {
           return xError(error, { arg, rule, key: ruleKey })
         }
 
-        // use rule to override property when not match
         if (rule instanceof Rule) {
           let error = rule.vaildate(arg)
+          
+          // use rule to override property when not match
+          // override value and check again
+          if (isFunction(rule.override)) {
+            arg = rule.override(error, args, argKey) || args[argKey]
+            error = rule.vaildate(arg)
+          }
+
           if (error) {
-            if (!isFunction(rule.override)) {
-              return xError(error, { arg, rule, key: argKey })
-            }
-            
-            // override
-            rule.override(args, argKey)
-            arg = args[argKey]
+            return xError(error, { arg, rule, key: argKey })
           }
           else {
             continue

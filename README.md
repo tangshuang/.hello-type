@@ -429,36 +429,65 @@ const MyType = Dict({
 MyType.assert({ type: Number })
 ```
 
+**Lambda()**
+
+The value should be a function, and the parameters and return value should match passed rules.
+
+_Notice: this rule can only used in array or object, and will modify the original data._
+
+- @type function
+- @param InputType: should best be Tuple if you have multiple arguments
+- @param OutputType
+- @return an instance of Rule
+
+```js
+const SomeType = Dict({
+  fn: Lambda(Tuple(String, Number), Object),
+})
+const some = {
+  fn: (str, num) => ({ str, num }),
+}
+
+SomeType.assert(some)
+some.fn('tomy', null) // throw error because the second parameter is not Number
+```
+
 ## HelloType
 
 The `HelloType` is a set of methods to use type assertions more unified.
 
-**expect.toBe.typeof**
+**expect**
 
 ```js
-HelloType.expect(SomeType).toBe.typeof(someobject) // it is the same as `SomeType.assert(someobject)`
+// toMatch
+HelloType.expect(some).toMatch(SomeoType) // it is the same as `SomeType.assert(someobject)`
+
+// toBeCatchedBy
+let error = HelloType.expect(some).toBeCatchedBy(SomeType) // it is the same as `SomeType.catch(someobject)`
+
+// toBeTracedBy.with
+HelloType.expect(some).toBeTracedBy(SomeType.Strict).with((error, args, type) => { 
+  // strict mode
+  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
+  // ...
+}) 
 ```
+
+**slient**
+
+When you set `HelloType.slient` to be 'true', `HelloType.expect.toMatch` will use `console.error` instead of `throw`.
+
+```js
+HelloType.slient = true
+HelloType.expect(some).toMatch(SomeoType) // console.error(e)
+```
+
+Notice, `slient` only works for `HelloType.expect.toMatch`, a certain type container's `assert` method will ignore this.
 
 **is.typeof**
 
 ```js
 let bool = HelloType.is(SomeType).typeof(someobject)
-```
-
-**catch.by**
-
-```js
-let error = HelloType.catch(someobject).by(SomeType) // it is the same as `SomeType.catch(someobject)`
-```
-
-**trace.by.with**
-
-```js
-HelloType.trace(someobject).by(SomeType.Strict).with((error, [args], type) => { 
-  // strict mode
-  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
-  // ...
-}) 
 ```
 
 **decorate**

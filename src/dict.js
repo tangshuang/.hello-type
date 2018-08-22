@@ -7,7 +7,8 @@ export default function Dict(pattern) {
     pattern = Object
   }
 
-  let DictType = new Type(pattern)
+  const DictType = new Type(pattern)
+  DictType.name = 'Dict'
   DictType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match Dict')

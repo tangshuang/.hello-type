@@ -74,3 +74,7 @@ BookType.meet(book)
 HelloType.trace(book).by(BookType).catch((reports) => {})
 BookType.trace(book).catch((reports) => {})
 // @HelloType.docorator.trace.by(BookType) // use as Decorator on class
+
+const LambdaType = Dict({
+  fn: Lambda(Tuple(String, Number, IfExists(Boolean)), Object)
+})

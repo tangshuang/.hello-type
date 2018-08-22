@@ -1,5 +1,6 @@
 import Type from './type'
 import { isFunction, xError } from './utils'
+import HelloType from './hello-type'
 
 export default class Rule {
   constructor(...args) {
@@ -15,7 +16,7 @@ export default class Rule {
       this.vaildate = () => null
     }
     if (this.override && !isFunction(this.override)) {
-      this.override = () => null
+      this.override = () => undefined
     }
   }
 }
@@ -64,8 +65,10 @@ export const IfNotMatch = function(rule, defaultValue) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
       return xError(error, { value, rule, name: 'IfNotMatch' })
-    }, function(target, prop) {
-      target[prop] = defaultValue
+    }, function(error, target, prop) {
+      if (error) {
+        target[prop] = defaultValue
+      }
     })
   }
   
@@ -73,8 +76,10 @@ export const IfNotMatch = function(rule, defaultValue) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.catch(value)
       return xError(error, { value, rule, name: 'IfNotMatch' })
-    }, function(target, prop) {
-      target[prop] = defaultValue
+    }, function(error, target, prop) {
+      if (error) {
+        target[prop] = defaultValue
+      }
     })
   }
 
@@ -110,6 +115,28 @@ export const Equal = function(rule) {
     else {
       let error = new Error('argument does not equal rule')
       return xError(error, { value, rule, name: 'Equal' })
+    }
+  })
+}
+
+export const Lambda = function(InputRule, OutputRule) {
+  return new Rule('Lambda', function(value) {
+    if (!isFunction(value)) {
+      let error = new Error('%value should be a function')
+      return xError(error, { value, name: 'Lambda' })
+    }
+  }, function(error, target, prop) {
+    if (!error) {
+      let fn = target[prop].bind(target)
+      let InputType = new Type(InputRule)
+      let OutputType = new Type(OutputRule)
+      let lambda = function(...args) {
+        HelloType.expect(...args).toMatch(InputType)
+        let result = fn(...args)
+        HelloType.expect(...args).toMatch(OutputType)
+        return result
+      }
+      target[prop] = lambda
     }
   })
 }

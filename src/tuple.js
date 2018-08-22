@@ -3,7 +3,8 @@ import Rule from './rule'
 import { xError } from './utils'
 
 export default function Tuple(...patterns) {
-  let TupleType = new Type(...patterns)
+  const TupleType = new Type(...patterns)
+  TupleType.name = 'Tuple'
   TupleType.assert = function(...args) {
     let rules = this.rules
     let ruleLen = rules.length

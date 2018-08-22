@@ -13,7 +13,8 @@ export default function Range(min, max) {
     max = 1
   }
 
-  let RangeType = new Type(min, max)
+  const RangeType = new Type(min, max)
+  RangeType.name = 'Range'
   RangeType.assert = function(...args) {
     if (args.length !== 1) {
       let error = new Error('arguments length not match Range')
