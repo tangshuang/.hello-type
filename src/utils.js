@@ -53,6 +53,10 @@ export function isConstructor(f) {
   return true
 }
 
+export function isInstanceOf(ins, cons) {
+  return ins instanceof cons
+}
+
 export function toFlatObject(obj, parentPath = '', result = {}) {
   let keys = Object.keys(obj)
   keys.sort() // make sure the output are the same order

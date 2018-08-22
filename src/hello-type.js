@@ -10,7 +10,7 @@ export {
   IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
 } from './rule'
 
-import { decorate } from './utils'
+import { decorate, isInstanceOf, isObject, xError } from './utils';
 
 export const HelloType = {
   /**
@@ -23,14 +23,11 @@ export const HelloType = {
     toMatch: (type) => {
       try {
         type.assert(...targets)
+        return true
       }
       catch(e) {
-        if (HelloType.slient) {
-          console.error(e)
-        }
-        else {
-          throw e
-        }
+        HelloType.throwError(e)
+        return false
       }
     },
     toBeCatchedBy: (type) => type.catch(...targets),
@@ -73,6 +70,47 @@ export const HelloType = {
    * whether to use console.error instead of throw when using HelloType.expect.toMatch
    */
   slient: false,
+  throwError(e) {
+    if (HelloType.slient) {
+      console.error(e)
+    }
+    else {
+      throw e
+    }
+  },
+
+  define: (target) => ({
+    by: (type) => {
+      return new Proxy(target, {
+        set(obj, prop, value) {
+          let TargetType = isInstanceOf(type, Type) ? type : new Type(type)
+          let rule = TargetType.rules[0]
+          // only works for object
+          if (!isObject(rule)) {
+            let error = new Error('%obj should not be object')
+            let e = xError(error, { obj, prop, value, rule, type, target })
+            HelloType.throwError(e)
+          }
+
+          // if given type to check, use it
+          let proptype = rule[prop]
+          if (proptype) {
+            let PropType = isInstanceOf(proptype, Type) ? proptype : new Type(proptype)
+            HelloType.expect(value).toMatch(PropType)
+            
+            // if value is object, should make proxy too
+            let proprule = PropType.rules[0]
+            if (isObject(value) && isObject(proprule)) {
+              value = HelloType.define(value).by(PropType)
+            }
+          }
+
+          obj[prop] = value
+          return true
+        },
+      })
+    },
+  }),
 }
 
 export default HelloType
