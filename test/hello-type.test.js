@@ -37,5 +37,21 @@ describe('HelloType', () => {
       expect(() => { HelloType.expect(null).toMatch(NumberType) }).not.toThrowError()
       HelloType.slient = false
     })
+    test('HelloType.define.by', () => {
+      let obj = {}
+      let ObjType = new Type({
+        name: String,
+        age: Number,
+        child: {
+          name: String,
+          age: Number,
+        },
+      })
+      let o = HelloType.define(obj).by(ObjType)
+      expect(() => { o.name = 10 }).toThrowError()
+      expect(() => { o.name = 'tomy' }).not.toThrowError()
+      expect(() => { o.child.name = 10 }).toThrowError()
+      expect(() => { o.child.name = 'tomy' }).not.toThrowError()
+    })
   })
 })

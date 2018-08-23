@@ -10,7 +10,8 @@ export {
   IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, xError } from './utils';
+import { decorate, isInstanceOf, isObject, xError } from './utils'
+import Type from './type'
 
 export const HelloType = {
   /**
