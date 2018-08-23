@@ -10,7 +10,7 @@ export {
   IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, inObject, xError, deepClone } from './utils'
+import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray } from './utils'
 import Type from './type'
 
 export const HelloType = {
@@ -103,8 +103,7 @@ export const HelloType = {
         HelloType.throwError(e)
       }
 
-      function xclone(obj, rule) {
-        let origin = deepClone(obj)
+      function xclone(origin, rule) {
         let result = {}
         let rules = getRule(rule)
         let ruleKeys = Object.keys(rules)
@@ -152,44 +151,61 @@ export const HelloType = {
 
         return result
       }
+
       function xproxy(origin, rule) {
-        let keys = Object.keys(origin)
-        keys.forEach((key) => {
-          let propRule = getRule(rule[key])
-          let propValue = origin[key]
+        let parents = []
+        let generate = function(origin, rule) {
+          parents.push(origin)
 
-          if (isObject(propValue) && isObject(propRule)) {
-            origin[key] = xproxy(propValue, propRule)
-          }
-        })
+          let keys = Object.keys(origin)
+          keys.forEach((key) => {
+            let propRule = getRule(rule[key])
+            let propValue = origin[key]
 
-        return new Proxy(origin, {
-          set(obj, key, value) {
-            // if given type to check, use it
-            let propRule = rule[key]
-            if (propRule) {
-              let PropType = getRuleType(propRule)
-              let error = HelloType.expect(value).toBeCatchedBy(PropType)
-              if (error) {
-                let e = xError(error, { origin, rule, key, value, propRule, type, target, action: 'define.by' })
-                HelloType.throwError(e)
+            if (isObject(propValue) && isObject(propRule)) {
+              if (inArray(propValue, parents)) {
+                origin[key] = propValue
               }
-              
-              // if value is object, should make proxy too
-              let proprule = PropType.rules[0]
-              if (isObject(value) && isObject(proprule)) {
-                value = xclone(value, proprule)
-                value = xproxy(value, proprule, origin)
+              else {
+                origin[key] = xproxy(propValue, propRule)
               }
             }
+          })
 
-            obj[key] = value
-            return true
-          },
-        })
+          return new Proxy(origin, {
+            set(obj, key, value) {
+              // if given type to check, use it
+              let propRule = rule[key]
+              if (propRule) {
+                let PropType = getRuleType(propRule)
+                let error = HelloType.expect(value).toBeCatchedBy(PropType)
+                if (error) {
+                  let e = xError(error, { origin, rule, key, value, propRule, type, target, action: 'define.by' })
+                  HelloType.throwError(e)
+                }
+                
+                // if value is object, should make proxy too
+                let proprule = PropType.rules[0]
+                if (isObject(value) && isObject(proprule)) {
+                  value = xclone(value, proprule)
+                  value = clone(value)
+                  value = xproxy(value, proprule)
+                }
+              }
+
+              obj[key] = value
+              return true
+            },
+          })
+        }
+
+        let proxy = generate(origin, rule)
+        parents = null
+        return proxy
       }
 
-      let cloned = xclone(target, rule)
+      let xcloned = xclone(target, rule)
+      let cloned = clone(xcloned)
       let proxy = xproxy(cloned, rule)
       return proxy
     },

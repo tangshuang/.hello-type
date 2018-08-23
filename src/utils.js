@@ -143,7 +143,7 @@ export function xError(error, info) {
 }
 
 
-export function deepClone(obj) {
+export function clone(obj, fn) {
   let parents = []
   let clone = function(origin, path = '') {
     if (!isObject(origin) && !isArray(origin)) {
@@ -157,20 +157,27 @@ export function deepClone(obj) {
 
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
-      let value = origin[key]
+      let v = origin[key]
       let referer = parents.find(item => item.target === value)
+      let res = isFunction(fn) ? fn(v, key, origin, path, obj, !!referer) : v
+      let value = res === undefined ? value : res
 
-      if (referer) {
-        let pathstr = referer.path
-        let paths = pathstr.split('.')
-        let v = result
-        paths.forEach((k) => {
-          v = v[k]
-        })
-        result[key] = v
+      if (!isObject(value) && !isArray(value)) {
+        if (referer) {
+          let pathstr = referer.path
+          let paths = pathstr.split('.')
+          let v = result
+          paths.forEach((k) => {
+            v = v[k]
+          })
+          result[key] = v
+        }
+        else {
+          result[key] = clone(value, path ? path + '.' + key : key)
+        }
       }
       else {
-        result[key] = clone(value, path ? path + '.' + key : key)
+        result[key] = value
       }
     }
 
@@ -182,9 +189,13 @@ export function deepClone(obj) {
   return result
 }
 
-export function deepEach(obj, deep, shallow) {
+export function each(obj, fn) {
+  if (!isFunction(fn)) {
+    return
+  }
+
   let parents = []
-  let each = function(origin, path = '') {
+  let recursive = function(origin, path = '') {
     if (!isObject(origin) && !isArray(origin)) {
       return
     }
@@ -195,23 +206,23 @@ export function deepEach(obj, deep, shallow) {
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
       let value = origin[key]
-
-      if (!isObject(value) && !isArray(value)) {
-        if (isFunction(deep)) {
-          deep(value, key, origin, path, obj)
+      if (isFunction(fn)) {
+        let res = fn(value, key, origin, path, obj, inArray(value, parents))
+        if (!res) {
+          return false
         }
       }
-      else if (!inArray(value, parents)) {
-        if (isFunction(shallow)) {
-          shallow(value, key, origin, path, obj)
+      if (!inArray(value, parents)) {
+        let res = recursive(value, path ? path + '.' + key : key)
+        if (!res) {
+          return false
         }
-        each(value, path ? path + '.' + key : key)
       }
     }
 
-    return result
+    return true
   }
 
-  each(obj)
+  recursive(obj)
   parents = null
 }
