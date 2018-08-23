@@ -82,17 +82,22 @@ export const HelloType = {
 
   define: (target) => ({
     by: (type) => {
-      return new Proxy(target, {
-        set(obj, prop, value) {
-          let TargetType = isInstanceOf(type, Type) ? type : new Type(type)
-          let rule = TargetType.rules[0]
-          // only works for object
-          if (!isObject(rule)) {
-            let error = new Error('%obj should not be object')
-            let e = xError(error, { obj, prop, value, rule, type, target })
-            HelloType.throwError(e)
-          }
+      if (!isObject(target)) {
+        let error = new Error('%target should be an object')
+        let e = xError(error, { target, type })
+        HelloType.throwError(e)
+      }
 
+      let TargetType = isInstanceOf(type, Type) ? type : new Type(type)
+      let rule = TargetType.rules[0]
+      if (!isObject(rule)) {
+        let error = new Error('%rule should be an object')
+        let e = xError(error, { obj, prop, value, rule, type, target })
+        HelloType.throwError(e)
+      }
+      
+      let proxy = new Proxy(target, {
+        set(obj, prop, value) {
           // if given type to check, use it
           let proptype = rule[prop]
           if (proptype) {
@@ -110,6 +115,10 @@ export const HelloType = {
           return true
         },
       })
+
+      // TODO: make default structure
+
+      return proxy
     },
   }),
 }
