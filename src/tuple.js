@@ -12,7 +12,7 @@ export default function Tuple(...patterns) {
     let minLen = ruleLen
 
     if (this.mode === 'strict' && argLen !== ruleLen) {
-      let error = new Error('arguments length not match Tuple in strict mode')
+      let error = new TypeError('arguments length not match Tuple in strict mode')
       throw xError(error, { args, rules, type: 'Tuple' })
     }
 
@@ -27,7 +27,7 @@ export default function Tuple(...patterns) {
     }
 
     if (argLen < minLen || argLen > ruleLen) {
-      let error = new Error('arguments length not match Tuple')
+      let error = new TypeError('arguments length not match Tuple')
       throw xError(error, { args, rules, type: 'Tuple' })
     }
     

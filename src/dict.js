@@ -11,13 +11,13 @@ export default function Dict(pattern) {
   DictType.name = 'Dict'
   DictType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new Error('arguments length not match Dict')
+      let error = new TypeError('arguments length not match Dict')
       throw xError(error, { args, type: 'Dict' })
     }
 
     let arg = args[0]
     if (!isObject(arg)) {
-      let error = new Error('%arg does not match Dict')
+      let error = new TypeError('%arg does not match Dict')
       throw xError(error, { arg, type: 'Dict' })
     }
 

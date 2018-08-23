@@ -97,7 +97,7 @@ export const InstanceOf = function(rule) {
       return null
     }
     else {
-      let error = new Error('argument is not an instance of ' + (rule.name || 'unknow'))
+      let error = new TypeError('argument is not an instance of ' + (rule.name || 'unknow'))
       return xError(error, { value, rule, name: 'InstanceOf' })
     }
   })
@@ -113,7 +113,7 @@ export const Equal = function(rule) {
       return null
     }
     else {
-      let error = new Error('argument does not equal rule')
+      let error = new TypeError('argument does not equal rule')
       return xError(error, { value, rule, name: 'Equal' })
     }
   })
@@ -122,7 +122,7 @@ export const Equal = function(rule) {
 export const Lambda = function(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
-      let error = new Error('%value should be a function')
+      let error = new TypeError('%value should be a function')
       return xError(error, { value, name: 'Lambda' })
     }
   }, function(error, target, prop) {

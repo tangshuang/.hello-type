@@ -46,7 +46,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match NaN')
+        let error = new TypeError('%arg does not match NaN')
         return xError(error, { arg, rule })
       }
     }
@@ -58,7 +58,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Number')
+        let error = new TypeError('%arg does not match Number')
         return xError(error, { arg, rule })
       }
     }
@@ -70,7 +70,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Boolean')
+        let error = new TypeError('%arg does not match Boolean')
         return xError(error, { arg, rule })
       }
     }
@@ -82,7 +82,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match String')
+        let error = new TypeError('%arg does not match String')
         return xError(error, { arg, rule })
       }
     }
@@ -94,7 +94,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Function')
+        let error = new TypeError('%arg does not match Function')
         return xError(error, { arg, rule })
       }
     }
@@ -106,7 +106,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Array')
+        let error = new TypeError('%arg does not match Array')
         return xError(error, { arg, rule })
       }
     }
@@ -118,7 +118,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Object')
+        let error = new TypeError('%arg does not match Object')
         return xError(error, { arg, rule })
       }
     }
@@ -128,7 +128,7 @@ export default class Type {
         return null
       }
       else {
-        let error = new Error('%arg does not match Symbol')
+        let error = new TypeError('%arg does not match Symbol')
         return xError(error, { arg, rule })
       }
     }
@@ -142,7 +142,7 @@ export default class Type {
       if (this.mode === 'strict') {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
-          let error = new Error(`array's length should be ${ruleLen} in strict mode, but receive ${argLen}`)
+          let error = new TypeError(`array's length should be ${ruleLen} in strict mode, but receive ${argLen}`)
           return xError(error, { arg, rule })
         }
       }
@@ -200,7 +200,7 @@ export default class Type {
           let argKey = argKeys[i]
           // args has key beyond rules
           if (!inArray(argKey, ruleKeys)) {
-            let error = new Error(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
+            let error = new TypeError(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
             return xError(error, { arg, rule, key: argKey })
           }
         }
@@ -223,7 +223,7 @@ export default class Type {
             }
           }
 
-          let error = new Error(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+          let error = new TypeError(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
           return xError(error, { arg, rule, key: ruleKey })
         }
 
@@ -279,12 +279,12 @@ export default class Type {
       return null
     }
 
-    let error = new Error('%arg does not match type of %rule')
+    let error = new TypeError('%arg does not match type of %rule')
     return xError(error, { arg, rule })
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
-      let error = new Error('arguments length not match type')
+      let error = new TypeError('arguments length not match type')
       throw xError(error, { args, rules })
     }
 

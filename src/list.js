@@ -11,13 +11,13 @@ export default function List(pattern) {
   ListType.name = 'List'
   ListType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new Error('arguments length not match List')
+      let error = new TypeError('arguments length not match List')
       throw xError(error, { args, type: 'List' })
     }
 
     let arg = args[0]
     if (!isArray(arg)) {
-      let error = new Error('%arg does not match List')
+      let error = new TypeError('%arg does not match List')
       throw xError(error, { arg, type: 'List' })
     }
 

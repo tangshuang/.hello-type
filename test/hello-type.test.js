@@ -38,7 +38,6 @@ describe('HelloType', () => {
       HelloType.slient = false
     })
     test('HelloType.define.by', () => {
-      let obj = {}
       let ObjType = new Type({
         name: String,
         age: Number,
@@ -47,7 +46,22 @@ describe('HelloType', () => {
           age: Number,
         },
       })
-      let o = HelloType.define(obj).by(ObjType)
+      
+      expect(() => { HelloType.define({}).by(ObjType) }).not.toThrowError()
+      expect(() => {
+        let obj = {
+          child: [], // error type
+        }
+        HelloType.define(obj).by(ObjType)
+      }).toThrowError()
+
+      let o
+      expect(() => {
+        let obj = {
+          child: {},
+        }
+        o = HelloType.define(obj).by(ObjType)
+      }).not.toThrowError()
       expect(() => { o.name = 10 }).toThrowError()
       expect(() => { o.name = 'tomy' }).not.toThrowError()
       expect(() => { o.child.name = 10 }).toThrowError()

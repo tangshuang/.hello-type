@@ -81,7 +81,7 @@ A type instance have members:
 **assert(...args)**
 
 Assert whether the args match the type.
-If not match, it will use `throw` to break the program.
+If not match, it will use `throw TypeError` to break the program.
 Return undefined.
 
 **test(...args)**
@@ -479,7 +479,7 @@ When you set `HelloType.slient` to be 'true', `HelloType.expect.toMatch` will us
 
 ```js
 HelloType.slient = true
-HelloType.expect(some).toMatch(SomeoType) // console.error(e)
+let bool = HelloType.expect(some).toMatch(SomeoType) // console.error(e)
 ```
 
 Notice, `slient` only works for `HelloType.expect.toMatch`, a certain type container's `assert` method will ignore this.
@@ -505,6 +505,32 @@ class SomeClass {
   @HelloType.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
   methodName(...args) {}
 }
+```
+
+**define.by**
+
+Convert an object to be a proxy object which will check its property's type:
+
+```js
+const SomeType = Dict({
+  name: String,
+  age: Number,
+  child: {
+    name: String,
+    age: Number,
+  },
+  books: [Object],
+})
+const obj = HelloType.define({}).by(SomeType)
+obj.child.age === undefined // true
+obj.age = '10' // throw TypeError
+obj.child.name = null // throw TypeError
+```
+
+It is only works for object/sub-objects, not for any array/sub-arrays:
+
+```js
+obj.books[0].name = null // without any effects
 ```
 
 ## Test

@@ -79,7 +79,7 @@ export function toShallowObject(obj, factory) {
   keys.sort() // make sure the output are the same order
   keys.forEach((key) => {
     let value = obj[key]
-    result[key] = isFunction(factory) ? factory(value) || value : value
+    result[key] = isFunction(factory) ? factory(value, key) || value : value
   })
   return result
 }
@@ -140,4 +140,78 @@ export function xError(error, info) {
   }
   
   return null
+}
+
+
+export function deepClone(obj) {
+  let parents = []
+  let clone = function(origin, path = '') {
+    if (!isObject(origin) && !isArray(origin)) {
+      return origin
+    }
+
+    let result = isArray(origin) ? [] : {}
+    let keys = Object.keys(origin)
+
+    parents.push({ path, target: origin })
+
+    for (let i = 0, len = keys.length; i < len; i ++) {
+      let key = keys[i]
+      let value = origin[key]
+      let referer = parents.find(item => item.target === value)
+
+      if (referer) {
+        let pathstr = referer.path
+        let paths = pathstr.split('.')
+        let v = result
+        paths.forEach((k) => {
+          v = v[k]
+        })
+        result[key] = v
+      }
+      else {
+        result[key] = clone(value, path ? path + '.' + key : key)
+      }
+    }
+
+    return result
+  }
+
+  let result = clone(obj)
+  parents = null
+  return result
+}
+
+export function deepEach(obj, deep, shallow) {
+  let parents = []
+  let each = function(origin, path = '') {
+    if (!isObject(origin) && !isArray(origin)) {
+      return
+    }
+
+    parents.push(origin)
+
+    let keys = Object.keys(origin)
+    for (let i = 0, len = keys.length; i < len; i ++) {
+      let key = keys[i]
+      let value = origin[key]
+
+      if (!isObject(value) && !isArray(value)) {
+        if (isFunction(deep)) {
+          deep(value, key, origin, path, obj)
+        }
+      }
+      else if (!inArray(value, parents)) {
+        if (isFunction(shallow)) {
+          shallow(value, key, origin, path, obj)
+        }
+        each(value, path ? path + '.' + key : key)
+      }
+    }
+
+    return result
+  }
+
+  each(obj)
+  parents = null
 }
