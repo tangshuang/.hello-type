@@ -153,31 +153,25 @@ export function clone(obj, fn) {
     let result = isArray(origin) ? [] : {}
     let keys = Object.keys(origin)
 
-    parents.push({ path, target: origin })
+    parents.push({ path, origin, result })
 
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
       let v = origin[key]
-      let referer = parents.find(item => item.target === v)
+      let referer = parents.find(item => item.origin === v)
       let res = isFunction(fn) ? fn(v, key, origin, path, obj, !!referer) : v
       let value = res === undefined ? value : res
 
       if (!isObject(value) && !isArray(value)) {
+        result[key] = value
+      }
+      else {
         if (referer) {
-          let pathstr = referer.path
-          let paths = pathstr.split('.')
-          let v = result
-          paths.forEach((k) => {
-            v = v[k]
-          })
-          result[key] = v
+          result[key] = referer.result
         }
         else {
           result[key] = clone(value, path ? path + '.' + key : key)
         }
-      }
-      else {
-        result[key] = value
       }
     }
 
@@ -206,13 +200,14 @@ export function each(obj, fn) {
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
       let value = origin[key]
+      let referer = inArray(value, parents)
       if (isFunction(fn)) {
-        let res = fn(value, key, origin, path, obj, inArray(value, parents))
+        let res = fn(value, key, origin, path, obj, referer)
         if (!res) {
           return false
         }
       }
-      if (!inArray(value, parents)) {
+      if (!referer) {
         let res = recursive(value, path ? path + '.' + key : key)
         if (!res) {
           return false
