@@ -158,7 +158,7 @@ export function clone(obj, fn) {
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
       let v = origin[key]
-      let referer = parents.find(item => item.target === value)
+      let referer = parents.find(item => item.target === v)
       let res = isFunction(fn) ? fn(v, key, origin, path, obj, !!referer) : v
       let value = res === undefined ? value : res
 
