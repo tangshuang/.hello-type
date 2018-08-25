@@ -103,7 +103,7 @@ If there is no error, `null` will be returned.
 **trace(...args).with(fn)**
 
 Assert whether the args match the type.
-It will run async.
+It will run completely asynchronously.
 If not match, `fn` will run. You can do like:
 
 ```js
@@ -128,7 +128,35 @@ It will return a resolved promise anyway:
 
 ```js
 let error = await PersonType.trace(person).with(fn)
+if (error) {
+  // ...
+}
 ```
+
+**track(...args).with(fn)**
+
+The difference between trace and track is: `trace` will run assert action completely asynchronously, `track` will run assert action synchronously, and run `fn` asynchronously.
+
+```js
+const SomeType = Dict({
+  name: String,
+  age: Number,
+})
+const some = {
+  name: 'tomy',
+  age: 10,
+}
+
+SomeType.trace(some).with((error) => console.log(1, error))
+SomeType.track(some).with((error) => console.log(2, error))
+
+some.age = null
+
+// => 2 null
+// => 1 TypeError
+```
+
+As you see, track will be run at the point it placed, trace will be run asynchronously.
 
 **toBeStrict()/strict/Strict**
 
@@ -429,11 +457,11 @@ const MyType = Dict({
 MyType.assert({ type: Number })
 ```
 
-**Lambda()**
+**Lambda(InputRule, OutputRule)**
 
 The value should be a function, and the parameters and return value should match passed rules.
 
-_Notice: this rule can only used in array or object, and will modify the original data._
+_Notice: this rule can only used in array or object, and will modify the original function._
 
 - @type function
 - @param InputType: should best be Tuple if you have multiple arguments
@@ -452,6 +480,9 @@ SomeType.assert(some)
 some.fn('tomy', null) // throw error because the second parameter is not Number
 ```
 
+Notice: If the params not match the type, the function will not urn any more.
+So don't use it if you do not know whether you should.
+
 ## HelloType
 
 The `HelloType` is a set of methods to use type assertions more unified.
@@ -460,29 +491,67 @@ The `HelloType` is a set of methods to use type assertions more unified.
 
 ```js
 // toMatch
-HelloType.expect(some).toMatch(SomeoType) // it is the same as `SomeType.assert(someobject)`
+HelloType.expect(some).toMatch(SomeoType) // it is almostly lik `SomeType.assert(someobject)`
 
 // toBeCatchedBy
-let error = HelloType.expect(some).toBeCatchedBy(SomeType) // it is the same as `SomeType.catch(someobject)`
+let error = HelloType.expect(some).toBeCatchedBy(SomeType)
 
 // toBeTracedBy.with
 HelloType.expect(some).toBeTracedBy(SomeType.Strict).with((error, args, type) => { 
   // strict mode
   // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
   // ...
-}) 
+})
+
+// toBeTrackedBy.with
+HelloType.expect(some).toBeTrackedBy(SomeType.Strict).with((error, args, type) => { 
+  // strict mode
+  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
+  // ...
+})
 ```
 
 **slient**
 
-When you set `HelloType.slient` to be 'true', `HelloType.expect.toMatch` will use `console.error` instead of `throw`.
+When you set `HelloType.slient` to be 'true', `HelloType.expect.toMatch` will use `console.error` instead of `throw TypeError`.
 
 ```js
 HelloType.slient = true
-let bool = HelloType.expect(some).toMatch(SomeoType) // console.error(e)
+HelloType.expect(some).toMatch(SomeoType) // console.error(e)
 ```
 
-Notice, `slient` only works for `HelloType.expect.toMatch`, a certain type container's `assert` method will ignore this.
+Notice, `slient` only works for `HelloType.expect.toMatch` and `HelloType.define`, 
+other methods will not follow this rule.
+
+**bind**
+
+```js
+HelloType.bind(fn)
+HelloType.unbind(fn)
+```
+
+example:
+
+```js
+const showError = (err) => Toast.error(err.message)
+HelloType.bind(showError) // use your own action to notice users
+window.addEventListener('error', e => {
+  let { error } = e
+  if (error.owner === 'hello-type') {
+    e.preventDefault() // when throw Error, there will no log in console
+  }
+})
+// when the assert fail, it throw TypeError, however, `fn` will run before error thrown
+HelloType.expect(some).toMatch(SomeoType) 
+
+// HelloType will not break the process
+HelloType.slient = true 
+// `fn` will run before console.error
+HelloType.expect(some).toMatch(SomeoType)
+```
+
+Notice, `bind` only works for `HelloType.expect.toMatch` and `HelloType.define`, 
+other methods will not follow this rule.
 
 **is.typeof**
 

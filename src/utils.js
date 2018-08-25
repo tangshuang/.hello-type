@@ -136,12 +136,12 @@ export function xError(error, info) {
     let trace = Object.assign({ message: error.message }, info)
     error.trace = error.trace || []
     error.trace.shift(trace)
+    error.owner = 'hello-type'
     return error
   }
   
   return null
 }
-
 
 export function clone(obj, fn) {
   let parents = []
