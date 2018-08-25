@@ -313,7 +313,23 @@ export default class Type {
   }
 
   /**
-   * track args with type
+   * track args with type sync
+   * @param {*} args 
+   */
+  track(...args) {
+    return {
+      with: (fn) => new Promise((resolve) => {
+        let error = this.catch(...args)
+        if (error && isFunction(fn)) {
+          Promise.resolve().then(() => fn(error, args, this))
+        }
+        resolve(error)
+      }),
+    }
+  }
+
+  /**
+   * track args with type async
    * @param {*} args 
    * @example
    * SomeType.trace(arg).with((error, [arg], type) => { ... })

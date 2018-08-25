@@ -1,6 +1,6 @@
 import Type from './type'
-import { isFunction, xError } from './utils'
-import HelloType from './hello-type'
+import { isFunction, xError, isString, inArray } from './utils'
+import { HelloType } from './hello-type';
 
 export default class Rule {
   constructor(...args) {
@@ -131,9 +131,9 @@ export const Lambda = function(InputRule, OutputRule) {
       let InputType = new Type(InputRule)
       let OutputType = new Type(OutputRule)
       let lambda = function(...args) {
-        HelloType.expect(...args).toMatch(InputType)
-        let result = fn(...args)
-        HelloType.expect(...args).toMatch(OutputType)
+        InputType.assert(...args)
+        let result = fn.call(this, ...args)
+        OutputType.assert(result)
         return result
       }
       target[prop] = lambda

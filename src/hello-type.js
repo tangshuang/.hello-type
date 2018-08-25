@@ -10,8 +10,10 @@ export {
   IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray } from './utils'
+import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction } from './utils'
 import Type from './type'
+
+const HelloTypeListeners = []
 
 export const HelloType = {
   /**
@@ -34,6 +36,9 @@ export const HelloType = {
     toBeCatchedBy: (type) => type.catch(...targets),
     toBeTracedBy: (type) => ({
       with: (fn) => type.trace(...targets).with(fn),
+    }),
+    toBeTrackedBy: (type) => ({
+      with: (fn) => type.track(...targets).with(fn),
     }),
   }),
 
@@ -67,11 +72,39 @@ export const HelloType = {
     }),
   },
 
+  bind: (fn) => {
+    if (isFunction(fn)) {
+      HelloTypeListeners.push(fn)
+    }
+  },
+  unbind: (fn) => {
+    let i = 0
+    let len = HelloTypeListeners.length
+    for (; i < len; i ++) {
+      let item = HelloTypeListeners[i]
+      if (item === fn) {
+        HelloTypeListeners.splice(i, 1)
+        i --
+        len = HelloTypeListeners.length
+      }
+    }
+  },
+  dispatch: (error) => {
+    if (HelloTypeListeners.length) {
+      HelloTypeListeners.forEach((fn) => {
+        Promise.resolve().then(() => {
+          fn(error)
+        })
+      })
+    }
+  },
+
   /**
    * whether to use console.error instead of throw when using HelloType.expect.toMatch
    */
   slient: false,
   throwError(e) {
+    HelloType.dispatch(e)
     if (HelloType.slient) {
       console.error(e)
     }
