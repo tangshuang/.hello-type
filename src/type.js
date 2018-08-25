@@ -1,8 +1,12 @@
-import { isArray, inArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError, clone } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
 import Enum from './enum'
+import { 
+  isArray, inArray, isBoolean, isNumber, isObject, 
+  isString, isFunction, isSymbol, isConstructor,
+  toShallowObject, xError,
+} from './utils'
 
 export default class Type {
   constructor(...patterns) {
@@ -321,8 +325,7 @@ export default class Type {
       with: (fn) => new Promise((resolve) => {
         let error = this.catch(...args)
         if (error && isFunction(fn)) {
-          let params = clone(args)
-          Promise.resolve().then(() => fn(error, params, this))
+          fn(error, args, this)
         }
         resolve(error)
       }),
