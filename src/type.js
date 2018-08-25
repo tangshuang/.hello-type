@@ -1,4 +1,4 @@
-import { isArray, inArray, isBoolean, isNumber, isObject, inObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError } from './utils'
+import { isArray, inArray, isBoolean, isNumber, isObject, toShallowObject, isString, isFunction, isSymbol, isConstructor, xError, clone } from './utils'
 import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
@@ -321,7 +321,8 @@ export default class Type {
       with: (fn) => new Promise((resolve) => {
         let error = this.catch(...args)
         if (error && isFunction(fn)) {
-          Promise.resolve().then(() => fn(error, args, this))
+          let params = clone(args)
+          Promise.resolve().then(() => fn(error, params, this))
         }
         resolve(error)
       }),
