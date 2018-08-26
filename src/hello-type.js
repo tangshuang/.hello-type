@@ -58,17 +58,32 @@ export const HelloType = {
    */
   decorate: {
     input: {
-      with: (fn) => decorate(function(...args) {
-        fn(...args)
+      with: (factor) => decorate(function(...args) {
+        if (isFunction(factor)) {
+          factor(...args)
+        }
+        else if (factor instanceof Type) {
+          HelloType.expect(...args).toMatch(factor)
+        }
       }, 'input'),
     },
     output: {
-      with: (fn) => decorate(function(...args) {
-        fn(...args)
+      with: (factor) => decorate(function(...args) {
+        if (isFunction(factor)) {
+          factor(...args)
+        }
+        else if (factor instanceof Type) {
+          HelloType.expect(...args).toMatch(factor)
+        }
       }, 'output'),
     },
-    with: (fn) => decorate(function(...args) {
-      fn(...args)
+    with: (factor) => decorate(function(...args) {
+      if (isFunction(factor)) {
+        factor(...args)
+      }
+      else if (factor instanceof Type) {
+        HelloType.expect(...args).toMatch(factor)
+      }
     }),
   },
 
@@ -105,6 +120,7 @@ export const HelloType = {
   slient: false,
   throwError(e) {
     HelloType.dispatch(e)
+  
     if (HelloType.slient) {
       console.error(e)
     }
