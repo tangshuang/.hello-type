@@ -6,8 +6,8 @@ export default function Enum(...patterns) {
   EnumType.name = 'Enum'
   EnumType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new TypeError('arguments length not match Enum')
-      throw xError(error, { args, type: 'Enum' })
+      let error = new TypeError('arguments length not match ' + this.name)
+      throw xError(error, { args, type: this.name })
     }
     
     let rules = this.rules
@@ -21,8 +21,8 @@ export default function Enum(...patterns) {
       }
     }
     
-    let error = new TypeError('%arg does not match Enum(' + this.patterns.join(',') + ')')
-    throw xError(error, { arg, rules, type: 'Enum' })
+    let error = new TypeError(`%arg does not match ${this.name}(${this.patterns.join(',')})`)
+    throw xError(error, { arg, rules, type: this.name })
   }
   return EnumType
 }

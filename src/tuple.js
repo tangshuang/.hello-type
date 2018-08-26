@@ -12,8 +12,8 @@ export default function Tuple(...patterns) {
     let minLen = ruleLen
 
     if (this.mode === 'strict' && argLen !== ruleLen) {
-      let error = new TypeError('arguments length not match Tuple in strict mode')
-      throw xError(error, { args, rules, type: 'Tuple' })
+      let error = new TypeError('arguments length not match ' + this.name + ' in strict mode')
+      throw xError(error, { args, rules, type: this.name })
     }
 
     for (let i = ruleLen - 1; i > -1; i --) {
@@ -27,8 +27,8 @@ export default function Tuple(...patterns) {
     }
 
     if (argLen < minLen || argLen > ruleLen) {
-      let error = new TypeError('arguments length not match Tuple')
-      throw xError(error, { args, rules, type: 'Tuple' })
+      let error = new TypeError('arguments length not match ' + this.name)
+      throw xError(error, { args, rules, type: this.name })
     }
     
     for (let i = 0; i < argLen; i ++) {
@@ -36,7 +36,7 @@ export default function Tuple(...patterns) {
       let rule = rules[i]
       let error = this.vaildate(arg, rule)
       if (error) {
-        throw xError(error, { arg, rule, index: i, args, rules, type: 'Tuple' })
+        throw xError(error, { arg, rule, index: i, args, rules, type: this.name })
       }
     }
   }

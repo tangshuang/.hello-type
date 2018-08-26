@@ -17,14 +17,14 @@ export default function Range(min, max) {
   RangeType.name = 'Range'
   RangeType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new TypeError('arguments length not match Range')
-      throw xError(error, { args, type: 'Range' })
+      let error = new TypeError('arguments length not match ' + this.name)
+      throw xError(error, { args, type: this.name })
     }
 
     let arg = args[0]
     if (!isNumber(arg)) {
-      let error = new TypeError('%arg is not a number for Range')
-      throw xError(error, { arg, type: 'Range' })
+      let error = new TypeError('%arg is not a number for ' + this.name)
+      throw xError(error, { arg, type: this.name })
     }
 
     let [min, max] = this.patterns
@@ -32,8 +32,8 @@ export default function Range(min, max) {
       return
     }
     
-    let error = new TypeError(`%arg does not match Range(${min}, ${max})`)
-    throw xError(error, { arg, rule: [min, max], type: 'Range' })
+    let error = new TypeError(`%arg does not match ${this.name}(${min}, ${max})`)
+    throw xError(error, { arg, rule: [min, max], type: this.name })
   }
   return RangeType
 }
