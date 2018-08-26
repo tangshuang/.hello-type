@@ -117,6 +117,12 @@ export const HelloType = {
   /**
    * whether to use console.error instead of throw when using HelloType.expect.toMatch
    */
+  set Slient(value) {
+    HelloType.slient = value
+  },
+  get Slient() {
+    return HelloType.slient
+  },
   slient: false,
   throwError(e) {
     HelloType.dispatch(e)
