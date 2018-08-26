@@ -275,6 +275,9 @@ export default class Type {
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
     if (rule instanceof Type) {
+      if (this.mode === 'strict') {
+        rule = rule.strict
+      }
       let error = rule.catch(arg)
       if (error) {
         return xError(error, { arg, rule })

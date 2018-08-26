@@ -1,9 +1,10 @@
 {
   "name": "hello-type",
-  "version": "2.9.3",
+  "version": "2.9.4",
   "description": "An ECMAScript data type check library",
   "main": "index.js",
   "scripts": {
+    "prepublishOnly": "npm run test && npm run build",
     "build": "webpack",
     "test": "jest"
   },
