@@ -3,6 +3,8 @@ HelloType
 
 An ECMAScript data type check library.
 
+【[中文文档](https://www.tangshuang.net/5625.html)】
+
 ## Install
 
 ```
