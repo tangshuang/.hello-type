@@ -366,4 +366,9 @@ export default class Type {
   get Strict() {
     return this.strict
   }
+
+  // use name when convert to string
+  toString() {
+    return this.name || 'Type'
+  }
 }
