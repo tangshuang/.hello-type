@@ -90,6 +90,22 @@ export default class Type {
         return xError(error, { arg, rule })
       }
     }
+    
+    // regexp
+    // i.e. (new Type(/a/)).assert('name')
+    if (rule instanceof RegExp) {
+      if (!isString(arg)) {
+        let error = new TypeError('%arg is not a string which does not match RegExp instance.')
+        return xError(error, { arg, rule })
+      }
+      if (rule.test(arg)) {
+        return null
+      }
+      else {
+        let error = new TypeError('%arg does not match RegExp instance.')
+        return xError(error, { arg, rule })
+      }
+    }
 
     // Function
     // i.e. (new Type(Function)).assert(() => {})
