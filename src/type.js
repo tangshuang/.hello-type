@@ -4,7 +4,7 @@ import List from './list'
 import Enum from './enum'
 import { 
   isArray, inArray, isBoolean, isNumber, isObject, 
-  isString, isFunction, isSymbol, isConstructor,
+  isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   toShallowObject, xError,
 } from './utils'
 
@@ -36,9 +36,22 @@ export default class Type {
    * @param {*} rule 
    */
   vaildate(arg, rule) {
+    // convert function as rule
+    // i.e. (new Type(function(value) { return typeof value === 'string' })).asset('tomy')
+    if (isFunction(rule)) {
+      let result = rule(arg)
+      if (result) {
+        return null
+      }
+      else {
+        let error = new TypeError('%arg does not match custom rule function.')
+        return xError(error, { arg, rule })
+      }
+    }
+    
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
-    if (rule instanceof Rule) {
+    if (isInstanceOf(rule, Rule)) {
       let error = rule.vaildate(arg)
       return xError(error, { arg, rule })
     }
@@ -93,7 +106,7 @@ export default class Type {
     
     // regexp
     // i.e. (new Type(/a/)).assert('name')
-    if (rule instanceof RegExp) {
+    if (isInstanceOf(rule, RegExp)) {
       if (!isString(arg)) {
         let error = new TypeError('%arg is not a string which does not match RegExp instance.')
         return xError(error, { arg, rule })
@@ -180,7 +193,7 @@ export default class Type {
         let arg = args[i]
         let rule = clonedRules[i]
 
-        if (rule instanceof Rule) {
+        if (isInstanceOf(rule, Rule)) {
           let error = rule.vaildate(arg)
           
           // use rule to override property when not match
@@ -277,7 +290,7 @@ export default class Type {
 
     // is the given value, rule should not be an object/instance
     // i.e. (new Type('name')).assert('name')
-    if (!(rule instanceof Object) && arg === rule) {
+    if (!isInstanceOf(rule, Object) && arg === rule) {
       return null
     }
 
@@ -290,7 +303,7 @@ export default class Type {
     // instance of Type
     // const BooksType = List(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
-    if (rule instanceof Type) {
+    if (isInstanceOf(rule, Type)) {
       if (this.mode === 'strict') {
         rule = rule.strict
       }
