@@ -12,6 +12,9 @@ export function isString(value) {
 
 export function isFunction(value) {
   return typeof value === 'function'
+    && (value + '') !== `function ${value.name}() { [native code] }`
+    && (value + '').indexOf('class ') !== 0
+    && (value + '').indexOf('_classCallCheck(this,') === -1 // for babel transfered class
 }
 
 export function isSymbol(value) {
@@ -55,6 +58,10 @@ export function isConstructor(f) {
 
 export function isInstanceOf(ins, cons) {
   return ins instanceof cons
+}
+
+export function stringify(obj) {
+  return JSON.stringify(obj)
 }
 
 export function toFlatObject(obj, parentPath = '', result = {}) {

@@ -6,7 +6,9 @@ import {
   isArray, inArray, isBoolean, isNumber, isObject, 
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   toShallowObject, xError,
+  stringify,
 } from './utils'
+import { criticize } from './messages'
 
 export default class Type {
   constructor(...patterns) {
@@ -36,19 +38,6 @@ export default class Type {
    * @param {*} rule 
    */
   vaildate(arg, rule) {
-    // convert function as rule
-    // i.e. (new Type(function(value) { return typeof value === 'string' })).asset('tomy')
-    if (isFunction(rule)) {
-      let result = rule(arg)
-      if (result) {
-        return null
-      }
-      else {
-        let error = new TypeError('%arg does not match custom rule function.')
-        return xError(error, { arg, rule })
-      }
-    }
-    
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
@@ -63,7 +52,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match NaN')
+        let message = criticize('type.NaN', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -75,7 +67,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Number')
+        let message = criticize('type.Number', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -87,7 +82,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Boolean')
+        let message = criticize('type.Boolean', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -99,7 +97,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match String')
+        let message = criticize('type.String', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -108,14 +109,20 @@ export default class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(arg)) {
-        let error = new TypeError('%arg is not a string which does not match RegExp instance.')
+        let message = criticize('type.regexp.string', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
       if (rule.test(arg)) {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match RegExp instance.')
+        let message = criticize('type.regexp', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -127,7 +134,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Function')
+        let message = criticize('type.Function', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -139,7 +149,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Array')
+        let message = criticize('type.Array', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -151,7 +164,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Object')
+        let message = criticize('type.Object', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -161,7 +177,10 @@ export default class Type {
         return null
       }
       else {
-        let error = new TypeError('%arg does not match Symbol')
+        let message = criticize('type.Symbol', {
+          arg: stringify(arg),
+        })
+        let error = new TypeError(message)
         return xError(error, { arg, rule })
       }
     }
@@ -175,7 +194,12 @@ export default class Type {
       if (this.mode === 'strict') {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
-          let error = new TypeError(`array's length should be ${ruleLen} in strict mode, but receive ${argLen}`)
+          let message = criticize('type.strict.array.length', {
+            arg: stringify(arg),
+            ruleLen,
+            argLen,
+          })
+          let error = new TypeError(message)
           return xError(error, { arg, rule })
         }
       }
@@ -233,7 +257,12 @@ export default class Type {
           let argKey = argKeys[i]
           // args has key beyond rules
           if (!inArray(argKey, ruleKeys)) {
-            let error = new TypeError(`"${argKey}" should not be in object, only "${ruleKeys.join('","')}" allowed in strict mode`)
+            let message = criticize('type.strict.object.key', {
+              arg: stringify(arg),
+              argKey,
+              ruleKeys: ruleKeys.join(','),
+            })
+            let error = new TypeError(message)
             return xError(error, { arg, rule, key: argKey })
           }
         }
@@ -256,7 +285,12 @@ export default class Type {
             }
           }
 
-          let error = new TypeError(`"${ruleKey}" is not in object, needs ${ruleKeys.join(',')}`)
+          let message = criticize('type.object.key', {
+            arg: stringify(arg),
+            ruleKey,
+            ruleKeys: ruleKeys.join(','),
+          })
+          let error = new TypeError(message)
           return xError(error, { arg, rule, key: ruleKey })
         }
 
@@ -315,12 +349,20 @@ export default class Type {
       return null
     }
 
-    let error = new TypeError('%arg does not match type of %rule')
+    let message = criticize('type', {
+      arg: stringify(arg),
+    })
+    let error = new TypeError(message)
     return xError(error, { arg, rule })
   }
   assert(...args) {
     if (args.length !== this.rules.length) {
-      let error = new TypeError('arguments length not match type')
+      let message = criticize('type.arguments.length', {
+        args: stringify(args),
+        name: this.toString(),
+        length: this.rules.length,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, rules })
     }
 

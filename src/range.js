@@ -1,5 +1,6 @@
 import Type from './type'
-import { isNumber, xError } from './utils'
+import { isNumber, xError, stringify } from './utils'
+import { criticize } from './messages'
 
 export default function Range(min, max) {
   if (!isNumber(min)) {
@@ -17,13 +18,22 @@ export default function Range(min, max) {
   RangeType.name = 'Range'
   RangeType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new TypeError('arguments length not match ' + this.name)
+      let message = criticize('range.arguments.length', {
+        args: stringify(args),
+        name: this.toString(),
+        length: 1,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, type: this.name })
     }
 
     let arg = args[0]
     if (!isNumber(arg)) {
-      let error = new TypeError('%arg is not a number for ' + this.name)
+      let message = criticize('range.number', {
+        arg: stringify(arg),
+        name: this.toString(),
+      })
+      let error = new TypeError(message)
       throw xError(error, { arg, type: this.name })
     }
 
@@ -32,7 +42,13 @@ export default function Range(min, max) {
       return
     }
     
-    let error = new TypeError(`%arg does not match ${this.name}(${min}, ${max})`)
+    let message = criticize('range', {
+      arg: stringify(arg),
+      name: this.toString(),
+      min,
+      max,
+    })
+    let error = new TypeError(message)
     throw xError(error, { arg, rule: [min, max], type: this.name })
   }
   return RangeType

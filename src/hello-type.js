@@ -7,11 +7,13 @@ export { default as Range } from './range'
 export { 
   default as Rule, 
   Any, Null, Undefined, 
-  IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
+  IfExists, IfNotMatch, Equal, InstanceOf, Lambda, 
+  Validate,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction } from './utils'
+import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction, stringify } from './utils'
 import Type from './type'
+import { messages, criticize } from './messages'
 
 const HelloTypeListeners = []
 
@@ -146,14 +148,20 @@ export const HelloType = {
       }
 
       if (!isObject(target)) {
-        let error = new TypeError('%target should be an object')
+        let message = criticize('hello.define.target.object', {
+          target: stringify(target),
+        })
+        let error = new TypeError(message)
         let e = xError(error, { target, type })
         HelloType.throwError(e)
       }
 
       let rule = getRule(type)
       if (!isObject(rule)) {
-        let error = new TypeError('%rule should be an object')
+        let message = criticize('hello.define.rule.object', {
+          rule: stringify(rule),
+        })
+        let error = new TypeError(message)
         let e = xError(error, { obj, prop, value, rule, type, target, action: 'define.by' })
         HelloType.throwError(e)
       }
@@ -178,7 +186,11 @@ export const HelloType = {
             }
             // if original prop value is not an object but should be an object called by rule
             else {
-              let error = new TypeError('%propValue should be an object')
+              let message = criticize('hello.define.property.object', {
+                prop: key,
+                value: stringify(propValue),
+              })
+              let error = new TypeError(message)
               let e = xError(error, { origin, rule, key, propValue, propRule, type, target, action: 'define.by' })
               HelloType.throwError(e)
 
@@ -265,6 +277,9 @@ export const HelloType = {
       return proxy
     },
   }),
+  messages(obj) {
+    Object.assign(messages, obj)
+  },
 }
 
 export default HelloType

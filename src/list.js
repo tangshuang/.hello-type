@@ -1,5 +1,6 @@
 import Type from './type'
-import { isArray, xError } from './utils'
+import { isArray, xError, stringify } from './utils'
+import { criticize } from './messages'
 
 export default function List(pattern) {
   // if pattern is not an array, it treated undefined
@@ -11,13 +12,22 @@ export default function List(pattern) {
   ListType.name = 'List'
   ListType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new TypeError('arguments length not match ' + this.name)
+      let message = criticize('list.arguments.length', { 
+        args: stringify(args),
+        name: this.toString(),
+        length: 1,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, type: this.name })
     }
 
     let arg = args[0]
     if (!isArray(arg)) {
-      let error = new TypeError('%arg does not match ' + this.name)
+      let message = criticize('list.array', {
+        arg: stringify(arg),
+        name: this.toString(),
+      })
+      let error = new TypeError(message)
       throw xError(error, { arg, type: this.name })
     }
 

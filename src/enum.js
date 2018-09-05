@@ -1,5 +1,6 @@
 import Type from './type'
-import { xError } from './utils'
+import { xError, stringify } from './utils'
+import { criticize } from './messages'
 
 export default function Enum(...patterns) {
   const EnumType = new Type(...patterns)
@@ -23,7 +24,12 @@ export default function Enum(...patterns) {
       }
     }
     
-    let error = new TypeError(`%args does not match ${this.name}(${this.patterns.join(',')})`)
+    let message = criticize('enum', { 
+      args: stringify(args), 
+      name: this.toString(), 
+      rules: this.rules.join(','),
+    })
+    let error = new TypeError(message)
     throw xError(error, { args, rules, type: this.name })
   }
   return EnumType

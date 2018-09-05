@@ -485,6 +485,30 @@ some.fn('tomy', null) // throw error because the second parameter is not Number
 Notice: If the params not match the type, the function will not urn any more.
 So don't use it if you do not know whether you should.
 
+**Validate(rule, message)**
+
+Sometimes, you want to use your own error message to be thrown out. `Validate` rule help you to reach this.
+
+- @type function
+- @param rule: a function which to return a boolean, true means pass/match, false means not, or any other rules
+- @param message: the message to be thrown when not pass
+- @return a instance of Rule
+
+```js
+let MyRule = Validate(value => typeof value === 'object', 'target should be an object.')
+let MyType = new Type(MyRule)
+MyType.assert('111') // throw Error with 'Target should be an object.'
+```
+
+```js
+let MyRule = Validate(String, 'target should be a string.')
+```
+
+```js
+// pass a function as second parameter to receive the value which to be validated
+let MyRule = Validate(Number, value => `${value} is not a number.`)
+```
+
 ## HelloType
 
 The `HelloType` is a set of methods to use type assertions more unified.
@@ -602,6 +626,17 @@ It is only works for object/sub-objects, not for any array/sub-arrays:
 
 ```js
 obj.books[0].name = null // without any effects
+```
+
+**messages**
+
+Use `messages` method to replace the default message text. Look into [message.js](./src/message.js) to find out which to replace.
+
+```js
+HelloType.messages({
+  'enum': '{args}不符合枚举类型{name}({rules})，请从枚举列表中选择。',
+  'type.Object': '{arg}的类型不是Object.',
+})
 ```
 
 ## Test

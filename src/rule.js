@@ -1,6 +1,6 @@
 import Type from './type'
-import { isFunction, xError, isString, inArray } from './utils'
-import { HelloType } from './hello-type';
+import { isFunction, xError, stringify, isString } from './utils'
+import { criticize } from './messages'
 
 export default class Rule {
   constructor(...args) {
@@ -19,11 +19,41 @@ export default class Rule {
       this.override = () => undefined
     }
   }
+  toString() {
+    return this.name || 'Rule'
+  }
 }
 
 export const Null = new Rule(value => value === null)
 export const Undefined = new Rule(value => value === undefined)
 export const Any = new Rule(() => null)
+
+/**
+ * Verify a rule by using custom error message
+ * @param {Rule|Function} rule 
+ * @param {String|Function} message 
+ */
+export function Validate(rule, message) {
+  if (isFunction(rule)) {
+    return new Rule('Verify', function(value) {
+      if (!rule(value)) {
+        let msg = isFunction(message) ? message(value) : message
+        let error = new TypeError(msg)
+        return xError(error, { value, rule, name: 'Verify' })
+      }
+    })
+  }
+  else {
+    let type = new Type(rule)
+    return new Rule('Verify', function(value) {
+      if (!type.test(value)) {
+        let msg = isFunction(message) ? message(value) : message
+        let error = new TypeError(msg)
+        return xError(error, { value, rule, name: 'Verify' })
+      }
+    })
+  }
+}
 
 /**
  * If the value exists, use rule to vaildate. If not exists, ignore this rule.
@@ -97,7 +127,11 @@ export const InstanceOf = function(rule) {
       return null
     }
     else {
-      let error = new TypeError('argument is not an instance of ' + (rule.name || 'unknow'))
+      let message = criticize('rule.instanceof', {
+        arg: stringify(value),
+        rule: rule.name || 'unknow',
+      })
+      let error = new TypeError(message)
       return xError(error, { value, rule, name: 'InstanceOf' })
     }
   })
@@ -113,7 +147,11 @@ export const Equal = function(rule) {
       return null
     }
     else {
-      let error = new TypeError('argument does not equal rule')
+      let message = criticize('rule.equal', {
+        arg: stringify(value),
+        rule: rule.name || 'unknow',
+      })
+      let error = new TypeError(message)
       return xError(error, { value, rule, name: 'Equal' })
     }
   })
@@ -122,7 +160,10 @@ export const Equal = function(rule) {
 export const Lambda = function(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
-      let error = new TypeError('%value should be a function')
+      let message = criticize('rule.lambda.function', {
+        arg: stringify(value),
+      })
+      let error = new TypeError(message)
       return xError(error, { value, name: 'Lambda' })
     }
   }, function(error, target, prop) {

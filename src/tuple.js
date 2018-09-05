@@ -1,6 +1,7 @@
 import Type from './type'
 import Rule from './rule'
-import { xError } from './utils'
+import { xError, stringify } from './utils'
+import { criticize } from './messages'
 
 export default function Tuple(...patterns) {
   const TupleType = new Type(...patterns)
@@ -12,7 +13,12 @@ export default function Tuple(...patterns) {
     let minLen = ruleLen
 
     if (this.mode === 'strict' && argLen !== ruleLen) {
-      let error = new TypeError('arguments length not match ' + this.name + ' in strict mode')
+      let message = criticize('tuple.strict.arguments.length', {
+        args: stringify(args),
+        name: this.toString(),
+        length: rules.length,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, rules, type: this.name })
     }
 
@@ -27,7 +33,12 @@ export default function Tuple(...patterns) {
     }
 
     if (argLen < minLen || argLen > ruleLen) {
-      let error = new TypeError('arguments length not match ' + this.name)
+      let message = criticize('tuple.arguments.length', {
+        args: stringify(args),
+        name: this.toString(),
+        length: rules.length,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, rules, type: this.name })
     }
     

@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, IfExists, InstanceOf, Equal, IfNotMatch } from '../src/rule'
+import Rule, { Any, IfExists, InstanceOf, Equal, IfNotMatch, Validate } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -78,5 +78,11 @@ describe('Rule', () => {
     }
     expect(() => { SomeType.assert(obj) }).not.toThrowError()
     expect(obj.age).toEqual(0)
+  })
+  test('Validate', () => {
+    const SomeType = new Type(Validate(Number, 'It should be a number.'))
+    let error = SomeType.catch('string')
+    let message = error.message
+    expect(message).toEqual('It should be a number.')
   })
 })

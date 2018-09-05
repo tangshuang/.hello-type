@@ -1,5 +1,6 @@
 import Type from './type'
-import { isObject, xError } from './utils'
+import { isObject, xError, stringify } from './utils'
+import { criticize } from './messages'
 
 export default function Dict(pattern) {
   // if pattern is not an object, it treated undefined
@@ -11,13 +12,22 @@ export default function Dict(pattern) {
   DictType.name = 'Dict'
   DictType.assert = function(...args) {
     if (args.length !== 1) {
-      let error = new TypeError('arguments length not match ' + this.name)
+      let message = criticize('dict.arguments.length', { 
+        args: stringfy(args), 
+        name: this.toString(),
+        length: 1,
+      })
+      let error = new TypeError(message)
       throw xError(error, { args, type: this.name })
     }
 
     let arg = args[0]
     if (!isObject(arg)) {
-      let error = new TypeError('%arg does not match ' + this.name)
+      let message = criticize('dict.object', { 
+        arg: stringify(arg), 
+        name: this.toString(),
+      })
+      let error = new TypeError(message)
       throw xError(error, { arg, type: this.name })
     }
 
