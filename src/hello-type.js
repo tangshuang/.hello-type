@@ -28,17 +28,21 @@ export const HelloType = {
     toMatch: (type) => {
       try {
         type.assert(...targets)
-        return true
       }
       catch(e) {
         HelloType.throwError(e)
-        return false
       }
     },
-    toBeCatchedBy: (type) => type.catch(...targets),
+    toBeCatchedBy: (type) => {
+      let error = type.catch(...targets)
+      if (error) {
+        HelloType.dispatch(error, 'catch')
+      }
+      return error
+    },
     toBeTracedBy: (type) => {
       let defer = type.trace(...targets).with((error) => {
-        HelloType.dispatch(error)
+        HelloType.dispatch(error, 'trace')
         return error
       })
       return {
@@ -47,7 +51,7 @@ export const HelloType = {
     },
     toBeTrackedBy: (type) => {
       let defer = type.track(...targets).with((error) => {
-        HelloType.dispatch(error)
+        HelloType.dispatch(error, 'track')
         return error
       })
       return {
@@ -63,7 +67,16 @@ export const HelloType = {
    * let bool = HelloType.is(SomeType).typeof(arg)
    */
   is: (type) =>  ({
-    typeof: (...targets) => type.test(...targets),
+    typeof: (...targets) => {
+      let error = type.catch(...targets)
+      if (error) {
+        HelloType.dispatch(error, 'test')
+        return false
+      }
+      else {
+        return true
+      }
+    },
   }),
 
   /**
@@ -118,11 +131,11 @@ export const HelloType = {
       }
     }
   },
-  dispatch: (error) => {
+  dispatch: (error, action) => {
     if (HelloTypeListeners.length) {
       HelloTypeListeners.forEach((fn) => {
         Promise.resolve().then(() => {
-          fn(error)
+          fn(error, action)
         })
       })
     }
@@ -139,7 +152,7 @@ export const HelloType = {
   },
   slient: false,
   throwError(e) {
-    HelloType.dispatch(e)
+    HelloType.dispatch(e, 'assert')
   
     if (HelloType.slient) {
       console.error(e)

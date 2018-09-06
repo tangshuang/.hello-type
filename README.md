@@ -523,14 +523,14 @@ HelloType.expect(some).toMatch(SomeoType) // it is almostly lik `SomeType.assert
 let error = HelloType.expect(some).toBeCatchedBy(SomeType)
 
 // toBeTracedBy.with
-HelloType.expect(some).toBeTracedBy(SomeType.Strict).with((error, args, type) => { 
+HelloType.expect(some).toBeTracedBy(SomeType.Strict).with((error) => { 
   // strict mode
   // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
   // ...
 })
 
 // toBeTrackedBy.with
-HelloType.expect(some).toBeTrackedBy(SomeType.Strict).with((error, args, type) => { 
+HelloType.expect(some).toBeTrackedBy(SomeType.Strict).with((error) => { 
   // strict mode
   // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
   // ...
@@ -576,8 +576,12 @@ HelloType.slient = true
 HelloType.expect(some).toMatch(SomeoType)
 ```
 
-Notice, `bind` only works for `HelloType.expect.toMatch` `HelloType.expect.toBeTracedBy` `HelloType.expect.toBeTrackedBy` and `HelloType.define` , 
-other methods will not follow this rule.
+A callback function:
+
+- @param error
+- @param action: 'assert', 'test', 'trace', 'track', 'catch'
+
+Notice, `bind` only works for `HelloType` , `Type` methods will not follow this rule.
 
 
 ```js
