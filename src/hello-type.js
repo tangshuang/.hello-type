@@ -36,12 +36,24 @@ export const HelloType = {
       }
     },
     toBeCatchedBy: (type) => type.catch(...targets),
-    toBeTracedBy: (type) => ({
-      with: (fn) => type.trace(...targets).with(fn),
-    }),
-    toBeTrackedBy: (type) => ({
-      with: (fn) => type.track(...targets).with(fn),
-    }),
+    toBeTracedBy: (type) => {
+      let defer = type.trace(...targets).with((error) => {
+        HelloType.dispatch(error)
+        return error
+      })
+      return {
+        with: (fn) => defer.then(fn),
+      }
+    },
+    toBeTrackedBy: (type) => {
+      let defer = type.track(...targets).with((error) => {
+        HelloType.dispatch(error)
+        return error
+      })
+      return {
+        with: (fn) => defer.then(fn),
+      }
+    },
   }),
 
   /**

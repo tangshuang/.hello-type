@@ -396,13 +396,15 @@ export default class Type {
    */
   track(...args) {
     return {
-      with: (fn) => new Promise((resolve) => {
+      with: (fn) => {
         let error = this.catch(...args)
-        if (error && isFunction(fn)) {
-          fn(error, args, this)
-        }
-        resolve(error)
-      }),
+        Promise.resolve(error).then((error) => {
+          if (error && isFunction(fn)) {
+            fn(error, args, this)
+          }
+          return error
+        })
+      },
     }
   }
 

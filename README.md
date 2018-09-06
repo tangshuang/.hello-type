@@ -576,8 +576,16 @@ HelloType.slient = true
 HelloType.expect(some).toMatch(SomeoType)
 ```
 
-Notice, `bind` only works for `HelloType.expect.toMatch` and `HelloType.define`, 
+Notice, `bind` only works for `HelloType.expect.toMatch` `HelloType.expect.toBeTracedBy` `HelloType.expect.toBeTrackedBy` and `HelloType.define` , 
 other methods will not follow this rule.
+
+
+```js
+HelloType.bind(function(error) {
+  bugReportJs.report(error)
+})
+HelloType.expect(args).toBeTrackedBy(someType) // without `.with` on tail
+```
 
 **is.typeof**
 
