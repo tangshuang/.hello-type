@@ -395,16 +395,15 @@ export default class Type {
    * @param {*} args 
    */
   track(...args) {
+    let error = this.catch(...args)
+    let defer = Promise.resolve(error)
     return {
-      with: (fn) => {
-        let error = this.catch(...args)
-        Promise.resolve(error).then((error) => {
-          if (error && isFunction(fn)) {
-            fn(error, args, this)
-          }
-          return error
-        })
-      },
+      with: (fn) => defer.then((error) => {
+        if (error && isFunction(fn)) {
+          fn(error, args, this)
+        }
+        return error
+      }),
     }
   }
 
@@ -415,15 +414,18 @@ export default class Type {
    * SomeType.trace(arg).with((error, [arg], type) => { ... })
    */
   trace(...args) {
+    let defer = new Promise((resolve) => {
+      Promise.resolve().then(() => {
+        let error = this.catch(...args)
+        resolve(error)
+      })
+    })
     return {
-      with: (fn) => new Promise((resolve) => {
-        Promise.resolve().then(() => {
-          let error = this.catch(...args)
-          if (error && isFunction(fn)) {
-            fn(error, args, this)
-          }
-          resolve(error)
-        })
+      with: (fn) => defer.then((error) => {
+        if (error && isFunction(fn)) {
+          fn(error, args, this)
+        }
+        return error
       }),
     }
   }
