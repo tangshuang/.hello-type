@@ -9,24 +9,24 @@ describe('HelloType', () => {
     afterAll(() => {
       console.error.mockRestore()
     })
-    test('HelloType.expect.toMatch', () => {
+    test('HelloType.expect.to.match', () => {
       const NumberType = new Type(Number)
-      expect(() => { HelloType.expect(1).toMatch(NumberType) }).not.toThrowError()
-      expect(() => { HelloType.expect(null).toMatch(NumberType) }).toThrowError()
+      expect(() => { HelloType.expect(1).to.match(NumberType) }).not.toThrowError()
+      expect(() => { HelloType.expect(null).to.match(NumberType) }).toThrowError()
     })
     test('HelloType.is.typeof', () => {
       const NumberType = new Type(Number)
       expect(HelloType.is(NumberType).typeof(1)).toBeTruthy()
       expect(HelloType.is(NumberType).typeof('1')).toBeFalsy()
     })
-    test('HelloType.expect.toBeCatchedBy', () => {
+    test('HelloType.catch.by', () => {
       const NumberType = new Type(Number)
-      expect(HelloType.expect(1).toBeCatchedBy(NumberType)).toBeNull()
-      expect(HelloType.expect('1').toBeCatchedBy(NumberType)).toBeInstanceOf(Error)
+      expect(HelloType.catch(1).by(NumberType)).toBeNull()
+      expect(HelloType.catch('1').by(NumberType)).toBeInstanceOf(Error)
     })
-    test('HelloType.expect.toBeTracedBy.with', (done) => {
+    test('HelloType.trace.by.with', (done) => {
       const NumberType = new Type(Number)
-      HelloType.expect('1').toBeTracedBy(NumberType).with((error) => {
+      HelloType.trace('1').by(NumberType).with((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })
@@ -34,7 +34,7 @@ describe('HelloType', () => {
     test('HelloType.slient', () => {
       HelloType.slient = true
       const NumberType = new Type(Number)
-      expect(() => { HelloType.expect(null).toMatch(NumberType) }).not.toThrowError()
+      expect(() => { HelloType.expect(null).to.match(NumberType) }).not.toThrowError()
       HelloType.slient = false
     })
     test('HelloType.define.by', () => {

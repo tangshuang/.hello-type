@@ -513,43 +513,60 @@ let MyRule = Validate(Number, value => `${value} is not a number.`)
 
 The `HelloType` is a set of methods to use type assertions more unified.
 
-**expect**
+### expect.to.match
 
 ```js
-// toMatch
-HelloType.expect(some).toMatch(SomeoType) // it is almostly lik `SomeType.assert(someobject)`
+HelloType.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
+```
 
-// toBeCatchedBy
-let error = HelloType.expect(some).toBeCatchedBy(SomeType)
+_alias:_ 
 
-// toBeTracedBy.with
-HelloType.expect(some).toBeTracedBy(SomeType.Strict).with((error) => { 
-  // strict mode
-  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
-  // ...
-})
+- expect.match
+- expect.toMatch
 
-// toBeTrackedBy.with
-HelloType.expect(some).toBeTrackedBy(SomeType.Strict).with((error) => { 
-  // strict mode
-  // it is the same as `SomeType.Strict.trace(someobject).with(fn)`
-  // ...
-})
+```js
+HelloType.expect(some).toMatch(SomeType)
+HelloType.expect(some).match(SomeType)
 ```
 
 **slient**
 
-When you set `HelloType.slient` to be 'true', `HelloType.expect.toMatch` will use `console.error` instead of `throw TypeError`.
+When you set `HelloType.slient` to be 'true', `HelloType.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
 
 ```js
 HelloType.slient = true
-HelloType.expect(some).toMatch(SomeoType) // console.error(e)
+HelloType.expect(some).to.match(SomeoType) // console.error(e)
 ```
 
-Notice, `slient` only works for `HelloType.expect.toMatch` and `HelloType.define`, 
-other methods will not follow this rule.
+Notice, `slient` only works for `HelloType.expect.to.match`, not for `Type.assert`.
 
-**bind**
+### catch.by.with
+
+```js
+let error = HelloType.catch(some).by(SomeType)
+```
+
+### is.typeof
+
+```js
+let bool = HelloType.is(SomeType).typeof(some)
+```
+
+### trace.by.with
+
+```js
+HelloType.trace(some).by(SomeType).with(fn)
+```
+
+### track.by.with
+
+```js
+HelloType.track(some).by(SomeType).with(fn)
+```
+
+### bind/unbind
+
+Bind some functions, so that when assert fail, the functions will run.
 
 ```js
 HelloType.bind(fn)
@@ -560,20 +577,22 @@ example:
 
 ```js
 const showError = (err) => Toast.error(err.message)
-HelloType.bind(showError) // use your own action to notice users
-window.addEventListener('error', e => {
+window.addEventListener('error', (e) => {
   let { error } = e
   if (error.owner === 'hello-type') {
-    e.preventDefault() // when throw Error, there will no log in console
+    e.preventDefault() // when throw Error, there will no error massage in console
   }
 })
+
+HelloType.bind(showError) // use your own action to notice users
+
 // when the assert fail, it throw TypeError, however, `fn` will run before error thrown
-HelloType.expect(some).toMatch(SomeoType) 
+HelloType.expect(some).to.match(SomeoType)
 
 // HelloType will not break the process
-HelloType.slient = true 
+HelloType.slient = true
 // `fn` will run before console.error
-HelloType.expect(some).toMatch(SomeoType)
+HelloType.expect(some).to.match(SomeoType)
 ```
 
 A callback function:
@@ -583,21 +602,16 @@ A callback function:
 
 Notice, `bind` only works for `HelloType` , `Type` methods will not follow this rule.
 
-
 ```js
-HelloType.bind(function(error) {
-  bugReportJs.report(error)
+HelloType.bind(function(error, action) {
+  if (action === 'trace') {
+    bugReportJs.report(error)
+  }
 })
-HelloType.expect(args).toBeTrackedBy(someType) // without `.with` on tail
+HelloType.trace(args).by(someType) // without `.with` on tail
 ```
 
-**is.typeof**
-
-```js
-let bool = HelloType.is(SomeType).typeof(someobject)
-```
-
-**decorate**
+### decorate
 
 Use to decorate class and its members:
 
@@ -614,7 +628,7 @@ class SomeClass {
 }
 ```
 
-**define.by**
+### define.by
 
 Convert an object to be a proxy object which will check its property's type:
 
@@ -640,7 +654,7 @@ It is only works for object/sub-objects, not for any array/sub-arrays:
 obj.books[0].name = null // without any effects
 ```
 
-**messages**
+### messages
 
 Use `messages` method to replace the default message text. Look into [message.js](./src/message.js) to find out which to replace.
 

@@ -22,25 +22,58 @@ export const HelloType = {
    * assert
    * @param {Type} type 
    * @example
-   * HelloType.expect(arg).toMatch(SomeType)
+   * HelloType.expect(arg).to.match(SomeType)
    */
   expect: (...targets) => ({
-    toMatch: (type) => {
-      try {
-        type.assert(...targets)
-      }
-      catch(e) {
-        HelloType.throwError(e)
-      }
+    to: {
+      match: (type) => {
+        try {
+          type.assert(...targets)
+          return true
+        }
+        catch(e) {
+          HelloType.throwError(e)
+          return false
+        }
+      },
     },
+    match: (type) => HelloType.expect(...targets).to.match(type),
+    /**
+     * @deprecated
+     */
+    toMatch: (type) => HelloType.expect(...targets).to.match(type),
+    /**
+     * @deprecated
+     */
     toBeCatchedBy: (type) => {
+      return HelloType.catch(...targets).by(type)
+    },
+    /**
+     * @deprecated
+     */
+    toBeTracedBy: (type) => {
+      return HelloType.trace(...targets).by(type)
+    },
+    /**
+     * @deprecated
+     */
+    toBeTrackedBy: (type) => {
+      return HelloType.track(...targets).by(type)
+    },
+  }),
+
+  catch: (...targets) => ({
+    by: (type) => {
       let error = type.catch(...targets)
       if (error) {
         HelloType.dispatch(error, 'catch')
       }
       return error
     },
-    toBeTracedBy: (type) => {
+  }),
+
+  trace: (...targets) => ({
+    by: (type) => {
       let defer = type.trace(...targets).with((error) => {
         HelloType.dispatch(error, 'trace')
         return error
@@ -49,7 +82,10 @@ export const HelloType = {
         with: (fn) => defer.then(fn),
       }
     },
-    toBeTrackedBy: (type) => {
+  }),
+
+  track: (...targets) => ({
+    by: (type) => {
       let defer = type.track(...targets).with((error) => {
         HelloType.dispatch(error, 'track')
         return error
@@ -161,7 +197,6 @@ export const HelloType = {
       throw e
     }
   },
-
   define: (target) => ({
     by: (type) => {
       function getRuleType(rule) {
