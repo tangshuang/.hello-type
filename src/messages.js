@@ -22,7 +22,6 @@ export const messages = {
   'type.arguments.length': '{args} length not match type, length should be {length}.',
   'type.Array': '{arg} does not match Array.',
   'type.Boolean': '{arg} does not match Boolean.',
-  'type.function': '{arg} does not match custom rule function.',
   'type.Function': '{arg} does not match Function.',
   'type.NaN': '{arg} does not match NaN.',
   'type.Number': '{arg} does not match Number.',

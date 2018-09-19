@@ -42,7 +42,7 @@ export const Undefined = new Rule('Undefined', (value) => {
     return xError(error, { value, name: 'Undefined' })
   }
 })
-export const Any = new Rule(() => null)
+export const Any = new Rule('Any', () => null)
 
 /**
  * Verify a rule by using custom error message
