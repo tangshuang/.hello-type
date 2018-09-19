@@ -1,5 +1,5 @@
 import Type from './type'
-import { xError, stringify } from './utils'
+import { xError, stringify, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default function Enum(...patterns) {
@@ -10,7 +10,7 @@ export default function Enum(...patterns) {
     for (let i = 0, len = rules.length; i < len; i ++) {
       let rule = rules[i]
       let match
-      if (rule instanceof Type) {
+      if (isInstanceOf(rule, Type)) {
         match = rule.test(...args)
       }
       else {

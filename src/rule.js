@@ -1,5 +1,5 @@
 import Type from './type'
-import { isFunction, xError, stringify, isString } from './utils'
+import { isFunction, xError, stringify, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default class Rule {
@@ -24,8 +24,24 @@ export default class Rule {
   }
 }
 
-export const Null = new Rule(value => value === null)
-export const Undefined = new Rule(value => value === undefined)
+export const Null = new Rule('Null', (value) => {
+  if (value !== null) {
+    let message = criticize('rule.null', {
+      arg: stringify(value),
+    })
+    let error = new TypeError(message)
+    return xError(error, { value, name: 'Null' })
+  }
+})
+export const Undefined = new Rule('Undefined', (value) => {
+  if (value !== undefined) {
+    let message = criticize('rule.undefined', {
+      arg: stringify(value),
+    })
+    let error = new TypeError(message)
+    return xError(error, { value, name: 'Undefined' })
+  }
+})
 export const Any = new Rule(() => null)
 
 /**
@@ -60,7 +76,7 @@ export function Validate(rule, message) {
  * @param {*} rule 
  */
 export const IfExists = function(rule) {
-  if (rule instanceof Rule) {
+  if (isInstanceOf(rule, Rule)) {
     return new Rule('IfExists', function(value) {
       if (value === undefined) {
         return null
@@ -70,7 +86,7 @@ export const IfExists = function(rule) {
     })
   }
   
-  if (rule instanceof Type) {
+  if (isInstanceOf(rule, Type)) {
     return new Rule('IfExists', function(value) {
       if (value === undefined) {
         return null
@@ -91,7 +107,7 @@ export const IfExists = function(rule) {
  * @param {*} defaultValue 
  */
 export const IfNotMatch = function(rule, defaultValue) {
-  if (rule instanceof Rule) {
+  if (isInstanceOf(rule, Rule)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
       return xError(error, { value, rule, name: 'IfNotMatch' })
@@ -102,7 +118,7 @@ export const IfNotMatch = function(rule, defaultValue) {
     })
   }
   
-  if (rule instanceof Type) {
+  if (isInstanceOf(rule, Type)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.catch(value)
       return xError(error, { value, rule, name: 'IfNotMatch' })
@@ -123,7 +139,7 @@ export const IfNotMatch = function(rule, defaultValue) {
  */
 export const InstanceOf = function(rule) {
   return new Rule('InstanceOf', function(value) {
-    if (value instanceof rule && value.constructor === rule) {
+    if (isInstanceOf(value, rule) && isInstanceOf(value, rule, true)) {
       return null
     }
     else {

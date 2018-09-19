@@ -125,7 +125,7 @@ export const HelloType = {
         if (isFunction(factor)) {
           factor(...args)
         }
-        else if (factor instanceof Type) {
+        else if (isInstanceOf(factor, Type)) {
           HelloType.expect(...args).toMatch(factor)
         }
       }, 'input'),
@@ -135,7 +135,7 @@ export const HelloType = {
         if (isFunction(factor)) {
           factor(...args)
         }
-        else if (factor instanceof Type) {
+        else if (isInstanceOf(factor, Type)) {
           HelloType.expect(...args).toMatch(factor)
         }
       }, 'output'),
@@ -144,7 +144,7 @@ export const HelloType = {
       if (isFunction(factor)) {
         factor(...args)
       }
-      else if (factor instanceof Type) {
+      else if (isInstanceOf(factor, Type)) {
         HelloType.expect(...args).toMatch(factor)
       }
     }),

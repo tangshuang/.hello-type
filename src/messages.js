@@ -15,6 +15,8 @@ export const messages = {
   'rule.equal': '{arg} does not equal {rule}.',
   'rule.instanceof': '{arg} is not an instance of {rule}.',
   'rule.lambda.function': '{arg} should be a function.',
+  'rule.null': '{arg} should be null.',
+  'rule.undefined': '{arg} should be undefined.',
   'tuple.arguments.length': '{args} length does not match {name}, length should be {length}.',
   'tuple.strict.arguments.length': '{args} length does not match {name}  in strict mode, length should be {length}.',
   'type.arguments.length': '{args} length not match type, length should be {length}.',

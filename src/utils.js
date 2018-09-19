@@ -56,8 +56,8 @@ export function isConstructor(f) {
   return true
 }
 
-export function isInstanceOf(ins, cons) {
-  return ins instanceof cons
+export function isInstanceOf(ins, cons, strict) {
+  return strict ? ins.constructor === cons : ins instanceof cons
 }
 
 export function stringify(obj) {
@@ -139,7 +139,7 @@ export function decorate(factory, method = 'input') {
 }
 
 export function xError(error, info) {
-  if (error instanceof Error) {
+  if (isInstanceOf(error, Error)) {
     let trace = Object.assign({ message: error.message }, info)
     error.trace = error.trace || []
     error.trace.shift(trace)

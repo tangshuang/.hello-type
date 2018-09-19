@@ -1,6 +1,6 @@
 import Type from './type'
 import Rule from './rule'
-import { xError, stringify } from './utils'
+import { xError, stringify, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default function Tuple(...patterns) {
@@ -24,7 +24,7 @@ export default function Tuple(...patterns) {
 
     for (let i = ruleLen - 1; i > -1; i --) {
       let rule = rules[i]
-      if (rule instanceof Rule && rule.name === 'IfExists') {
+      if (isInstanceOf(rule, Rule) && rule.name === 'IfExists') {
         minLen --
       }
       else {

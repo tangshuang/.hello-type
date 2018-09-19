@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, IfExists, InstanceOf, Equal, IfNotMatch, Validate } from '../src/rule'
+import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -14,6 +14,16 @@ describe('Rule', () => {
     expect(() => { ObjectType.assert(null) }).not.toThrowError()
     expect(() => { ObjectType.assert([]) }).not.toThrowError()
     expect(() => { ObjectType.assert('') }).toThrowError()
+  })
+  test('Null', () => {
+    const NullType = new Type(Null)
+    expect(() => { NullType.assert({}) }).toThrowError()
+    expect(() => { NullType.assert(null) }).not.toThrowError()
+  })
+  test('Undefined', () => {
+    const UndefinedType = new Type(Undefined)
+    expect(() => { UndefinedType.assert({}) }).toThrowError()
+    expect(() => { UndefinedType.assert(undefined) }).not.toThrowError()
   })
   test('Any', () => {
     const AnyType = new Type(Any)

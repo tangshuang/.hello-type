@@ -278,7 +278,7 @@ export default class Type {
         // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
         if (!inArray(ruleKey, argKeys)) {
           // IfExists:
-          if (rule instanceof Rule && this.mode !== 'strict') {
+          if (isInstanceOf(rule, Rule) && this.mode !== 'strict') {
             let error = rule.vaildate(arg)
             if (!error) {
               continue
@@ -294,7 +294,7 @@ export default class Type {
           return xError(error, { arg, rule, key: ruleKey })
         }
 
-        if (rule instanceof Rule) {
+        if (isInstanceOf(rule, Rule)) {
           let error = rule.vaildate(arg)
           
           // use rule to override property when not match
@@ -330,7 +330,7 @@ export default class Type {
 
     // instance of a class
     // i.e. (new Type(Person)).assert(person)
-    if (isConstructor(rule) && arg instanceof rule) {
+    if (isConstructor(rule) && isInstanceOf(arg, rule)) {
       return null
     }
 
