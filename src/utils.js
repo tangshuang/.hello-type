@@ -152,7 +152,7 @@ export function xError(error, info) {
 
 export function clone(obj, fn) {
   let parents = []
-  let clone = function(origin, path = '') {
+  let clone = function(origin, path = '', obj) {
     if (!isObject(origin) && !isArray(origin)) {
       return origin
     }
@@ -160,24 +160,23 @@ export function clone(obj, fn) {
     let result = isArray(origin) ? [] : {}
     let keys = Object.keys(origin)
 
-    parents.push({ path, origin, result })
+    parents.push({ obj, path, origin, result })
 
     for (let i = 0, len = keys.length; i < len; i ++) {
       let key = keys[i]
-      let v = origin[key]
-      let referer = parents.find(item => item.origin === v)
-      let res = isFunction(fn) ? fn(v, key, origin, path, obj, !!referer) : v
-      let value = res === undefined ? value : res
+      let value = origin[key]
+      let referer = parents.find(item => item.origin === value)
+      let computed = isFunction(fn) ? fn(value, key, origin, path, obj, referer) : value
 
-      if (!isObject(value) && !isArray(value)) {
-        result[key] = value
+      if (!isObject(computed) && !isArray(computed)) {
+        result[key] = computed
       }
       else {
         if (referer) {
           result[key] = referer.result
         }
         else {
-          result[key] = clone(value, path ? path + '.' + key : key)
+          result[key] = clone(computed, path ? path + '.' + key : key)
         }
       }
     }
@@ -185,7 +184,7 @@ export function clone(obj, fn) {
     return result
   }
 
-  let result = clone(obj)
+  let result = clone(obj, '', obj)
   parents = null
   return result
 }
