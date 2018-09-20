@@ -1,5 +1,5 @@
 import Type from './type'
-import { isFunction, xError, stringify, isInstanceOf } from './utils'
+import { isFunction, xError, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default class Rule {
@@ -27,7 +27,7 @@ export default class Rule {
 export const Null = new Rule('Null', (value) => {
   if (value !== null) {
     let message = criticize('rule.null', {
-      arg: stringify(value),
+      arg: value,
     })
     let error = new TypeError(message)
     return xError(error, { value, name: 'Null' })
@@ -36,7 +36,7 @@ export const Null = new Rule('Null', (value) => {
 export const Undefined = new Rule('Undefined', (value) => {
   if (value !== undefined) {
     let message = criticize('rule.undefined', {
-      arg: stringify(value),
+      arg: value,
     })
     let error = new TypeError(message)
     return xError(error, { value, name: 'Undefined' })
@@ -144,7 +144,7 @@ export const InstanceOf = function(rule) {
     }
     else {
       let message = criticize('rule.instanceof', {
-        arg: stringify(value),
+        arg: value,
         rule: rule.name || 'unknow',
       })
       let error = new TypeError(message)
@@ -164,7 +164,7 @@ export const Equal = function(rule) {
     }
     else {
       let message = criticize('rule.equal', {
-        arg: stringify(value),
+        arg: value,
         rule: rule.name || 'unknow',
       })
       let error = new TypeError(message)
@@ -177,7 +177,7 @@ export const Lambda = function(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
       let message = criticize('rule.lambda.function', {
-        arg: stringify(value),
+        arg: value,
       })
       let error = new TypeError(message)
       return xError(error, { value, name: 'Lambda' })

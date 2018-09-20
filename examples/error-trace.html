@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<script src="../dist/hello-type.js"></script>
+<script>
+const { HelloType, Dict } = window['hello-type']
+const SomeType = Dict({
+  name: String,
+  age: Number,
+  ab: [
+    {
+      duck: 'tom',
+    },
+  ],
+})
+const some = {
+  ab: [
+    {
+      chik: 'jude',
+    },
+  ],
+}
+HelloType.trace(some).by(SomeType).with(error => {
+  console.log('some does not match SomeType,', error.message)
+  console.log(error.stack)
+  error.traces.forEach(item => {
+    console.log(item)
+    console.log(item.stack)
+  })
+})
+</script>

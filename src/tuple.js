@@ -1,6 +1,6 @@
 import Type from './type'
 import Rule from './rule'
-import { xError, stringify, isInstanceOf } from './utils'
+import { xError, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default function Tuple(...patterns) {
@@ -14,7 +14,7 @@ export default function Tuple(...patterns) {
 
     if (this.mode === 'strict' && argLen !== ruleLen) {
       let message = criticize('tuple.strict.arguments.length', {
-        args: stringify(args),
+        args,
         name: this.toString(),
         length: rules.length,
       })
@@ -34,7 +34,7 @@ export default function Tuple(...patterns) {
 
     if (argLen < minLen || argLen > ruleLen) {
       let message = criticize('tuple.arguments.length', {
-        args: stringify(args),
+        args,
         name: this.toString(),
         length: rules.length,
       })

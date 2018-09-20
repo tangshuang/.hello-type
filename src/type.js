@@ -6,7 +6,6 @@ import {
   isArray, inArray, isBoolean, isNumber, isObject, 
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   toShallowObject, xError,
-  stringify,
 } from './utils'
 import { criticize } from './messages'
 
@@ -53,7 +52,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.NaN', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -68,7 +67,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Number', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -83,7 +82,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Boolean', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -98,7 +97,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.String', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -110,7 +109,7 @@ export default class Type {
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(arg)) {
         let message = criticize('type.regexp.string', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -120,7 +119,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.regexp', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -135,7 +134,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Function', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -150,7 +149,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Array', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -165,7 +164,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Object', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -178,7 +177,7 @@ export default class Type {
       }
       else {
         let message = criticize('type.Symbol', {
-          arg: stringify(arg),
+          arg,
         })
         let error = new TypeError(message)
         return xError(error, { arg, rule })
@@ -195,7 +194,7 @@ export default class Type {
         // array length should equal in strict mode
         if (ruleLen !== argLen) {
           let message = criticize('type.strict.array.length', {
-            arg: stringify(arg),
+            arg,
             ruleLen,
             argLen,
           })
@@ -258,9 +257,10 @@ export default class Type {
           // args has key beyond rules
           if (!inArray(argKey, ruleKeys)) {
             let message = criticize('type.strict.object.key', {
-              arg: stringify(arg),
+              arg,
               argKey,
-              ruleKeys: ruleKeys.join(','),
+              ruleKeys,
+              object: args,
             })
             let error = new TypeError(message)
             return xError(error, { arg, rule, key: argKey })
@@ -286,9 +286,10 @@ export default class Type {
           }
 
           let message = criticize('type.object.key', {
-            arg: stringify(arg),
+            arg,
             ruleKey,
-            ruleKeys: ruleKeys.join(','),
+            ruleKeys: ruleKeys,
+            object: args,
           })
           let error = new TypeError(message)
           return xError(error, { arg, rule, key: ruleKey })
@@ -350,7 +351,7 @@ export default class Type {
     }
 
     let message = criticize('type', {
-      arg: stringify(arg),
+      arg,
     })
     let error = new TypeError(message)
     return xError(error, { arg, rule })
@@ -358,7 +359,7 @@ export default class Type {
   assert(...args) {
     if (args.length !== this.rules.length) {
       let message = criticize('type.arguments.length', {
-        args: stringify(args),
+        args,
         name: this.toString(),
         length: this.rules.length,
       })

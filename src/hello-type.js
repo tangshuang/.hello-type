@@ -11,7 +11,7 @@ export {
   Validate,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction, stringify } from './utils'
+import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction } from './utils'
 import Type from './type'
 import { messages, criticize } from './messages'
 
@@ -209,7 +209,7 @@ export const HelloType = {
 
       if (!isObject(target)) {
         let message = criticize('hello.define.target.object', {
-          target: stringify(target),
+          target,
         })
         let error = new TypeError(message)
         let e = xError(error, { target, type })
@@ -219,7 +219,7 @@ export const HelloType = {
       let rule = getRule(type)
       if (!isObject(rule)) {
         let message = criticize('hello.define.rule.object', {
-          rule: stringify(rule),
+          rule,
         })
         let error = new TypeError(message)
         let e = xError(error, { obj, prop, value, rule, type, target, action: 'define.by' })
@@ -248,7 +248,7 @@ export const HelloType = {
             else {
               let message = criticize('hello.define.property.object', {
                 prop: key,
-                value: stringify(propValue),
+                value: propValue,
               })
               let error = new TypeError(message)
               let e = xError(error, { origin, rule, key, propValue, propRule, type, target, action: 'define.by' })

@@ -1,4 +1,4 @@
-import { inObject } from './utils'
+import { inObject, stringify } from './utils'
 
 export const messages = {
   'dict.arguments.length': '{args} length does not match {name}, length should be {length}.',
@@ -26,13 +26,13 @@ export const messages = {
   'type.NaN': '{arg} does not match NaN.',
   'type.Number': '{arg} does not match Number.',
   'type.Object': '{arg} does not match Object.',
-  'type.object.key': '"{ruleKey}" is not in object, needs {ruleKeys}',
+  'type.object.key': '{ruleKey} is not in {object}, needs {ruleKeys}',
   'type.regexp.string': '{arg} is not a string which does not match RegExp instance.',
   'type.regexp': '{arg} does not match RegExp instance.',
   'type.String': '{arg} does not match String.',
   'type.Symbol': '{arg} does not match Symbol.',
   'type.strict.array.length': 'array length should be {ruleLen} in strict mode, but receive {argLen}.',
-  'type.strict.object.key': '"{argKey}" should not be in object, only "{ruleKeys}" allowed in strict mode.',
+  'type.strict.object.key': '{argKey} should not be in {object}, only {ruleKeys} allowed in strict mode.',
   'type': '{arg} does not match type.',
 }
 export function criticize(key, params) {
@@ -40,7 +40,7 @@ export function criticize(key, params) {
   if (!message) {
     message = '{arg} not match type.'
   }
-  return message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? params[key] : '%$1')
+  return message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? stringify(params[key]) : '%' + match)
 }
 
 export default messages

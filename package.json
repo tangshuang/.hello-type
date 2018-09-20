@@ -1,6 +1,6 @@
 {
   "name": "hello-type",
-  "version": "2.12.4",
+  "version": "2.12.5",
   "description": "An ECMAScript data type check library",
   "main": "dist/hello-type.js",
   "scripts": {

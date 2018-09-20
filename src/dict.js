@@ -1,5 +1,5 @@
 import Type from './type'
-import { isObject, xError, stringify } from './utils'
+import { isObject, xError } from './utils'
 import { criticize } from './messages'
 
 export default function Dict(pattern) {
@@ -13,7 +13,7 @@ export default function Dict(pattern) {
   DictType.assert = function(...args) {
     if (args.length !== 1) {
       let message = criticize('dict.arguments.length', { 
-        args: stringfy(args), 
+        args, 
         name: this.toString(),
         length: 1,
       })
@@ -24,7 +24,7 @@ export default function Dict(pattern) {
     let arg = args[0]
     if (!isObject(arg)) {
       let message = criticize('dict.object', { 
-        arg: stringify(arg), 
+        arg, 
         name: this.toString(),
       })
       let error = new TypeError(message)

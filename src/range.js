@@ -1,5 +1,5 @@
 import Type from './type'
-import { isNumber, xError, stringify } from './utils'
+import { isNumber, xError } from './utils'
 import { criticize } from './messages'
 
 export default function Range(min, max) {
@@ -19,7 +19,7 @@ export default function Range(min, max) {
   RangeType.assert = function(...args) {
     if (args.length !== 1) {
       let message = criticize('range.arguments.length', {
-        args: stringify(args),
+        args,
         name: this.toString(),
         length: 1,
       })
@@ -30,7 +30,7 @@ export default function Range(min, max) {
     let arg = args[0]
     if (!isNumber(arg)) {
       let message = criticize('range.number', {
-        arg: stringify(arg),
+        arg,
         name: this.toString(),
       })
       let error = new TypeError(message)
@@ -43,7 +43,7 @@ export default function Range(min, max) {
     }
     
     let message = criticize('range', {
-      arg: stringify(arg),
+      arg,
       name: this.toString(),
       min,
       max,

@@ -1,5 +1,5 @@
 import Type from './type'
-import { xError, stringify, isInstanceOf } from './utils'
+import { xError, isInstanceOf } from './utils'
 import { criticize } from './messages'
 
 export default function Enum(...patterns) {
@@ -25,9 +25,9 @@ export default function Enum(...patterns) {
     }
     
     let message = criticize('enum', { 
-      args: stringify(args), 
+      args, 
       name: this.toString(), 
-      rules: this.rules.join(','),
+      rules,
     })
     let error = new TypeError(message)
     throw xError(error, { args, rules, type: this.name })

@@ -140,10 +140,28 @@ export function decorate(factory, method = 'input') {
 
 export function xError(error, info) {
   if (isInstanceOf(error, Error)) {
-    let trace = Object.assign({ message: error.message }, info)
-    error.trace = error.trace || []
-    error.trace.shift(trace)
+    let traces = error.traces || []
+    let keys = []
+    traces.forEach(item => {
+      if (inObject('key', item)) {
+        keys.push(item.key)
+      }
+      if (inObject('index', item)) {
+        keys.push(item.index)
+      }
+    })
+    keys = keys.length ? ['[]', ...keys] : keys
+
+    let keyPath = keys.join('.')
+    let e = new Error(keyPath)
+    let stack = e.stack || e.stacktrace || 'stack not supported by your browser'
+    let trace = Object.assign({ stack, keyPath }, info)
+
+    traces.unshift(trace)
+
+    error.traces = traces
     error.owner = 'hello-type'
+
     return error
   }
   

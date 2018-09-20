@@ -1,5 +1,5 @@
 import Type from './type'
-import { isArray, xError, stringify } from './utils'
+import { isArray, xError } from './utils'
 import { criticize } from './messages'
 
 export default function List(pattern) {
@@ -13,7 +13,7 @@ export default function List(pattern) {
   ListType.assert = function(...args) {
     if (args.length !== 1) {
       let message = criticize('list.arguments.length', { 
-        args: stringify(args),
+        args,
         name: this.toString(),
         length: 1,
       })
@@ -24,7 +24,7 @@ export default function List(pattern) {
     let arg = args[0]
     if (!isArray(arg)) {
       let message = criticize('list.array', {
-        arg: stringify(arg),
+        arg,
         name: this.toString(),
       })
       let error = new TypeError(message)
