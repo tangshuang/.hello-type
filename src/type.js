@@ -228,7 +228,7 @@ export default class Type {
           }
 
           if (error) {
-            return xError(error, { arg, rule, key: argKey })
+            return xError(error, { arg, rule, index: i })
           }
           else {
             continue
