@@ -19,12 +19,10 @@ const some = {
     },
   ],
 }
-HelloType.trace(some).by(SomeType).with(error => {
-  console.log('some does not match SomeType,', error.message)
-  console.log(error.stack)
-  error.traces.forEach(item => {
-    console.log(item)
-    console.log(item.stack)
-  })
+HelloType.trace(some).by(SomeType.Strict).with(error => {
+  // console.log(error.message + '\n' + error.summary.stack)
+  // console.log(error.translate('{keyPath}'))
+  error.stack = error.summary.stack
+  throw error
 })
 </script>

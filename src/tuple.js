@@ -1,28 +1,22 @@
 import Type from './type'
 import Rule from './rule'
-import { xError, isInstanceOf } from './utils'
-import { criticize } from './messages'
+import { isInstanceOf } from './utils'
+import { xError, HelloTypeError } from './error'
 
 export default function Tuple(...patterns) {
   const TupleType = new Type(...patterns)
   TupleType.name = 'Tuple'
-  TupleType.assert = function(...args) {
+  TupleType.assert = function(...targets) {
     let rules = this.rules
-    let ruleLen = rules.length
-    let argLen = args.length
-    let minLen = ruleLen
+    let ruleLength = rules.length
+    let targetLength = targets.length
+    let minLen = ruleLength
 
-    if (this.mode === 'strict' && argLen !== ruleLen) {
-      let message = criticize('tuple.strict.arguments.length', {
-        args,
-        name: this.toString(),
-        length: rules.length,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, rules, type: this.name })
+    if (this.mode === 'strict' && targetLength !== ruleLength) {
+      throw new HelloTypeError('tuple.strict.arguments.length', { target: targets, type: this.name, ruleLength, targetLength })
     }
 
-    for (let i = ruleLen - 1; i > -1; i --) {
+    for (let i = ruleLength - 1; i > -1; i --) {
       let rule = rules[i]
       if (isInstanceOf(rule, Rule) && rule.name === 'IfExists') {
         minLen --
@@ -32,22 +26,16 @@ export default function Tuple(...patterns) {
       }
     }
 
-    if (argLen < minLen || argLen > ruleLen) {
-      let message = criticize('tuple.arguments.length', {
-        args,
-        name: this.toString(),
-        length: rules.length,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, rules, type: this.name })
+    if (targetLength < minLen || targetLength > ruleLength) {
+      throw new HelloTypeError('tuple.arguments.length', { target: targets, type: this.name, ruleLength, targetLength, minLen })
     }
     
-    for (let i = 0; i < argLen; i ++) {
-      let arg = args[i]
+    for (let i = 0; i < targetLength; i ++) {
+      let target = targets[i]
       let rule = rules[i]
-      let error = this.vaildate(arg, rule)
+      let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { arg, rule, index: i, args, rules, type: this.name })
+        throw xError(error, { target, rule, type: this.name })
       }
     }
   }

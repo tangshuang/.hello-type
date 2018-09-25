@@ -5,17 +5,19 @@ import Enum from './enum'
 import { 
   isArray, inArray, isBoolean, isNumber, isObject, 
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
-  toShallowObject, xError,
+  toShallowObject,
+  defineProperty,
 } from './utils'
-import { criticize } from './messages'
+import { xError, HelloTypeError } from './error'
 
 export default class Type {
   constructor(...patterns) {
-    this.id = Date.now()  + '.' + parseInt(Math.random() * 10000)
-    this.mode = 'none'
+    defineProperty(this, 'id', Date.now()  + '.' + parseInt(Math.random() * 10000))
+    defineProperty(this, 'mode', 'none', true)
+    defineProperty(this, 'name', 'Type', true, true)
+    defineProperty(this, 'patterns', patterns)
 
-    this.patterns = patterns
-    this.rules = patterns.map((rule) => {
+    let rules = patterns.map((rule) => {
       if (isObject(rule)) {
         // if rule is an object, it will be converted to be a shallow object
         // if the value of a property is an object, it will be converted to be a Dict
@@ -30,204 +32,159 @@ export default class Type {
         return rule
       }
     })
+    defineProperty(this, 'rules', rules)
   }
   /**
    * vaildate whether the argument match the rule
-   * @param {*} arg
+   * @param {*} target
    * @param {*} rule 
    */
-  vaildate(arg, rule) {
+  vaildate(target, rule) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
-      let error = rule.vaildate(arg)
-      return xError(error, { arg, rule })
+      let error = rule.vaildate(target)
+      return xError(error, { target, rule, type: this.name })
     }
 
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
     if (typeof rule === 'number' && isNaN(rule)) {
-      if (typeof arg === 'number' && isNaN(arg)) {
+      if (typeof target === 'number' && isNaN(target)) {
         return null
       }
       else {
-        let message = criticize('type.NaN', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.NaN', { target, rule, type: this.name })
       }
     }
 
     // Number
     // i.e. (new Type(Number).assert(1))
     if (rule === Number) {
-      if (isNumber(arg)) {
+      if (isNumber(target)) {
         return null
       }
       else {
-        let message = criticize('type.Number', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Number', { target, rule, type: this.name })
       }
     }
 
     // Boolean
     // i.e. (new Type(Boolean)).assert(true)
     if (rule === Boolean) {
-      if (isBoolean(arg)) {
+      if (isBoolean(target)) {
         return null
       }
       else {
-        let message = criticize('type.Boolean', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Boolean', { target, rule, type: this.name })
       }
     }
 
     // String
     // i.e. (new Type(String)).assert('name')
     if (rule === String) {
-      if (isString(arg)) {
+      if (isString(target)) {
         return null
       }
       else {
-        let message = criticize('type.String', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.String', { target, rule, type: this.name })
       }
     }
     
     // regexp
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
-      if (!isString(arg)) {
-        let message = criticize('type.regexp.string', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+      if (!isString(target)) {
+        return new HelloTypeError('type.regexp.string', { target, rule, type: this.name })
       }
-      if (rule.test(arg)) {
+      if (rule.test(target)) {
         return null
       }
       else {
-        let message = criticize('type.regexp', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.regexp', { target, rule, type: this.name })
       }
     }
 
     // Function
     // i.e. (new Type(Function)).assert(() => {})
     if (rule === Function) {
-      if (isFunction(arg)) {
+      if (isFunction(target)) {
         return null
       }
       else {
-        let message = criticize('type.Function', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Function', { target, rule, type: this.name })
       }
     }
 
     // Array
     // i.e. (new Type(Array)).assert([])
     if (rule === Array) {
-      if (isArray(arg)) {
+      if (isArray(target)) {
         return null
       }
       else {
-        let message = criticize('type.Array', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Array', { target, rule, type: this.name })
       }
     }
 
     // object
     // i.e. (new Type(Object).assert({}))
     if (rule === Object) {
-      if (isObject(arg)) {
+      if (isObject(target)) {
         return null
       }
       else {
-        let message = criticize('type.Object', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Object', { target, rule, type: this.name })
       }
     }
 
     if (rule === Symbol) {
-      if (isSymbol(arg)) {
+      if (isSymbol(target)) {
         return null
       }
       else {
-        let message = criticize('type.Symbol', {
-          arg,
-        })
-        let error = new TypeError(message)
-        return xError(error, { arg, rule })
+        return new HelloTypeError('type.Symbol', { target, rule, type: this.name })
       }
     }
 
-    if (isArray(rule) && isArray(arg)) {
+    if (isArray(rule) && isArray(target)) {
       let rules = rule
-      let args = arg
-      let ruleLen = rules.length
-      let argLen = args.length
+      let targets = target
+      let ruleLength = rules.length
+      let targetLength = targets.length
 
       if (this.mode === 'strict') {
         // array length should equal in strict mode
-        if (ruleLen !== argLen) {
-          let message = criticize('type.strict.array.length', {
-            arg,
-            ruleLen,
-            argLen,
-          })
-          let error = new TypeError(message)
-          return xError(error, { arg, rule })
+        if (ruleLength !== targetLength) {
+          return new HelloTypeError('type.strict.array.length', { target, rule, ruleLength, targetLength, type: this.name })
         }
       }
       
       // if arguments.length is bigger than rules.length, use Enum to match left items
       let clonedRules = [].concat(rules)
-      if (argLen > ruleLen) {
-        let ItemType = ruleLen > 1 ? Enum(...rules) : ruleLen ? rules[0] : Any
-        for (let i = ruleLen; i < argLen; i ++) {
+      if (targetLength > ruleLength) {
+        let ItemType = ruleLength > 1 ? Enum(...rules) : ruleLength ? rules[0] : Any
+        for (let i = ruleLength; i < targetLength; i ++) {
           clonedRules.push(ItemType)
         }
       }
 
-      for (let i = 0; i < argLen; i ++) {
-        let arg = args[i]
+      for (let i = 0; i < targetLength; i ++) {
+        let target = targets[i]
         let rule = clonedRules[i]
 
         if (isInstanceOf(rule, Rule)) {
-          let error = rule.vaildate(arg)
+          let error = rule.vaildate(target)
           
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            arg = rule.override(error, args, i) || args[i]
-            error = rule.vaildate(arg)
+            target = rule.override(error, targets, i) || targets[i]
+            error = rule.vaildate(target)
           }
 
           if (error) {
-            return xError(error, { arg, rule, index: i })
+            return xError(error, { target, rule, index: i, node: targets, type: this.name })
           }
           else {
             continue
@@ -235,78 +192,63 @@ export default class Type {
         }
         
         // normal vaildate
-        let error = this.vaildate(arg, rule)
+        let error = this.vaildate(target, rule)
         if (error) {
-          return xError(error, { arg, rule, index: i })
+          return xError(error, { target, rule, index: i, node: targets, type: this.name })
         }
       }
       
       return null
     }
 
-    if (isObject(rule) && isObject(arg)) {
+    if (isObject(rule) && isObject(target)) {
       let rules = rule
-      let args = arg
+      let targets = target
       let ruleKeys = Object.keys(rules).sort()
-      let argKeys = Object.keys(args).sort()
+      let targetKeys = Object.keys(targets).sort()
       
       if (this.mode === 'strict') {
         // properties should be absolutely same
-        for (let i = 0, len = argKeys.length; i < len; i ++) {
-          let argKey = argKeys[i]
-          // args has key beyond rules
-          if (!inArray(argKey, ruleKeys)) {
-            let message = criticize('type.strict.object.key', {
-              arg,
-              argKey,
-              ruleKeys,
-              object: args,
-            })
-            let error = new TypeError(message)
-            return xError(error, { arg, rule, key: argKey })
+        for (let i = 0, len = targetKeys.length; i < len; i ++) {
+          let key = targetKeys[i]
+          // targets has key beyond rules
+          if (!inArray(key, ruleKeys)) {
+            return new HelloTypeError('type.strict.object.key.overflow', { target, rule, key, ruleKeys, node: targets, type: this.name })
           }
         }
       }
 
       for (let i = 0, len = ruleKeys.length; i < len; i ++) {
-        let ruleKey = ruleKeys[i]
-        let rule = rules[ruleKey]
-        let argKey = ruleKey
-        let arg = args[argKey]
+        let key = ruleKeys[i]
+        let rule = rules[key]
+        let target = targets[key]
 
-        // not found some key in arg
+        // not found some key in target
         // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
-        if (!inArray(ruleKey, argKeys)) {
+        if (!inArray(key, targetKeys)) {
           // IfExists:
           if (isInstanceOf(rule, Rule) && this.mode !== 'strict') {
-            let error = rule.vaildate(arg)
+            let error = rule.vaildate(target)
             if (!error) {
               continue
             }
           }
 
-          let message = criticize('type.object.key', {
-            arg,
-            ruleKey,
-            ruleKeys: ruleKeys,
-            object: args,
-          })
-          let error = new TypeError(message)
-          return xError(error, { arg, rule, key: ruleKey })
+          return new HelloTypeError('type.object.key.missing', { target, rule, key, ruleKeys, node: targets, type: this.name })
         }
 
         if (isInstanceOf(rule, Rule)) {
-          let error = rule.vaildate(arg)
+          let error = rule.vaildate(target)
           
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            arg = rule.override(error, args, argKey) || args[argKey]
-            error = rule.vaildate(arg)
+            target = rule.override(error, targets, key) || targets[key]
+            error = rule.vaildate(target)
           }
 
           if (error) {
-            return xError(error, { arg, rule, key: argKey })
+            return xError(error, { target, rule, key, type: this.name })
           }
           else {
             continue
@@ -314,9 +256,9 @@ export default class Type {
         }
         
         // normal vaildate
-        let error = this.vaildate(arg, rule)
+        let error = this.vaildate(target, rule)
         if (error) {
-          return xError(error, { arg, rule, key: argKey })
+          return xError(error, { target, rule, key, type: this.name })
         }
       }
 
@@ -325,13 +267,13 @@ export default class Type {
 
     // is the given value, rule should not be an object/instance
     // i.e. (new Type('name')).assert('name')
-    if (!isInstanceOf(rule, Object) && arg === rule) {
+    if (!isInstanceOf(rule, Object) && target === rule) {
       return null
     }
 
     // instance of a class
     // i.e. (new Type(Person)).assert(person)
-    if (isConstructor(rule) && isInstanceOf(arg, rule)) {
+    if (isConstructor(rule) && isInstanceOf(target, rule)) {
       return null
     }
 
@@ -342,66 +284,57 @@ export default class Type {
       if (this.mode === 'strict') {
         rule = rule.strict
       }
-      let error = rule.catch(arg)
+      let error = rule.catch(target)
       if (error) {
-        return xError(error, { arg, rule })
+        return xError(error, { target, rule, type: this.name })
       }
 
       return null
     }
 
-    let message = criticize('type', {
-      arg,
-    })
-    let error = new TypeError(message)
-    return xError(error, { arg, rule })
+    return new HelloTypeError('type', { target, rule, type: this.name })
   }
-  assert(...args) {
-    if (args.length !== this.rules.length) {
-      let message = criticize('type.arguments.length', {
-        args,
-        name: this.toString(),
-        length: this.rules.length,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, rules })
+  assert(...targets) {
+    let rules = this.rules
+
+    if (targets.length !== rules.length) {
+      throw new HelloTypeError('type.arguments.length', { target: targets, type: this.name, ruleLength: this.rules.length, rules })
     }
 
-    let rules = this.rules
-    for (let i = 0, len = args.length; i < len; i ++) {
-      let arg = args[i]
+    for (let i = 0, len = targets.length; i < len; i ++) {
+      let target = targets[i]
       let rule = rules[i]
-      let error = this.vaildate(arg, rule)
+      let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { arg, rule, index: i, args, rules })
+        throw xError(error, { target, rule, type: this.name })
       }
     }
   }
-  catch(...args) {
+  catch(...targets) {
     try {
-      this.assert(...args)
+      this.assert(...targets)
       return null
     }
     catch(error) {
       return error
     }
   }
-  test(...args) {
-    let error = this.catch(...args)
+  test(...targets) {
+    let error = this.catch(...targets)
     return !error
   }
 
   /**
-   * track args with type sync
-   * @param {*} args 
+   * track targets with type sync
+   * @param {*} targets 
    */
-  track(...args) {
-    let error = this.catch(...args)
+  track(...targets) {
+    let error = this.catch(...targets)
     let defer = Promise.resolve(error)
     return {
       with: (fn) => defer.then((error) => {
         if (error && isFunction(fn)) {
-          fn(error, args, this)
+          fn(error, targets, this)
         }
         return error
       }),
@@ -409,22 +342,22 @@ export default class Type {
   }
 
   /**
-   * track args with type async
-   * @param {*} args 
+   * track targets with type async
+   * @param {*} targets 
    * @example
-   * SomeType.trace(arg).with((error, [arg], type) => { ... })
+   * SomeType.trace(target).with((error, [target], type) => { ... })
    */
-  trace(...args) {
+  trace(...targets) {
     let defer = new Promise((resolve) => {
       Promise.resolve().then(() => {
-        let error = this.catch(...args)
+        let error = this.catch(...targets)
         resolve(error)
       })
     })
     return {
       with: (fn) => defer.then((error) => {
         if (error && isFunction(fn)) {
-          fn(error, args, this)
+          fn(error, targets, this)
         }
         return error
       }),
@@ -437,7 +370,14 @@ export default class Type {
   }
   get strict() {
     let ins = new Type(...this.patterns)
-    return ins.toBeStrict()
+    ins.toBeStrict()
+
+    let keys = Object.keys(this)
+    keys.forEach((key) => {
+      ins[key] = this[key]
+    })
+
+    return ins
   }
   get Strict() {
     return this.strict
@@ -445,6 +385,6 @@ export default class Type {
 
   // use name when convert to string
   toString() {
-    return this.name || 'Type'
+    return this.name
   }
 }

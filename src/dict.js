@@ -1,6 +1,6 @@
 import Type from './type'
-import { isObject, xError } from './utils'
-import { criticize } from './messages'
+import { isObject } from './utils'
+import { HelloTypeError, xError } from './error'
 
 export default function Dict(pattern) {
   // if pattern is not an object, it treated undefined
@@ -10,32 +10,22 @@ export default function Dict(pattern) {
 
   const DictType = new Type(pattern)
   DictType.name = 'Dict'
-  DictType.assert = function(...args) {
-    if (args.length !== 1) {
-      let message = criticize('dict.arguments.length', { 
-        args, 
-        name: this.toString(),
-        length: 1,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, type: this.name })
+  DictType.assert = function(...targets) {
+    if (targets.length !== 1) {
+      throw new HelloTypeError('dict.arguments.length', { target: targets, type: this.name, ruleLength: 1, targetLength: targets.length })
     }
 
-    let arg = args[0]
-    if (!isObject(arg)) {
-      let message = criticize('dict.object', { 
-        arg, 
-        name: this.toString(),
-      })
-      let error = new TypeError(message)
-      throw xError(error, { arg, type: this.name })
+    let target = targets[0]
+    if (!isObject(target)) {
+      throw new HelloTypeError('dict.object', { target, type: this.name })
     }
 
     let rule = this.rules[0]
-    let error = this.vaildate(arg, rule)
+    let error = this.vaildate(target, rule)
     if (error) {
-      throw xError(error, { arg, rule, type: this.name })
+      throw xError(error, { target, rule, type: this.name })
     }
   }
+
   return DictType
 }

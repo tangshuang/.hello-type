@@ -1,11 +1,12 @@
 {
   "name": "hello-type",
-  "version": "2.12.5",
+  "version": "2.13.2",
   "description": "An ECMAScript data type check library",
   "main": "dist/hello-type.js",
   "scripts": {
     "prepublishOnly": "npm run test && npm run build",
     "build": "webpack",
+    "watch": "webpack --watch",
     "test": "jest"
   },
   "repository": {

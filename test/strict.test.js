@@ -43,7 +43,7 @@ describe('strict mode', () => {
   })
   test('toBeStrict', () => {
     const SomeType = new Type(Number)
-    expect(SomeType).toEqual(SomeType.toBeStrict())
-    expect(SomeType).not.toEqual(SomeType.Strict)
+    expect(SomeType).toBe(SomeType.toBeStrict())
+    expect(SomeType).not.toBe(SomeType.Strict)
   })
 })

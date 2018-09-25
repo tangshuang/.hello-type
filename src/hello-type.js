@@ -11,9 +11,9 @@ export {
   Validate,
 } from './rule'
 
-import { decorate, isInstanceOf, isObject, inObject, xError, clone, inArray, isFunction } from './utils'
+import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils'
 import Type from './type'
-import { messages, criticize } from './messages'
+import { xError, HelloTypeError } from './error'
 
 const HelloTypeListeners = []
 
@@ -22,7 +22,7 @@ export const HelloType = {
    * assert
    * @param {Type} type 
    * @example
-   * HelloType.expect(arg).to.match(SomeType)
+   * HelloType.expect(target).to.match(SomeType)
    */
   expect: (...targets) => ({
     to: {
@@ -79,7 +79,12 @@ export const HelloType = {
         return error
       })
       return {
-        with: (fn) => defer.then(fn),
+        with: (fn) => defer.then((error) => {
+          if (error && isFunction(fn)) {
+            fn(error, targets, type)
+          }
+          return error
+        }),
       }
     },
   }),
@@ -91,7 +96,12 @@ export const HelloType = {
         return error
       })
       return {
-        with: (fn) => defer.then(fn),
+        with: (fn) => defer.then((error) => {
+          if (error && isFunction(fn)) {
+            fn(error, targets, type)
+          }
+          return error
+        }),
       }
     },
   }),
@@ -100,7 +110,7 @@ export const HelloType = {
    * determine whether type match
    * @param {Type} type 
    * @example
-   * let bool = HelloType.is(SomeType).typeof(arg)
+   * let bool = HelloType.is(SomeType).typeof(target)
    */
   is: (type) =>  ({
     typeof: (...targets) => {
@@ -117,7 +127,7 @@ export const HelloType = {
 
   /**
    * @example
-   * @HelloType.decorate.with((arg) => SomeType.assertf(arg))
+   * @HelloType.decorate.with((target) => SomeType.assertf(target))
    */
   decorate: {
     input: {
@@ -208,22 +218,14 @@ export const HelloType = {
       }
 
       if (!isObject(target)) {
-        let message = criticize('hello.define.target.object', {
-          target,
-        })
-        let error = new TypeError(message)
-        let e = xError(error, { target, type })
-        HelloType.throwError(e)
+        let error = new HelloTypeError('hello.define.target.object', { target, type })
+        HelloType.throwError(error)
       }
 
       let rule = getRule(type)
       if (!isObject(rule)) {
-        let message = criticize('hello.define.rule.object', {
-          rule,
-        })
-        let error = new TypeError(message)
-        let e = xError(error, { obj, prop, value, rule, type, target, action: 'define.by' })
-        HelloType.throwError(e)
+        let error = new HelloTypeError('hello.define.rule.object', { target, type, rule })
+        HelloType.throwError(error)
       }
 
       function xclone(origin, rule) {
@@ -246,13 +248,17 @@ export const HelloType = {
             }
             // if original prop value is not an object but should be an object called by rule
             else {
-              let message = criticize('hello.define.property.object', {
-                prop: key,
-                value: propValue,
+              let error = new HelloTypeError('hello.define.property.object', { 
+                target,
+                type,
+                origin, 
+                rule, 
+                prop: key, 
+                value: propValue, 
+                propRule, 
+                action: 'define.by',
               })
-              let error = new TypeError(message)
-              let e = xError(error, { origin, rule, key, propValue, propRule, type, target, action: 'define.by' })
-              HelloType.throwError(e)
+              HelloType.throwError(error)
 
               result[key] = propValue
             }
@@ -337,9 +343,6 @@ export const HelloType = {
       return proxy
     },
   }),
-  messages(obj) {
-    Object.assign(messages, obj)
-  },
 }
 
 export default HelloType

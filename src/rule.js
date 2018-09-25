@@ -1,6 +1,6 @@
 import Type from './type'
-import { isFunction, xError, isInstanceOf } from './utils'
-import { criticize } from './messages'
+import { isFunction, isInstanceOf } from './utils'
+import { xError, HelloTypeError } from './error'
 
 export default class Rule {
   constructor(...args) {
@@ -24,24 +24,8 @@ export default class Rule {
   }
 }
 
-export const Null = new Rule('Null', (value) => {
-  if (value !== null) {
-    let message = criticize('rule.null', {
-      arg: value,
-    })
-    let error = new TypeError(message)
-    return xError(error, { value, name: 'Null' })
-  }
-})
-export const Undefined = new Rule('Undefined', (value) => {
-  if (value !== undefined) {
-    let message = criticize('rule.undefined', {
-      arg: value,
-    })
-    let error = new TypeError(message)
-    return xError(error, { value, name: 'Undefined' })
-  }
-})
+export const Null = new Rule('Null', value => value !== null ? new HelloTypeError('rule.null', { target: value, type: this.name }) : null)
+export const Undefined = new Rule('Undefined', value => value !== undefined ? new HelloTypeError('rule.undefined', { target: value, type: this.name }): null)
 export const Any = new Rule('Any', () => null)
 
 /**
@@ -54,8 +38,7 @@ export function Validate(rule, message) {
     return new Rule('Verify', function(value) {
       if (!rule(value)) {
         let msg = isFunction(message) ? message(value) : message
-        let error = new TypeError(msg)
-        return xError(error, { value, rule, name: 'Verify' })
+        return new HelloTypeError(msg, { target: value, rule, type: this.name })
       }
     })
   }
@@ -64,8 +47,7 @@ export function Validate(rule, message) {
     return new Rule('Verify', function(value) {
       if (!type.test(value)) {
         let msg = isFunction(message) ? message(value) : message
-        let error = new TypeError(msg)
-        return xError(error, { value, rule, name: 'Verify' })
+        return new HelloTypeError(msg, { target: value, rule, type: this.name })
       }
     })
   }
@@ -82,7 +64,7 @@ export const IfExists = function(rule) {
         return null
       }
       let error = rule.vaildate(value)
-      return xError(error, { value, rule, name: 'IfExists' })
+      return xError(error, { target: value, rule, type: this.name })
     })
   }
   
@@ -92,7 +74,7 @@ export const IfExists = function(rule) {
         return null
       }
       let error = rule.catch(value)
-      return xError(error, { value, rule, name: 'IfExists' })
+      return xError(error, { target: value, rule, type: this.name })
     })
   }
 
@@ -110,7 +92,7 @@ export const IfNotMatch = function(rule, defaultValue) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
-      return xError(error, { value, rule, name: 'IfNotMatch' })
+      return xError(error, { target: value, rule, type: this.name })
     }, function(error, target, prop) {
       if (error) {
         target[prop] = defaultValue
@@ -121,7 +103,7 @@ export const IfNotMatch = function(rule, defaultValue) {
   if (isInstanceOf(rule, Type)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.catch(value)
-      return xError(error, { value, rule, name: 'IfNotMatch' })
+      return xError(error, { target: value, rule, type: this.name })
     }, function(error, target, prop) {
       if (error) {
         target[prop] = defaultValue
@@ -143,12 +125,7 @@ export const InstanceOf = function(rule) {
       return null
     }
     else {
-      let message = criticize('rule.instanceof', {
-        arg: value,
-        rule: rule.name || 'unknow',
-      })
-      let error = new TypeError(message)
-      return xError(error, { value, rule, name: 'InstanceOf' })
+      return new HelloTypeError('rule.instanceof', { target: value, rule, type: this.name })
     }
   })
 }
@@ -163,12 +140,7 @@ export const Equal = function(rule) {
       return null
     }
     else {
-      let message = criticize('rule.equal', {
-        arg: value,
-        rule: rule.name || 'unknow',
-      })
-      let error = new TypeError(message)
-      return xError(error, { value, rule, name: 'Equal' })
+      return new HelloTypeError('rule.equal', { target: value, rule, type: this.name })
     }
   })
 }
@@ -176,11 +148,7 @@ export const Equal = function(rule) {
 export const Lambda = function(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
-      let message = criticize('rule.lambda.function', {
-        arg: value,
-      })
-      let error = new TypeError(message)
-      return xError(error, { value, name: 'Lambda' })
+      return new HelloTypeError('rule.lambda.function', { target: value, rule, type: this.name })
     }
   }, function(error, target, prop) {
     if (!error) {

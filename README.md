@@ -513,6 +513,10 @@ let MyRule = Validate(Number, value => `${value} is not a number.`)
 
 The `HelloType` is a set of methods to use type assertions more unified.
 
+```js
+import { HelloType } from 'hello-type'
+```
+
 ### expect.to.match
 
 ```js
@@ -654,14 +658,36 @@ It is only works for object/sub-objects, not for any array/sub-arrays:
 obj.books[0].name = null // without any effects
 ```
 
-### messages
+## HelloTypeError
 
-Use `messages` method to replace the default message text. Look into [message.js](./src/message.js) to find out which to replace.
+Advance TypeError which has `addtrace` method.
 
 ```js
-HelloType.messages({
-  'enum': '{args}不符合枚举类型{name}({rules})，请从枚举列表中选择。',
-  'type.Object': '{arg}的类型不是Object.',
+import { HelloTypeError } from 'hello-type'
+```
+
+- @param key/message
+- @param params
+
+```js
+let error = new HelloTypeError('{arg} is not good.', { arg: 'tomy' })
+error.addtrace({ arg: 'lily' })
+console.log(error.message) // 'lily is not good.'
+```
+
+Use `messages` to replace the default message text. Look into [error.js](./src/error.js) to find out which to replace.
+
+```js
+HelloTypeError.messages.enum = '{target}不符合枚举类型{type}({rules})，请从枚举列表中选择。'
+```
+
+When you create your own rule, you should return an instance of HellTypeError:
+
+```js
+const MyRule = new Rule(function(value) {
+  if (value !== 'tomy') {
+    return new HelloTypeError('{target} is not "tomy"', { target: value })
+  }
 })
 ```
 

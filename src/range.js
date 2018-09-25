@@ -1,6 +1,6 @@
 import Type from './type'
-import { isNumber, xError } from './utils'
-import { criticize } from './messages'
+import { isNumber } from './utils'
+import { HelloTypeError } from './error'
 
 export default function Range(min, max) {
   if (!isNumber(min)) {
@@ -16,40 +16,22 @@ export default function Range(min, max) {
 
   const RangeType = new Type(min, max)
   RangeType.name = 'Range'
-  RangeType.assert = function(...args) {
-    if (args.length !== 1) {
-      let message = criticize('range.arguments.length', {
-        args,
-        name: this.toString(),
-        length: 1,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, type: this.name })
+  RangeType.assert = function(...targets) {
+    if (targets.length !== 1) {
+      throw new HelloTypeError('range.arguments.length', { target: targets, type: this.name, targetLength: targets.length, ruleLength: 1 })
     }
 
-    let arg = args[0]
-    if (!isNumber(arg)) {
-      let message = criticize('range.number', {
-        arg,
-        name: this.toString(),
-      })
-      let error = new TypeError(message)
-      throw xError(error, { arg, type: this.name })
+    let target = targets[0]
+    if (!isNumber(target)) {
+      throw new HelloTypeError('range.number', { target, type: this.name })
     }
 
     let [min, max] = this.patterns
-    if (arg >= min && arg <= max) {
+    if (target >= min && target <= max) {
       return
     }
     
-    let message = criticize('range', {
-      arg,
-      name: this.toString(),
-      min,
-      max,
-    })
-    let error = new TypeError(message)
-    throw xError(error, { arg, rule: [min, max], type: this.name })
+    throw new HelloTypeError('range', { target, type: this.name, rule: [min, max], min, max })
   }
   return RangeType
 }

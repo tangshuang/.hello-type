@@ -1,21 +1,21 @@
 import Type from './type'
-import { xError, isInstanceOf } from './utils'
-import { criticize } from './messages'
+import { isInstanceOf } from './utils'
+import { HelloTypeError } from './error'
 
 export default function Enum(...patterns) {
   const EnumType = new Type(...patterns)
   EnumType.name = 'Enum'
-  EnumType.assert = function(...args) {
+  EnumType.assert = function(...targets) {
     let rules = this.rules
     for (let i = 0, len = rules.length; i < len; i ++) {
       let rule = rules[i]
       let match
       if (isInstanceOf(rule, Type)) {
-        match = rule.test(...args)
+        match = rule.test(...targets)
       }
       else {
         let type = new Type(rule)
-        match = type.test(...args)
+        match = type.test(...targets)
       }
 
       // if there is one match, break the loop
@@ -24,13 +24,7 @@ export default function Enum(...patterns) {
       }
     }
     
-    let message = criticize('enum', { 
-      args, 
-      name: this.toString(), 
-      rules,
-    })
-    let error = new TypeError(message)
-    throw xError(error, { args, rules, type: this.name })
+    throw new HelloTypeError('enum', { target: targets, rule: rules, type: this.name })
   }
   return EnumType
 }

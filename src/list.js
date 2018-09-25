@@ -1,6 +1,6 @@
 import Type from './type'
-import { isArray, xError } from './utils'
-import { criticize } from './messages'
+import { isArray } from './utils'
+import { xError, HelloTypeError } from './error'
 
 export default function List(pattern) {
   // if pattern is not an array, it treated undefined
@@ -10,31 +10,20 @@ export default function List(pattern) {
 
   const ListType = new Type(pattern)
   ListType.name = 'List'
-  ListType.assert = function(...args) {
-    if (args.length !== 1) {
-      let message = criticize('list.arguments.length', { 
-        args,
-        name: this.toString(),
-        length: 1,
-      })
-      let error = new TypeError(message)
-      throw xError(error, { args, type: this.name })
+  ListType.assert = function(...targets) {
+    if (targets.length !== 1) {
+      throw new HelloTypeError('list.arguments.length', { target: targets, type: this.name, ruleLength: 1, targetLength: targets.length })
     }
 
-    let arg = args[0]
-    if (!isArray(arg)) {
-      let message = criticize('list.array', {
-        arg,
-        name: this.toString(),
-      })
-      let error = new TypeError(message)
-      throw xError(error, { arg, type: this.name })
+    let target = targets[0]
+    if (!isArray(target)) {
+      throw new HelloTypeError('list.array', { target, type: this.name })
     }
 
     let rule = this.rules[0]
-    let error = this.vaildate(arg, rule)
+    let error = this.vaildate(target, rule)
     if (error) {
-      throw xError(error, { arg, rule, type: this.name })
+      throw xError(error, { target, rule, type: this.name })
     }
   }
   return ListType
