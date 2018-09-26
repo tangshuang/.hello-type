@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+
+<script src="../dist/hello-type.js"></script>
+<script>
+const { HelloType, Dict } = window['hello-type']
+const SomeType = Dict({
+  name: String,
+  age: Number,
+})
+const some = {
+  name: 'tomy',
+  age: '10',
+}
+HelloType.trace(some).by(SomeType).with(error => {
+  console.log(error.message)
+})
+</script>
