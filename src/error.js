@@ -1,39 +1,39 @@
-import { inObject, stringify, isInstanceOf } from './utils'
+import { inObject, stringify, isInstanceOf, inArray } from './utils'
 
 export const messages = {
-  'dict.arguments.length': '(...{target}) does not match {type}, arguments length should be {ruleLength}.',
-  'dict.object': '{keyPath} of {target} which should be an object does not match {type}.',
-  'enum': '{keyPath} of {target} does not match {type}({rules}).',
-  'hello.define.target.object': '{target} should be an object as an argument',
+  'dict.arguments.length': '{keyPath} does not match {type}, length should be {ruleLength}, but receive {targetLength}.',
+  'dict.object': '{keyPath} should be an object, which does not match {type}.',
+  'enum': '{keyPath} does not match {should}({rules}).',
+  'hello.define.target.object': 'argument should be an object',
   'hello.define.rule.object': '{rule} should be an object as a rule',
   'hello.define.property.object': '{prop} property should be an object, but receive {value}.',
-  'list.arguments.length': '(...{target}) does not match {type}, arguments length should be {length}.',
-  'list.array': '{keyPath} of {target} which should be an array does not match {type}.',
-  'range.arguments.length': '(...{target}) does not match {type}, arguments length should be {length}.',
-  'range.number': '{keyPath} of {target} is not a number for {type}.',
-  'range': '{keyPath} of {target} does not match {type}({min}, {max}).',
-  'rule.equal': '{keyPath} of {target} does not equal {rule}.',
-  'rule.instanceof': '{keyPath} of {target} is not an instance of {rule}.',
-  'rule.lambda.function': '{keyPath} of {target} should be a function.',
-  'rule.null': '{keyPath} of {target} should be null.',
-  'rule.undefined': '{keyPath} of {target} should be undefined.',
-  'tuple.arguments.length': '(...{target}) does not match {type}, arguments length should be {length}.',
-  'tuple.strict.arguments.length': '(...{target}) does not match {type}  in strict mode, arguments length should be {length}.',
-  'type.arguments.length': '(...{target}) does not match {type}, arguments length should be {length}.',
-  'type.Array': '{keyPath} of {target} does not match Array.',
-  'type.Boolean': '{keyPath} of {target} does not match Boolean.',
-  'type.Function': '{keyPath} of {target} does not match Function.',
-  'type.NaN': '{keyPath} of {target} does not match NaN.',
-  'type.Number': '{keyPath} of {target} does not match Number.',
-  'type.Object': '{keyPath} of {target} does not match Object.',
-  'type.object.key.missing': '{keyPath} is not in {target}',
-  'type.regexp.string': '{keyPath} of {target} is not a string which does not match RegExp instance.',
-  'type.regexp': '{keyPath} of {target} does not match RegExp instance.',
-  'type.String': '{keyPath} of {target} does not match String.',
-  'type.Symbol': '{keyPath} of {target} does not match Symbol.',
+  'list.arguments.length': '{keyPath} does not match {type}, length should be {length}, but receive {targetLength}.',
+  'list.array': '{keyPath} does not match {type} which should be an array.',
+  'range.arguments.length': '{keyPath} does not match {type}, length should be {length}, but receive {targetLength}.',
+  'range.number': '{keyPath} should be a number for {type}, but receive {value}.',
+  'range': '{keyPath} is {value} which does not match {type}({min}, {max}).',
+  'rule.equal': '{keyPath} does not equal {should}.',
+  'rule.instanceof': '{keyPath} is not an instance of {should}.',
+  'rule.lambda.function': '{keyPath} should be a function, but receive {value}.',
+  'rule.null': '{keyPath} should be null, but receive {value}.',
+  'rule.undefined': '{keyPath} should be undefined, but receive {value}.',
+  'tuple.arguments.length': '{keyPath} does not match {type}, length should be {ruleLength}, but receive {targetLength}.',
+  'tuple.strict.arguments.length': '{keyPath} does not match {type} in strict mode, length should be {ruleLength}, but receive {targetLength}.',
+  'type.arguments.length': '{keyPath} does not match {type}, length should be {ruleLength}, but receive {targetLength}.',
+  'type.Array': '{keyPath} should be an Array, but receive {value}.',
+  'type.Boolean': '{keyPath} should be a Boolean, but receive {value}.',
+  'type.Function': '{keyPath} should be a Function, but receive {value}.',
+  'type.NaN': '{keyPath} should be a NaN, but receive {value}.',
+  'type.Number': '{keyPath} should be a Number, but receive {value}.',
+  'type.Object': '{keyPath} should be a Object, but receive {value}.',
+  'type.object.key.missing': '{keyPath} does not exists.',
+  'type.regexp.string': '{keyPath} should be a string to match RegExp instance, but receive {value}.',
+  'type.regexp': '{keyPath} does not match RegExp instance {should}, receive {value}.',
+  'type.String': '{keyPath} should be a String, but receive {value}.',
+  'type.Symbol': '{keyPath} should be a Symbol, but receive {value}.',
   'type.strict.array.length': 'array at {keyPath} whose length should be {ruleLength} in strict mode, but receive {targetLength}.',
-  'type.strict.object.key.overflow': '{keyPath} should not be in {target}, only {ruleKeys} allowed in strict mode.',
-  'type': '{keyPath} of {target} does not match {type}.',
+  'type.strict.object.key.overflow': '{keyPath} should not exists, only {ruleKeys} allowed in strict mode.',
+  'type': '{keyPath} does not match {type}, receive {value}.',
 }
 export function mError(key, params) {
   let message = messages[key] || key
@@ -66,10 +66,10 @@ export function xError(error, params) {
 
     let trace = Object.assign({ stack, keyPath }, params)
     traces.unshift(trace)
-    
+
     return error
   }
-  
+
   return null
 }
 export class HelloTypeError extends TypeError {
@@ -87,14 +87,34 @@ export class HelloTypeError extends TypeError {
           let traces = this.traces
           let firstItem = traces[0]
           let lastItem = traces[traces.length - 1]
-          let keyPath = firstItem.keyPath
-          let stack = lastItem.stack
           let info = {}
+
           for (let i = traces.length - 1; i >= 0; i --) {
             let item = traces[i]
             Object.assign(info, item)
           }
-          Object.assign(info, { keyPath, stack })
+          delete info.key
+
+          let get = (rule) => {
+            let totype = typeof(rule)
+            if (inArray(totype, ['number', 'string', 'boolean', 'undefined']) || rule === null) {
+              return rule
+            }
+            else {
+              return rule.name
+            }
+          }
+          let summary = {
+            keyPath: firstItem.keyPath, // node keyPath
+            value: get(lastItem.target), // received node value
+            should: get(lastItem.rule), // node rule
+            stack: lastItem.stack,
+            rule: firstItem.rule,
+            target: firstItem.target,
+            type: firstItem.type,
+          }
+          Object.assign(info, summary)
+
           return info
         },
       },
