@@ -1,4 +1,4 @@
-import { inObject, stringify, isInstanceOf, inArray } from './utils'
+import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction } from './utils'
 
 export const messages = {
   'dict.arguments.length': '{keyPath} does not match {type}, length should be {ruleLength}, but receive {targetLength}.',
@@ -95,19 +95,41 @@ export class HelloTypeError extends TypeError {
           }
           delete info.key
 
-          let get = (rule) => {
+          let getValue = (value) => {
+            let totype = typeof(value)
+            if (inArray(totype, ['number', 'boolean', 'undefined']) || value === null) {
+              return value
+            }
+            else if (totype === 'string') {
+              return value.length > 16 ? value.substr(0, 16) + '...' : value
+            }
+            else if (isFunction(value)) {
+              return `function ${value.name}() { [code] }`
+            }
+            else if (isArray(value)) {
+              return `Array(${value.length})`
+            }
+            else if (isObject(value)) {
+              let keys = Object.keys(value)
+              return `Object { ${keys.join(', ')} }`
+            }
+            else {
+              return value.name ? value.name : value.constructor ? value.constructor.name : value.toString()
+            }
+          }
+          let getName = (rule) => {
             let totype = typeof(rule)
-            if (inArray(totype, ['number', 'string', 'boolean', 'undefined']) || rule === null) {
+            if (inArray(totype, ['number', 'boolean', 'undefined', 'string']) || rule === null) {
               return rule
             }
             else {
-              return rule.name
+              return rule.name ? rule.name : rule.constructor ? rule.constructor.name : rule.toString()
             }
           }
           let summary = {
             keyPath: firstItem.keyPath, // node keyPath
-            value: get(lastItem.target), // received node value
-            should: get(lastItem.rule), // node rule
+            value: getValue(lastItem.target), // received node value
+            should: getName(lastItem.rule || lastItem.type), // node rule
             stack: lastItem.stack,
             rule: firstItem.rule,
             target: firstItem.target,
