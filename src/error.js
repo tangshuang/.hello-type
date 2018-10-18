@@ -76,9 +76,6 @@ export class HelloTypeError extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {
-      key: {
-        value: key,
-      },
       traces: {
         value: [],
       },
@@ -142,8 +139,7 @@ export class HelloTypeError extends TypeError {
       },
       message: {
         get() {
-          let info = this.summary
-          let message = mError(key, info)
+          let message = mError(key, this.summary)
           return message
         },
       },
@@ -154,8 +150,12 @@ export class HelloTypeError extends TypeError {
         },
       },
       translate: {
-        value: function(message) {
-          return mError(message, this.summary)
+        value: function(text, replace) {
+          if (replace) {
+            // after this, error.message will get new text
+            key = text
+          }
+          return mError(text, this.summary)
         }
       },
     })
