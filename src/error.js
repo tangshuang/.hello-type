@@ -87,7 +87,6 @@ export class HelloTypeError extends TypeError {
           let getValue = (value) => {
             let totype = typeof(value)
             if (inArray(totype, ['number', 'boolean', 'undefined']) || value === null || isNaN(value)) {
-              console.log(value, totype, inArray(totype, ['number', 'boolean', 'undefined']), value === null, isNaN(value))
               return value
             }
             else if (totype === 'string') {
