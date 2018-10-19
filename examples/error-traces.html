@@ -8,21 +8,21 @@ const SomeType = Dict({
   age: Number,
   ab: [
     {
-      duck: 'tom',
+      duck: Object,
     },
   ],
 })
 const some = {
+  name: 'tomy',
   ab: [
     {
       chik: 'jude',
     },
   ],
 }
-HelloType.trace(some).by(SomeType.Strict).with(error => {
-  // console.log(error.message + '\n' + error.summary.stack)
-  // console.log(error.translate('{keyPath}'))
-  error.stack = error.summary.stack
-  throw error
+HelloType.trace(some).by(SomeType.Strict).with((error) => {
+  console.log(error.message)
+  console.log(error.traces)
+  console.log(error.summary)
 })
 </script>

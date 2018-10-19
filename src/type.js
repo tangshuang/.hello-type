@@ -2,8 +2,8 @@ import Rule, { Any } from './rule'
 import Dict from './dict'
 import List from './list'
 import Enum from './enum'
-import { 
-  isArray, inArray, isBoolean, isNumber, isObject, 
+import {
+  isArray, inArray, isBoolean, isNumber, isObject, isNaN,
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   toShallowObject,
   defineProperty,
@@ -37,7 +37,7 @@ export default class Type {
   /**
    * vaildate whether the argument match the rule
    * @param {*} target
-   * @param {*} rule 
+   * @param {*} rule
    */
   vaildate(target, rule) {
     // custom rule
@@ -90,7 +90,7 @@ export default class Type {
         return new HelloTypeError('type.String', { target, rule, type: this.name })
       }
     }
-    
+
     // regexp
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
@@ -159,7 +159,7 @@ export default class Type {
           return new HelloTypeError('type.strict.array.length', { target, rule, ruleLength, targetLength, type: this.name })
         }
       }
-      
+
       // if arguments.length is bigger than rules.length, use Enum to match left items
       let clonedRules = [].concat(rules)
       if (targetLength > ruleLength) {
@@ -175,7 +175,7 @@ export default class Type {
 
         if (isInstanceOf(rule, Rule)) {
           let error = rule.vaildate(target)
-          
+
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
@@ -190,14 +190,14 @@ export default class Type {
             continue
           }
         }
-        
+
         // normal vaildate
         let error = this.vaildate(target, rule)
         if (error) {
           return xError(error, { target, rule, index: i, node: targets, type: this.name })
         }
       }
-      
+
       return null
     }
 
@@ -206,7 +206,7 @@ export default class Type {
       let targets = target
       let ruleKeys = Object.keys(rules).sort()
       let targetKeys = Object.keys(targets).sort()
-      
+
       if (this.mode === 'strict') {
         // properties should be absolutely same
         for (let i = 0, len = targetKeys.length; i < len; i ++) {
@@ -239,7 +239,7 @@ export default class Type {
 
         if (isInstanceOf(rule, Rule)) {
           let error = rule.vaildate(target)
-          
+
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
@@ -254,7 +254,7 @@ export default class Type {
             continue
           }
         }
-        
+
         // normal vaildate
         let error = this.vaildate(target, rule)
         if (error) {
@@ -326,7 +326,7 @@ export default class Type {
 
   /**
    * track targets with type sync
-   * @param {*} targets 
+   * @param {*} targets
    */
   track(...targets) {
     let error = this.catch(...targets)
@@ -343,7 +343,7 @@ export default class Type {
 
   /**
    * track targets with type async
-   * @param {*} targets 
+   * @param {*} targets
    * @example
    * SomeType.trace(target).with((error, [target], type) => { ... })
    */

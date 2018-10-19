@@ -37,8 +37,12 @@ export function inObject(key, obj) {
   return inArray(key, Object.keys(obj))
 }
 
+export function isNaN(value) {
+  return typeof value === 'number' && Number.isNaN(value)
+}
+
 export function isEmpty(obj) {
-  return Object.keys(obj).length === 0
+  return object === null || obj === undefined || Object.keys(obj).length === 0
 }
 
 export function isConstructor(f) {
@@ -113,7 +117,7 @@ export function decorate(factory, method = 'input') {
         }
         descriptor.value = value
       }
-      
+
       // method
       let property = descriptor.value
       if (typeof property === 'function') {
