@@ -24,14 +24,22 @@ export default class Rule {
   }
 }
 
-export const Null = new Rule('Null', value => value !== null ? new HelloTypeError('rule.null', { target: value, type: this.name }) : null)
-export const Undefined = new Rule('Undefined', value => value !== undefined ? new HelloTypeError('rule.undefined', { target: value, type: this.name }): null)
+export const Null = new Rule('Null', function(value) {
+  if (value !== null) {
+    return new HelloTypeError('rule.null', { target: value, rule: this, type: this.name })
+  }
+})
+export const Undefined = new Rule('Undefined', function(value) {
+  if (value !== undefined) {
+    return new HelloTypeError('rule.undefined', { target: value, rule: this, type: this.name })
+  }
+})
 export const Any = new Rule('Any', () => null)
 
 /**
  * Verify a rule by using custom error message
- * @param {Rule|Function} rule 
- * @param {String|Function} message 
+ * @param {Rule|Function} rule
+ * @param {String|Function} message
  */
 export function Validate(rule, message) {
   if (isFunction(rule)) {
@@ -42,20 +50,32 @@ export function Validate(rule, message) {
       }
     })
   }
-  else {
-    let type = new Type(rule)
+
+  if (isInstanceOf(rule, Rule)) {
     return new Rule('Verify', function(value) {
-      if (!type.test(value)) {
+      if (rule.vaildate(value)) {
         let msg = isFunction(message) ? message(value) : message
         return new HelloTypeError(msg, { target: value, rule, type: this.name })
       }
     })
   }
+
+  if (isInstanceOf(rule, Type)) {
+    return new Rule('Verify', function(value) {
+      if (!rule.test(value)) {
+        let msg = isFunction(message) ? message(value) : message
+        return new HelloTypeError(msg, { target: value, rule, type: this.name })
+      }
+    })
+  }
+
+  let type = new Type(rule)
+  return Validate(type, message)
 }
 
 /**
  * If the value exists, use rule to vaildate. If not exists, ignore this rule.
- * @param {*} rule 
+ * @param {*} rule
  */
 export const IfExists = function(rule) {
   if (isInstanceOf(rule, Rule)) {
@@ -67,7 +87,7 @@ export const IfExists = function(rule) {
       return xError(error, { target: value, rule, type: this.name })
     })
   }
-  
+
   if (isInstanceOf(rule, Type)) {
     return new Rule('IfExists', function(value) {
       if (value === undefined) {
@@ -78,41 +98,41 @@ export const IfExists = function(rule) {
     })
   }
 
-  rule = new Type(rule)
-  return IfExists(rule)
+  let type = new Type(rule)
+  return IfExists(type)
 }
 
 /**
  * If the value not match rule, use defaultValue as value.
  * Notice, this will modify original data, which may cause error, so be careful.
- * @param {*} rule 
- * @param {*} defaultValue 
+ * @param {*} rule
+ * @param {*} defaultValue
  */
 export const IfNotMatch = function(rule, defaultValue) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
       return xError(error, { target: value, rule, type: this.name })
-    }, function(error, target, prop) {
-      if (error) {
-        target[prop] = defaultValue
-      }
-    })
-  }
-  
-  if (isInstanceOf(rule, Type)) {
-    return new Rule('IfNotMatch', function(value) {
-      let error = rule.catch(value)
-      return xError(error, { target: value, rule, type: this.name })
-    }, function(error, target, prop) {
+    }, function(error, prop, target) {
       if (error) {
         target[prop] = defaultValue
       }
     })
   }
 
-  rule = new Type(rule)
-  return IfNotMatch(rule, defaultValue)
+  if (isInstanceOf(rule, Type)) {
+    return new Rule('IfNotMatch', function(value) {
+      let error = rule.catch(value)
+      return xError(error, { target: value, rule, type: this.name })
+    }, function(error, prop, target) {
+      if (error) {
+        target[prop] = defaultValue
+      }
+    })
+  }
+
+  let type = new Type(rule)
+  return IfNotMatch(type, defaultValue)
 }
 
 /**
@@ -121,10 +141,7 @@ export const IfNotMatch = function(rule, defaultValue) {
  */
 export const InstanceOf = function(rule) {
   return new Rule('InstanceOf', function(value) {
-    if (isInstanceOf(value, rule) && isInstanceOf(value, rule, true)) {
-      return null
-    }
-    else {
+    if (!isInstanceOf(value, rule, true)) {
       return new HelloTypeError('rule.instanceof', { target: value, rule, type: this.name })
     }
   })
@@ -132,14 +149,11 @@ export const InstanceOf = function(rule) {
 
 /**
  * Whether the value is eqaul to the given value
- * @param {*} rule 
+ * @param {*} rule
  */
 export const Equal = function(rule) {
   return new Rule('Equal', function(value) {
-    if (value === rule) {
-      return null
-    }
-    else {
+    if (value !== rule) {
       return new HelloTypeError('rule.equal', { target: value, rule, type: this.name })
     }
   })
@@ -150,7 +164,7 @@ export const Lambda = function(InputRule, OutputRule) {
     if (!isFunction(value)) {
       return new HelloTypeError('rule.lambda.function', { target: value, rule, type: this.name })
     }
-  }, function(error, target, prop) {
+  }, function(error, prop, target) {
     if (!error) {
       let fn = target[prop].bind(target)
       let InputType = new Type(InputRule)

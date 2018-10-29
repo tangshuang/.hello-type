@@ -179,7 +179,7 @@ export default class Type {
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            target = rule.override(error, targets, i) || targets[i]
+            target = rule.override(error, i, targets) || targets[i]
             error = rule.vaildate(target)
           }
 
@@ -243,7 +243,7 @@ export default class Type {
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            target = rule.override(error, targets, key) || targets[key]
+            target = rule.override(error, key, targets) || targets[key]
             error = rule.vaildate(target)
           }
 

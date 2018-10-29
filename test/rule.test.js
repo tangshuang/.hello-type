@@ -59,11 +59,11 @@ describe('Rule', () => {
       num: InstanceOf(Number),
       str: InstanceOf(String),
     })
-    expect(() => { 
+    expect(() => {
       InstanceOfType.assert({
         num: new Number(4),
         str: new String('this is ok'),
-      }) 
+      })
     }).not.toThrowError()
   })
   test('Equal', () => {
@@ -71,10 +71,10 @@ describe('Rule', () => {
     const EqualType = new Type({
       name: Equal(name)
     })
-    expect(() => { 
+    expect(() => {
       EqualType.assert({
         name: name,
-      }) 
+      })
     }).not.toThrowError()
   })
   test('IfNotMatch', () => {
