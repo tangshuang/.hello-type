@@ -1,6 +1,7 @@
 module.exports = {
   mode: 'none',
   entry: __dirname + '/src/hello-type.js',
+  devtool: 'source-map',
   output: {
     path: __dirname + '/dist',
     filename: 'hello-type.js',

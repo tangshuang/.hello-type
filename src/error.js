@@ -21,6 +21,7 @@ export const messages = {
   'tuple.strict.arguments.length': '{keyPath} does not match {type} in strict mode, length should be {ruleLength}, but receive {targetLength}.',
   'type.arguments.length': '{keyPath} does not match {type}, length should be {ruleLength}, but receive {targetLength}.',
   'type.Array': '{keyPath} should be Array, but receive {value}.',
+  'type.array.length': '{keyPath} should be array of length greater than {ruleLength}, but recieve length {targetLength}.',
   'type.Boolean': '{keyPath} should be Boolean, but receive {value}.',
   'type.Function': '{keyPath} should be Function, but receive {value}.',
   'type.NaN': '{keyPath} should be NaN, but receive {value}.',
@@ -115,13 +116,23 @@ export class HelloTypeError extends TypeError {
               return rule.name ? rule.name : rule.constructor ? rule.constructor.name : rule.toString()
             }
           }
+          let temp
+          let researchPath = traces.map((item) => {
+            let sep = temp === undefined ? '' : (item.keyPath === temp ? '&' : '.')
+            temp = item.keyPath
+            return sep + getRule(item.rule || item.type)
+          })
           let summary = {
             value: getValue(info.target), // received node value
-            should: getRule(info.rule || info.type), // node rule
+            should: getRule(info.rule, info.type), // node rule
+            research: researchPath.join(''), // rule path
           }
-          Object.assign(info, summary)
+          let res = Object.assign({}, info, summary)
 
-          return info
+          delete res.type
+          delete res.rule
+
+          return res
         },
       },
       message: {

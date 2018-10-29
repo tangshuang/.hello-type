@@ -26,12 +26,12 @@ export default class Rule {
 
 export const Null = new Rule('Null', function(value) {
   if (value !== null) {
-    return new HelloTypeError('rule.null', { target: value, rule: this, type: this.name })
+    return new HelloTypeError('rule.null', { target: value, rule: this, type: this })
   }
 })
 export const Undefined = new Rule('Undefined', function(value) {
   if (value !== undefined) {
-    return new HelloTypeError('rule.undefined', { target: value, rule: this, type: this.name })
+    return new HelloTypeError('rule.undefined', { target: value, rule: this, type: this })
   }
 })
 export const Any = new Rule('Any', () => null)
@@ -46,7 +46,7 @@ export function Validate(rule, message) {
     return new Rule('Verify', function(value) {
       if (!rule(value)) {
         let msg = isFunction(message) ? message(value) : message
-        return new HelloTypeError(msg, { target: value, rule, type: this.name })
+        return new HelloTypeError(msg, { target: value, rule, type: this })
       }
     })
   }
@@ -55,7 +55,7 @@ export function Validate(rule, message) {
     return new Rule('Verify', function(value) {
       if (rule.vaildate(value)) {
         let msg = isFunction(message) ? message(value) : message
-        return new HelloTypeError(msg, { target: value, rule, type: this.name })
+        return new HelloTypeError(msg, { target: value, rule, type: this })
       }
     })
   }
@@ -64,7 +64,7 @@ export function Validate(rule, message) {
     return new Rule('Verify', function(value) {
       if (!rule.test(value)) {
         let msg = isFunction(message) ? message(value) : message
-        return new HelloTypeError(msg, { target: value, rule, type: this.name })
+        return new HelloTypeError(msg, { target: value, rule, type: this })
       }
     })
   }
@@ -78,14 +78,14 @@ export function Validate(rule, message) {
  * If not exists, ignore this rule.
  * @param {*} rule
  */
-export const IfExists = function(rule) {
+export function IfExists(rule) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfExists', function(value) {
       if (value === undefined) {
         return null
       }
       let error = rule.vaildate(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     })
   }
 
@@ -95,7 +95,7 @@ export const IfExists = function(rule) {
         return null
       }
       let error = rule.catch(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     })
   }
 
@@ -109,11 +109,11 @@ export const IfExists = function(rule) {
  * @param {*} rule
  * @param {*} defaultValue
  */
-export const IfNotMatch = function(rule, defaultValue) {
+export function IfNotMatch(rule, defaultValue) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
         target[prop] = defaultValue
@@ -124,7 +124,7 @@ export const IfNotMatch = function(rule, defaultValue) {
   if (isInstanceOf(rule, Type)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.catch(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
         target[prop] = defaultValue
@@ -142,14 +142,14 @@ export const IfNotMatch = function(rule, defaultValue) {
  * @param {*} rule
  * @param {*} defaultValue
  */
-export const IfExistsNotMatch = function(rule, defaultValue) {
+export function IfExistsNotMatch(rule, defaultValue) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfExistsNotMatch', function(value) {
       if (value === undefined) {
         return null
       }
       let error = rule.vaildate(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
         target[prop] = defaultValue
@@ -163,7 +163,7 @@ export const IfExistsNotMatch = function(rule, defaultValue) {
         return null
       }
       let error = rule.catch(value)
-      return xError(error, { target: value, rule, type: this.name })
+      return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
         target[prop] = defaultValue
@@ -179,10 +179,10 @@ export const IfExistsNotMatch = function(rule, defaultValue) {
  * Whether the value is an instance of given class
  * @param {*} rule should be a class constructor
  */
-export const InstanceOf = function(rule) {
+export function InstanceOf(rule) {
   return new Rule('InstanceOf', function(value) {
     if (!isInstanceOf(value, rule, true)) {
-      return new HelloTypeError('rule.instanceof', { target: value, rule, type: this.name })
+      return new HelloTypeError('rule.instanceof', { target: value, rule, type: this })
     }
   })
 }
@@ -191,18 +191,18 @@ export const InstanceOf = function(rule) {
  * Whether the value is eqaul to the given value
  * @param {*} rule
  */
-export const Equal = function(rule) {
+export function Equal(rule) {
   return new Rule('Equal', function(value) {
     if (value !== rule) {
-      return new HelloTypeError('rule.equal', { target: value, rule, type: this.name })
+      return new HelloTypeError('rule.equal', { target: value, rule, type: this })
     }
   })
 }
 
-export const Lambda = function(InputRule, OutputRule) {
+export function Lambda(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
-      return new HelloTypeError('rule.lambda.function', { target: value, rule, type: this.name })
+      return new HelloTypeError('rule.lambda.function', { target: value, rule, type: this })
     }
   }, function(error, prop, target) {
     if (!error) {

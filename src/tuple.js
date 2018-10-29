@@ -13,7 +13,7 @@ export default function Tuple(...patterns) {
     let minLen = ruleLength
 
     if (this.mode === 'strict' && targetLength !== ruleLength) {
-      throw new HelloTypeError('tuple.strict.arguments.length', { target: targets, type: this.name, ruleLength, targetLength })
+      throw new HelloTypeError('tuple.strict.arguments.length', { target: targets, type: this, ruleLength, targetLength })
     }
 
     for (let i = ruleLength - 1; i > -1; i --) {
@@ -27,15 +27,15 @@ export default function Tuple(...patterns) {
     }
 
     if (targetLength < minLen || targetLength > ruleLength) {
-      throw new HelloTypeError('tuple.arguments.length', { target: targets, type: this.name, ruleLength, targetLength, minLen })
+      throw new HelloTypeError('tuple.arguments.length', { target: targets, type: this, ruleLength, targetLength, minLen })
     }
-    
+
     for (let i = 0; i < targetLength; i ++) {
       let target = targets[i]
       let rule = rules[i]
       let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { target, rule, type: this.name })
+        throw xError(error, { target, rule, type: this })
       }
     }
   }

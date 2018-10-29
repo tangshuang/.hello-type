@@ -44,7 +44,7 @@ export default class Type {
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
       let error = rule.vaildate(target)
-      return xError(error, { target, rule, type: this.name })
+      return xError(error, { target, rule, type: this })
     }
 
     // NaN
@@ -54,7 +54,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.NaN', { target, rule, type: this.name })
+        return new HelloTypeError('type.NaN', { target, rule, type: this })
       }
     }
 
@@ -65,7 +65,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Number', { target, rule, type: this.name })
+        return new HelloTypeError('type.Number', { target, rule, type: this })
       }
     }
 
@@ -76,7 +76,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Boolean', { target, rule, type: this.name })
+        return new HelloTypeError('type.Boolean', { target, rule, type: this })
       }
     }
 
@@ -87,7 +87,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.String', { target, rule, type: this.name })
+        return new HelloTypeError('type.String', { target, rule, type: this })
       }
     }
 
@@ -95,13 +95,13 @@ export default class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(target)) {
-        return new HelloTypeError('type.regexp.string', { target, rule, type: this.name })
+        return new HelloTypeError('type.regexp.string', { target, rule, type: this })
       }
       if (rule.test(target)) {
         return null
       }
       else {
-        return new HelloTypeError('type.regexp', { target, rule, type: this.name })
+        return new HelloTypeError('type.regexp', { target, rule, type: this })
       }
     }
 
@@ -112,7 +112,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Function', { target, rule, type: this.name })
+        return new HelloTypeError('type.Function', { target, rule, type: this })
       }
     }
 
@@ -123,7 +123,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Array', { target, rule, type: this.name })
+        return new HelloTypeError('type.Array', { target, rule, type: this })
       }
     }
 
@@ -134,7 +134,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Object', { target, rule, type: this.name })
+        return new HelloTypeError('type.Object', { target, rule, type: this })
       }
     }
 
@@ -143,7 +143,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Symbol', { target, rule, type: this.name })
+        return new HelloTypeError('type.Symbol', { target, rule, type: this })
       }
     }
 
@@ -153,25 +153,18 @@ export default class Type {
       let ruleLength = rules.length
       let targetLength = targets.length
 
+      // array length should equal in strict mode
       if (this.mode === 'strict') {
-        // array length should equal in strict mode
         if (ruleLength !== targetLength) {
-          return new HelloTypeError('type.strict.array.length', { target, rule, ruleLength, targetLength, type: this.name })
+          return new HelloTypeError('type.strict.array.length', { target, rule, ruleLength, targetLength, type: this })
         }
       }
 
       // if arguments.length is bigger than rules.length, use Enum to match left items
-      let clonedRules = [].concat(rules)
-      if (targetLength > ruleLength) {
-        let ItemType = ruleLength > 1 ? Enum(...rules) : ruleLength ? rules[0] : Any
-        for (let i = ruleLength; i < targetLength; i ++) {
-          clonedRules.push(ItemType)
-        }
-      }
-
-      for (let i = 0; i < targetLength; i ++) {
+      let index = 0
+      for (let i = 0; i < ruleLength; i ++) {
         let target = targets[i]
-        let rule = clonedRules[i]
+        let rule = rules[i]
 
         if (isInstanceOf(rule, Rule)) {
           let error = rule.vaildate(target)
@@ -184,7 +177,7 @@ export default class Type {
           }
 
           if (error) {
-            return xError(error, { target, rule, index: i, node: targets, type: this.name })
+            return xError(error, { target, rule, index: i, items: targets, type: this })
           }
           else {
             continue
@@ -194,7 +187,21 @@ export default class Type {
         // normal vaildate
         let error = this.vaildate(target, rule)
         if (error) {
-          return xError(error, { target, rule, index: i, node: targets, type: this.name })
+          return xError(error, { target, rule, index: i, items: targets, type: this })
+        }
+
+        index = i
+      }
+      // if target length is greater than rule length
+      if (ruleLength && targetLength > ruleLength) {
+        let RestType = ruleLength > 1 ? Enum(...rules) : rules[0]
+        for (let i = index+1; i < targetLength; i ++) {
+          let target = targets[i]
+          // normal vaildate
+          let error = this.vaildate(target, RestType)
+          if (error) {
+            return xError(error, { target, rule: RestType, index: i, items: targets, type: this })
+          }
         }
       }
 
@@ -213,7 +220,7 @@ export default class Type {
           let key = targetKeys[i]
           // targets has key beyond rules
           if (!inArray(key, ruleKeys)) {
-            return new HelloTypeError('type.strict.object.key.overflow', { target, rule, key, ruleKeys, node: targets, type: this.name })
+            return new HelloTypeError('type.strict.object.key.overflow', { target, rule, key, ruleKeys, node: targets, type: this })
           }
         }
       }
@@ -242,7 +249,7 @@ export default class Type {
             }
           }
 
-          return new HelloTypeError('type.object.key.missing', { target, rule, key, ruleKeys, node: targets, type: this.name })
+          return new HelloTypeError('type.object.key.missing', { target, rule, key, ruleKeys, node: targets, type: this })
         }
 
         if (isInstanceOf(rule, Rule)) {
@@ -306,7 +313,7 @@ export default class Type {
     let rules = this.rules
 
     if (targets.length !== rules.length) {
-      throw new HelloTypeError('type.arguments.length', { target: targets, type: this.name, ruleLength: this.rules.length, rules })
+      throw new HelloTypeError('type.arguments.length', { target: targets, type: this, ruleLength: this.rules.length, rule: rules })
     }
 
     for (let i = 0, len = targets.length; i < len; i ++) {
@@ -314,7 +321,7 @@ export default class Type {
       let rule = rules[i]
       let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { target, rule, type: this.name })
+        throw xError(error, { target, rule, type: this })
       }
     }
   }

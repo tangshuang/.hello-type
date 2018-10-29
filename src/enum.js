@@ -23,8 +23,8 @@ export default function Enum(...patterns) {
         return
       }
     }
-    
-    throw new HelloTypeError('enum', { target: targets, rule: rules, type: this.name })
+
+    throw new HelloTypeError('enum', { target: targets, rule: rules, type: this })
   }
   return EnumType
 }

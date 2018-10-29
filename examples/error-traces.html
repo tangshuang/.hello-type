@@ -2,27 +2,39 @@
 
 <script src="../dist/hello-type.js"></script>
 <script>
-const { HelloType, Dict } = window['hello-type']
+const { HelloType, Dict, IfExists, Equal } = window['hello-type']
 const SomeType = Dict({
   name: String,
-  age: Number,
-  ab: [
-    {
-      duck: Object,
-    },
-  ],
+  test1: {
+    list: IfExists([
+      String,
+      Number,
+    ]),
+  }
+  // ab: IfExists([
+  //   {
+  //     chik: IfExists(Equal({ name: 'jude' })),
+  //   },
+  // ]),
 })
 const some = {
   name: 'tomy',
-  ab: [
-    {
-      chik: 'jude',
-    },
-  ],
+  test1: {
+    list: [
+      'null',
+      null
+    ],
+  },
+  // ab: [
+  //   {
+  //     chik: 'xima',
+  //   },
+  // ],
 }
-HelloType.trace(some).by(SomeType.Strict).with((error) => {
+HelloType.track(some).by(SomeType.Strict).with((error) => {
   console.log(error.message)
   console.log(error.traces)
   console.log(error.summary)
+  throw error
 })
 </script>
