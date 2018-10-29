@@ -229,6 +229,14 @@ export default class Type {
           // IfExists:
           if (isInstanceOf(rule, Rule) && this.mode !== 'strict') {
             let error = rule.vaildate(target)
+
+            // use rule to override property when not exists
+            // override value and check again
+            if (isFunction(rule.override)) {
+              target = rule.override(error, key, targets) || targets[key]
+              error = rule.vaildate(target)
+            }
+
             if (!error) {
               continue
             }

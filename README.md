@@ -432,6 +432,21 @@ SomeType.assert(some) // without any error
 
 Notice, this method will change your original data, so be careful when you use it.
 
+**IfExistsNotMatch()**
+
+If the property of object not exists, ignore this rule, if exists and not match, use default value to replace original object.
+
+```js
+const SomeType = Dict({
+  name: String,
+  age: IfExistsNotMatch(Number, 0),
+})
+
+SomeType.assert({ name: 'tomy' }) // whithout error, and no replacing
+
+SomeType.assert({ name: 'tomey', age: null }) // whithout error and `age` was set to be 0
+```
+
 **InstanceOf()**
 
 The value should be an instance of given class:

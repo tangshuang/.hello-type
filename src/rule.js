@@ -74,7 +74,8 @@ export function Validate(rule, message) {
 }
 
 /**
- * If the value exists, use rule to vaildate. If not exists, ignore this rule.
+ * If the value exists, use rule to vaildate.
+ * If not exists, ignore this rule.
  * @param {*} rule
  */
 export const IfExists = function(rule) {
@@ -133,6 +134,45 @@ export const IfNotMatch = function(rule, defaultValue) {
 
   let type = new Type(rule)
   return IfNotMatch(type, defaultValue)
+}
+
+/**
+ * If the value exists, and if the value not match rule, use defaultValue as value.
+ * If not exists, ignore this rule.
+ * @param {*} rule
+ * @param {*} defaultValue
+ */
+export const IfExistsNotMatch = function(rule, defaultValue) {
+  if (isInstanceOf(rule, Rule)) {
+    return new Rule('IfExistsNotMatch', function(value) {
+      if (value === undefined) {
+        return null
+      }
+      let error = rule.vaildate(value)
+      return xError(error, { target: value, rule, type: this.name })
+    }, function(error, prop, target) {
+      if (error) {
+        target[prop] = defaultValue
+      }
+    })
+  }
+
+  if (isInstanceOf(rule, Type)) {
+    return new Rule('IfExistsNotMatch', function(value) {
+      if (value === undefined) {
+        return null
+      }
+      let error = rule.catch(value)
+      return xError(error, { target: value, rule, type: this.name })
+    }, function(error, prop, target) {
+      if (error) {
+        target[prop] = defaultValue
+      }
+    })
+  }
+
+  let type = new Type(rule)
+  return IfExistsNotMatch(type, defaultValue)
 }
 
 /**

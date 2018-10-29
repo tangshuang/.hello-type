@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate } from '../src/rule'
+import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -82,17 +82,55 @@ describe('Rule', () => {
       name: String,
       age: IfNotMatch(Number, 0),
     })
+
+    // exists, but not match
     const obj = {
       name: 'tomy',
       age: null,
     }
     expect(() => { SomeType.assert(obj) }).not.toThrowError()
     expect(obj.age).toEqual(0)
+
+    // not exists
+    const obj2 = {
+      name: 'tomy',
+    }
+    expect(() => { SomeType.assert(obj2) }).not.toThrowError()
+    expect(obj2.age).toEqual(0)
   })
   test('Validate', () => {
     const SomeType = new Type(Validate(Number, 'It should be a number.'))
     let error = SomeType.catch('string')
     let message = error.message
     expect(message).toEqual('It should be a number.')
+  })
+  test('IfExistsNotMatch', () => {
+    const SomeType = new Type({
+      name: String,
+      age: IfExistsNotMatch(Number, 0),
+    })
+
+    // if not exists `age`
+    const some1 = {
+      name: 'tomy',
+    }
+    expect(SomeType.catch(some1)).toBeNull()
+    expect(some1.age).toBeUndefined()
+
+    // if exists age, but not match
+    const some2 = {
+      name: 'tomy',
+      age: null,
+    }
+    expect(SomeType.catch(some2)).toBeNull()
+    expect(some2.age).toBe(0)
+  })
+  test('nested rules', () => {
+    const SomeType = new Type({
+      name: String,
+      age: IfExists(Equal(10)),
+    })
+    expect(SomeType.catch({ name: 'tomy' })).toBeNull()
+    expect(() => SomeType.assert({ name: 'tomy', age: 2 })).toThrowError()
   })
 })
