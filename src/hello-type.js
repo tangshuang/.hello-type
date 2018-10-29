@@ -7,7 +7,8 @@ export { default as Range } from './range'
 export {
   default as Rule,
   Any, Null, Undefined,
-  IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
+  IfExists, IfNotMatch, IfExistsNotMatch,
+  Equal, InstanceOf, Lambda,
   Validate,
 } from './rule'
 
