@@ -231,7 +231,7 @@ An Object match any structure of object. However, a Dict match certain structure
 
 _What's the difference between Dict and new Type?_
 
-- _Dict_ receive only one parameter. 
+- _Dict_ receive only one parameter.
 - _Dict_ only receive object, _new Type_ receive any.
 - If you pass only one object into _new Type_, they are the same.
 
@@ -247,8 +247,8 @@ A list is an array in which each item has certain structure.
 const ListType = List([String, Number])
 ```
 
-The pending verify array's items should be right data type as the given order. 
-If the array length is longer than the rule's length, the overflow ones should be one of these rules. 
+The pending verify array's items should be right data type as the given order.
+If the array length is longer than the rule's length, the overflow ones should be one of these rules.
 For example, the 3th item should be Enum(String, Number):
 
 ```js
@@ -523,14 +523,10 @@ import { HelloType } from 'hello-type'
 HelloType.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
 ```
 
-_alias:_ 
-
-- expect.match
-- expect.toMatch
+SomeType can be original rule:
 
 ```js
-HelloType.expect(some).toMatch(SomeType)
-HelloType.expect(some).match(SomeType)
+HelloType.expect(10).to.match(Number)
 ```
 
 **slient**
@@ -548,12 +544,21 @@ Notice, `slient` only works for `HelloType.expect.to.match`, not for `Type.asser
 
 ```js
 let error = HelloType.catch(some).by(SomeType)
+let error = HelloType.catch(10).by(Number)
 ```
 
 ### is.typeof
 
 ```js
 let bool = HelloType.is(SomeType).typeof(some)
+let bool = HelloType.is(Number).typeof(10)
+```
+
+### is.of
+
+```js
+let bool = HelloType.is(some).of(SomeType)
+let bool = HelloType.is(10).of(Number)
 ```
 
 ### trace.by.with

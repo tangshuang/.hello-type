@@ -37,9 +37,9 @@ describe('strict mode', () => {
       name: String,
       age: IfExists(Number),
     })
-    expect(() => HelloType.expect({ name: 'tomy', age: 10 }).toMatch(SomeType.Strict)).not.toThrowError()
-    expect(() => HelloType.expect({ name: 'tomy', age: 10, height: 170 }).toMatch(SomeType.Strict)).toThrowError()
-    expect(() => HelloType.expect({ name: 'tomy' }).toMatch(SomeType.Strict)).toThrowError()
+    expect(() => HelloType.expect({ name: 'tomy', age: 10 }).to.match(SomeType.Strict)).not.toThrowError()
+    expect(() => HelloType.expect({ name: 'tomy', age: 10, height: 170 }).to.match(SomeType.Strict)).toThrowError()
+    expect(() => HelloType.expect({ name: 'tomy' }).to.match(SomeType.Strict)).toThrowError()
   })
   test('toBeStrict', () => {
     const SomeType = new Type(Number)

@@ -4,10 +4,10 @@ export { default as List } from './list'
 export { default as Tuple } from './tuple'
 export { default as Enum } from './enum'
 export { default as Range } from './range'
-export { 
-  default as Rule, 
-  Any, Null, Undefined, 
-  IfExists, IfNotMatch, Equal, InstanceOf, Lambda, 
+export {
+  default as Rule,
+  Any, Null, Undefined,
+  IfExists, IfNotMatch, Equal, InstanceOf, Lambda,
   Validate,
 } from './rule'
 
@@ -19,14 +19,16 @@ const HelloTypeListeners = []
 
 export const HelloType = {
   /**
-   * assert
-   * @param {Type} type 
    * @example
-   * HelloType.expect(target).to.match(SomeType)
+   * HelloType.expect(10).to.match(Number)
    */
   expect: (...targets) => ({
     to: {
       match: (type) => {
+        if (!isInstanceOf(type, Type)) {
+          type = new Type(type)
+        }
+
         try {
           type.assert(...targets)
           return true
@@ -37,33 +39,22 @@ export const HelloType = {
         }
       },
     },
+    /**
+     * @alias HelloType.expect.to.match
+     */
     match: (type) => HelloType.expect(...targets).to.match(type),
-    /**
-     * @deprecated
-     */
-    toMatch: (type) => HelloType.expect(...targets).to.match(type),
-    /**
-     * @deprecated
-     */
-    toBeCatchedBy: (type) => {
-      return HelloType.catch(...targets).by(type)
-    },
-    /**
-     * @deprecated
-     */
-    toBeTracedBy: (type) => {
-      return HelloType.trace(...targets).by(type)
-    },
-    /**
-     * @deprecated
-     */
-    toBeTrackedBy: (type) => {
-      return HelloType.track(...targets).by(type)
-    },
   }),
 
+  /**
+   * @example
+   * let error = HelloType.catch(10).by(Number)
+   */
   catch: (...targets) => ({
     by: (type) => {
+      if (!isInstanceOf(type, Type)) {
+        type = new Type(type)
+      }
+
       let error = type.catch(...targets)
       if (error) {
         HelloType.dispatch(error, 'catch')
@@ -72,8 +63,16 @@ export const HelloType = {
     },
   }),
 
+  /**
+   * @example
+   * HelloType.trace('10').by(Number).with(error => console.log(error.stack))
+   */
   trace: (...targets) => ({
     by: (type) => {
+      if (!isInstanceOf(type, Type)) {
+        type = new Type(type)
+      }
+
       let defer = type.trace(...targets).with((error) => {
         HelloType.dispatch(error, 'trace')
         return error
@@ -89,8 +88,16 @@ export const HelloType = {
     },
   }),
 
+  /**
+   * @example
+   * HelloType.track('10').by(Number).with(error => console.log(error.stack))
+   */
   track: (...targets) => ({
     by: (type) => {
+      if (!isInstanceOf(type, Type)) {
+        type = new Type(type)
+      }
+
       let defer = type.track(...targets).with((error) => {
         HelloType.dispatch(error, 'track')
         return error
@@ -108,12 +115,17 @@ export const HelloType = {
 
   /**
    * determine whether type match
-   * @param {Type} type 
    * @example
-   * let bool = HelloType.is(SomeType).typeof(target)
+   * let bool = HelloType.is(Number).typeof(10)
+   * let bool = HelloType.is(10).of(Number)
    */
-  is: (type) =>  ({
+  is: (...args) => ({
     typeof: (...targets) => {
+      let type = args[0]
+      if (!isInstanceOf(type, Type)) {
+        type = new Type(type)
+      }
+
       let error = type.catch(...targets)
       if (error) {
         HelloType.dispatch(error, 'test')
@@ -123,6 +135,7 @@ export const HelloType = {
         return true
       }
     },
+    of: (type) => HelloType.is(type).typeof(...args),
   }),
 
   /**
@@ -199,7 +212,7 @@ export const HelloType = {
   slient: false,
   throwError(e) {
     HelloType.dispatch(e, 'assert')
-  
+
     if (HelloType.slient) {
       console.error(e)
     }
@@ -233,7 +246,7 @@ export const HelloType = {
         let rules = getRule(rule)
         let ruleKeys = Object.keys(rules)
         let propKeys = Object.keys(origin)
-        
+
         ruleKeys.forEach((key) => {
           let propValue = origin[key]
           let propRule = getRule(rules[key])
@@ -248,14 +261,14 @@ export const HelloType = {
             }
             // if original prop value is not an object but should be an object called by rule
             else {
-              let error = new HelloTypeError('hello.define.property.object', { 
+              let error = new HelloTypeError('hello.define.property.object', {
                 target,
                 type,
-                origin, 
-                rule, 
-                prop: key, 
-                value: propValue, 
-                propRule, 
+                origin,
+                rule,
+                prop: key,
+                value: propValue,
+                propRule,
                 action: 'define.by',
               })
               HelloType.throwError(error)
@@ -311,12 +324,12 @@ export const HelloType = {
               let propRule = rule[key]
               if (propRule) {
                 let PropType = getRuleType(propRule)
-                let error = HelloType.expect(value).toBeCatchedBy(PropType)
+                let error = HelloType.catch(value).by(PropType)
                 if (error) {
                   let e = xError(error, { origin, rule, key, value, propRule, type, target, action: 'define.by' })
                   HelloType.throwError(e)
                 }
-                
+
                 // if value is object, should make proxy too
                 let proprule = PropType.rules[0]
                 if (isObject(value) && isObject(proprule)) {
