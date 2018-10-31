@@ -124,7 +124,7 @@ export class HelloTypeError extends TypeError {
           })
           let summary = {
             value: getValue(info.target), // received node value
-            should: getRule(info.rule, info.type), // node rule
+            should: getRule(info.rule || info.type), // node rule
             research: researchPath.join(''), // rule path
           }
           let res = Object.assign({}, info, summary)
