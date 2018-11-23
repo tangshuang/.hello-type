@@ -44,7 +44,7 @@ export default class Type {
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
       let error = rule.vaildate(target)
-      return xError(error, { target, rule, type: this })
+      return xError(error, { target, type: this })
     }
 
     // NaN
@@ -54,7 +54,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.NaN', { target, rule, type: this })
+        return new HelloTypeError('type.NaN', { target, type: rule })
       }
     }
 
@@ -65,7 +65,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Number', { target, rule, type: this })
+        return new HelloTypeError('type.Number', { target, type: rule })
       }
     }
 
@@ -76,7 +76,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Boolean', { target, rule, type: this })
+        return new HelloTypeError('type.Boolean', { target, type: rule })
       }
     }
 
@@ -87,7 +87,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.String', { target, rule, type: this })
+        return new HelloTypeError('type.String', { target, type: rule })
       }
     }
 
@@ -95,13 +95,13 @@ export default class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(target)) {
-        return new HelloTypeError('type.regexp.string', { target, rule, type: this })
+        return new HelloTypeError('type.regexp.string', { target, type: rule })
       }
       if (rule.test(target)) {
         return null
       }
       else {
-        return new HelloTypeError('type.regexp', { target, rule, type: this })
+        return new HelloTypeError('type.regexp', { target, type: rule })
       }
     }
 
@@ -112,7 +112,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Function', { target, rule, type: this })
+        return new HelloTypeError('type.Function', { target, type: rule })
       }
     }
 
@@ -123,7 +123,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Array', { target, rule, type: this })
+        return new HelloTypeError('type.Array', { target, type: rule })
       }
     }
 
@@ -134,7 +134,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Object', { target, rule, type: this })
+        return new HelloTypeError('type.Object', { target, type: rule })
       }
     }
 
@@ -143,7 +143,7 @@ export default class Type {
         return null
       }
       else {
-        return new HelloTypeError('type.Symbol', { target, rule, type: this })
+        return new HelloTypeError('type.Symbol', { target, type: rule })
       }
     }
 
@@ -156,7 +156,7 @@ export default class Type {
       // array length should equal in strict mode
       if (this.mode === 'strict') {
         if (ruleLength !== targetLength) {
-          return new HelloTypeError('type.strict.array.length', { target, rule, ruleLength, targetLength, type: this })
+          return new HelloTypeError('type.strict.array.length', { target, ruleLength, targetLength, type: rule })
         }
       }
 
@@ -177,7 +177,7 @@ export default class Type {
           }
 
           if (error) {
-            return xError(error, { target, rule, index: i, items: targets, type: this })
+            return xError(error, { target, index: i, items: targets, type: this })
           }
           else {
             continue
@@ -200,7 +200,7 @@ export default class Type {
           // normal vaildate
           let error = this.vaildate(target, RestType)
           if (error) {
-            return xError(error, { target, rule: RestType, index: i, items: targets, type: this })
+            return xError(error, { target, index: i, items: targets, type: this })
           }
         }
       }
@@ -263,7 +263,7 @@ export default class Type {
           }
 
           if (error) {
-            return xError(error, { target, rule, key, type: this.name })
+            return xError(error, { target, key, type: this })
           }
           else {
             continue
@@ -273,7 +273,7 @@ export default class Type {
         // normal vaildate
         let error = this.vaildate(target, rule)
         if (error) {
-          return xError(error, { target, rule, key, type: this.name })
+          return xError(error, { target, key, type: this })
         }
       }
 
@@ -301,19 +301,19 @@ export default class Type {
       }
       let error = rule.catch(target)
       if (error) {
-        return xError(error, { target, rule, type: this.name })
+        return xError(error, { target, type: this.name })
       }
 
       return null
     }
 
-    return new HelloTypeError('type', { target, rule, type: this.name })
+    return new HelloTypeError('type', { target, type: rule })
   }
   assert(...targets) {
     let rules = this.rules
 
     if (targets.length !== rules.length) {
-      throw new HelloTypeError('type.arguments.length', { target: targets, type: this, ruleLength: this.rules.length, rule: rules })
+      throw new HelloTypeError('type.arguments.length', { target: 'arguments', type: this, ruleLength: this.rules.length })
     }
 
     for (let i = 0, len = targets.length; i < len; i ++) {
@@ -321,7 +321,7 @@ export default class Type {
       let rule = rules[i]
       let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { target, rule, type: this })
+        throw xError(error, { target, type: rule })
       }
     }
   }

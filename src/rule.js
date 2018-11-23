@@ -26,12 +26,12 @@ export default class Rule {
 
 export const Null = new Rule('Null', function(value) {
   if (value !== null) {
-    return new HelloTypeError('rule.null', { target: value, rule: this, type: this })
+    return new HelloTypeError('rule.null', { target: value, type: this })
   }
 })
 export const Undefined = new Rule('Undefined', function(value) {
   if (value !== undefined) {
-    return new HelloTypeError('rule.undefined', { target: value, rule: this, type: this })
+    return new HelloTypeError('rule.undefined', { target: value, type: this })
   }
 })
 export const Any = new Rule('Any', () => null)
@@ -202,7 +202,7 @@ export function Equal(rule) {
 export function Lambda(InputRule, OutputRule) {
   return new Rule('Lambda', function(value) {
     if (!isFunction(value)) {
-      return new HelloTypeError('rule.lambda.function', { target: value, rule, type: this })
+      return new HelloTypeError('rule.lambda.function', { target: value, type: this })
     }
   }, function(error, prop, target) {
     if (!error) {

@@ -2,12 +2,13 @@
 
 <script src="../dist/hello-type.js"></script>
 <script>
-const { HelloType, Dict, IfExists, Equal, Null, Enum } = window['hello-type']
+const { HelloType, Dict, IfExists, Equal, Null, Enum, List } = window['hello-type']
 const SomeType = Dict({
   name: String,
   age: [
     Object,
     Enum(String, Null),
+    // List([String, Number])
   ],
   test1: {
     list: IfExists([
@@ -19,8 +20,8 @@ const SomeType = Dict({
 const some = {
   name: 'tomy',
   age: [
-    null,
-    10,
+    {},
+    [undefined, 10],
   ],
   test1: {
     list: [

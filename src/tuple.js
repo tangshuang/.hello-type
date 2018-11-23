@@ -35,7 +35,7 @@ export default function Tuple(...patterns) {
       let rule = rules[i]
       let error = this.vaildate(target, rule)
       if (error) {
-        throw xError(error, { target, rule, type: this })
+        throw xError(error, { target, type: this })
       }
     }
   }
