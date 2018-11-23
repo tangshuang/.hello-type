@@ -10,12 +10,7 @@ export default function Dict(pattern) {
 
   const DictType = new Type(pattern)
   DictType.name = 'Dict'
-  DictType.assert = function(...targets) {
-    if (targets.length !== 1) {
-      throw new HelloTypeError('dict.arguments.length', { target: targets, type: this, ruleLength: 1, targetLength: targets.length })
-    }
-
-    let target = targets[0]
+  DictType.assert = function(target) {
     if (!isObject(target)) {
       throw new HelloTypeError('dict.object', { target, type: this })
     }

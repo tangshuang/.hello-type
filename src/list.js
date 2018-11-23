@@ -10,12 +10,7 @@ export default function List(pattern) {
 
   const ListType = new Type(pattern)
   ListType.name = 'List'
-  ListType.assert = function(...targets) {
-    if (targets.length !== 1) {
-      throw new HelloTypeError('list.arguments.length', { target: targets, type: this, ruleLength: 1, targetLength: targets.length })
-    }
-
-    let target = targets[0]
+  ListType.assert = function(target) {
     if (!isArray(target)) {
       throw new HelloTypeError('list.array', { target, type: this })
     }

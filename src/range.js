@@ -16,12 +16,7 @@ export default function Range(min, max) {
 
   const RangeType = new Type(min, max)
   RangeType.name = 'Range'
-  RangeType.assert = function(...targets) {
-    if (targets.length !== 1) {
-      throw new HelloTypeError('range.arguments.length', { target: targets, type: this, targetLength: targets.length, ruleLength: 1 })
-    }
-
-    let target = targets[0]
+  RangeType.assert = function(target) {
     if (!isNumber(target)) {
       throw new HelloTypeError('range.number', { target, type: this })
     }
