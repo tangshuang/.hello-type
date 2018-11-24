@@ -150,7 +150,7 @@ export const HelloType = {
           factor(...args)
         }
         else if (isInstanceOf(factor, Type)) {
-          HelloType.expect(...args).toMatch(factor)
+          HelloType.expect(...args).to.match(factor)
         }
       }, 'input'),
     },
@@ -160,7 +160,7 @@ export const HelloType = {
           factor(...args)
         }
         else if (isInstanceOf(factor, Type)) {
-          HelloType.expect(...args).toMatch(factor)
+          HelloType.expect(...args).to.match(factor)
         }
       }, 'output'),
     },
@@ -169,7 +169,7 @@ export const HelloType = {
         factor(...args)
       }
       else if (isInstanceOf(factor, Type)) {
-        HelloType.expect(...args).toMatch(factor)
+        HelloType.expect(...args).to.match(factor)
       }
     }),
   },
@@ -202,7 +202,7 @@ export const HelloType = {
   },
 
   /**
-   * whether to use console.error instead of throw when using HelloType.expect.toMatch
+   * whether to use console.error instead of throw when using HelloType.expect.to.match
    */
   set Slient(value) {
     HelloType.slient = value
