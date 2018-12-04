@@ -10,6 +10,7 @@ export {
   IfExists, IfNotMatch, IfExistsNotMatch,
   Equal, InstanceOf, Lambda,
   Validate,
+  Determine,
 } from './rule'
 
 import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils'
