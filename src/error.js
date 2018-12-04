@@ -104,7 +104,7 @@ export class HelloTypeError extends TypeError {
               return 'undefined'
             }
             else if (totype === 'string') {
-              return value.length > 16 ? stringify(value.substr(0, 16) + '...') : value
+              return value.length > 16 ? stringify(value.substr(0, 16) + '...') : stringify(value)
             }
             else if (isFunction(value)) {
               return `Function(${value.name}(){[code]})`

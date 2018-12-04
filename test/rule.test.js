@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch } from '../src/rule'
+import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -132,5 +132,16 @@ describe('Rule', () => {
     })
     expect(SomeType.catch({ name: 'tomy' })).toBeNull()
     expect(() => SomeType.assert({ name: 'tomy', age: 2 })).toThrowError()
+  })
+  test('Determine', () => {
+    const SomeType = new Type({
+      is: Boolean,
+      has: Determine(function(obj) {
+        return obj.is ? String : Null
+      }),
+    })
+    expect(SomeType.catch({ is: true, has: 'one' })).toBeNull()
+    expect(() => SomeType.assert({ is: false, has: 'one' })).toThrowError()
+    expect(SomeType.catch({ is: false, has: null })).toBeNull()
   })
 })

@@ -137,6 +137,50 @@ export function IfNotMatch(rule, defaultValue) {
 }
 
 /**
+ * determine which rule to use.
+ * @param {function} factory a function to receive parent node of current prop, and return a rule
+ * @example
+ * const SomeType = Dict({
+ *   name: String,
+ *   isMale: Boolean,
+ *   // data type check based on person.isMale
+ *   touch: Determine(function(person) {
+ *     if (person.isMale) {
+ *       return String
+ *     }
+ *     else {
+ *       return Null
+ *     }
+ *   }),
+ * })
+ */
+export function Determine(factory) {
+  let rule
+  let isMade = false
+  return new Rule('Determine', function(value) {
+    if (!isMade) {
+      return new HelloTypeError('You should pass a rule to Determine.', { target: value, type: this })
+    }
+    if (isInstanceOf(rule, Rule)) {
+      let error = rule.vaildate(value)
+      return xError(error, { target: value, rule, type: this })
+    }
+    else if (isInstanceOf(rule, Type)) {
+      let error = rule.catch(value)
+      return xError(error, { target: value, rule, type: this })
+    }
+    else {
+      rule = new Type(rule)
+      let error = rule.catch(value)
+      return xError(error, { target: value, rule, type: this })
+    }
+  }, function(error, porp, target) {
+    rule = factory(target)
+    isMade = true
+  })
+}
+
+/**
  * If the value exists, and if the value not match rule, use defaultValue as value.
  * If not exists, ignore this rule.
  * @param {*} rule

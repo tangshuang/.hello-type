@@ -524,6 +524,32 @@ let MyRule = Validate(String, 'target should be a string.')
 let MyRule = Validate(Number, value => `${value} is not a number.`)
 ```
 
+**Determine(factory)**
+
+Sometimes, you want your rule depends on the prop's parent node, with different value, with different rule. `Determine` do not check the prop value type immediately, it use the return value of `factory` as a rule to check data type.
+
+- @type function
+- @param factory: a function which receive target object and should return a new rule
+  - @param target: the parent object of current property
+  - @return a instance of Rule
+- @return a instance of Rule
+
+```js
+const SomeType = Dict({
+  name: String,
+  isMale: Boolean,
+  // data type check based on person.isMale
+  touch: Determine(function(person) {
+    if (person.isMale) {
+      return String
+    }
+    else {
+      return Null
+    }
+  }),
+})
+```
+
 ## HelloType
 
 The `HelloType` is a set of methods to use type assertions more unified.
