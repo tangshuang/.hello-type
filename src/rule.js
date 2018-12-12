@@ -1,5 +1,5 @@
 import Type from './type'
-import { isFunction, isInstanceOf } from './utils'
+import { isFunction, isInstanceOf, isNumber, isString } from './utils'
 import { xError, HelloTypeError } from './error'
 
 export default class Rule {
@@ -35,6 +35,11 @@ export const Undefined = new Rule('Undefined', function(value) {
   }
 })
 export const Any = new Rule('Any', () => null)
+export const Numeric = new Rule('Numeric', function(value) {
+  if (!isNumber(value) && !(isString(value) && /^[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value))) {
+    return new HelloTypeError('rule.numeric', { target: value, type: this })
+  }
+})
 
 /**
  * Verify a rule by using custom error message

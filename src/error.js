@@ -14,6 +14,7 @@ export const messages = {
   'rule.lambda.function': '{keyPath} should match {should}, but receive {value}.',
   'rule.null': '{keyPath} should match {should}, but receive {value}.',
   'rule.undefined': '{keyPath} should match {should}, but receive {value}.',
+  'rule.numeric': '{keyPath} should match {should}, but receive {value}.',
   'tuple.arguments.length': '{keyPath} does not match {should}, length should be {ruleLength}, but receive {targetLength}.',
   'tuple.strict.arguments.length': '{keyPath} does not match {should} in strict mode, length should be {ruleLength}, but receive {targetLength}.',
   'type.arguments.length': '{keyPath} does not match {should}, length should be {ruleLength}, but receive {targetLength}.',

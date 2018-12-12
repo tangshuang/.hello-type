@@ -6,7 +6,7 @@ export { default as Enum } from './enum'
 export { default as Range } from './range'
 export {
   default as Rule,
-  Any, Null, Undefined,
+  Any, Null, Undefined, Numeric,
   IfExists, IfNotMatch, IfExistsNotMatch,
   Equal, InstanceOf, Lambda,
   Validate,
