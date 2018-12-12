@@ -193,6 +193,9 @@ export class HelloTypeError extends TypeError {
           return res
         },
       },
+      message_key: {
+        value: key,
+      },
       message: {
         get() {
           let message = mError(key, this.summary)
