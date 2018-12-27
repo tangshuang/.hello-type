@@ -420,7 +420,7 @@ Only works for object.
 ```js
 const SomeType = Dict({
   name: String,
-  age: IfNotMatch(Number, 0),
+  age: IfNotMatch(Number, () => 0),
 })
 const some = {
   name: 'tomy',
@@ -428,6 +428,14 @@ const some = {
 
 SomeType.assert(some) // without any error
 // => some.age === 0
+```
+
+The second parameter should be a function to return the final value.
+
+```js
+function modify(value) {
+  return value
+}
 ```
 
 Notice, this method will change your original data, so be careful when you use it.
@@ -439,7 +447,7 @@ If the property of object not exists, ignore this rule, if exists and not match,
 ```js
 const SomeType = Dict({
   name: String,
-  age: IfExistsNotMatch(Number, 0),
+  age: IfExistsNotMatch(Number, () => 0),
 })
 
 SomeType.assert({ name: 'tomy' }) // whithout error, and no replacing

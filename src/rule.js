@@ -113,15 +113,16 @@ export function IfExists(rule) {
  * Notice, this will modify original data, which may cause error, so be careful.
  * @param {*} rule
  * @param {*} defaultValue
+ * @param {function} calculate a function to calculate new value with origin old value
  */
-export function IfNotMatch(rule, defaultValue) {
+export function IfNotMatch(rule, defaultValue, calculate) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfNotMatch', function(value) {
       let error = rule.vaildate(value)
       return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = defaultValue
+        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
       }
     })
   }
@@ -132,13 +133,13 @@ export function IfNotMatch(rule, defaultValue) {
       return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = defaultValue
+        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
       }
     })
   }
 
   let type = new Type(rule)
-  return IfNotMatch(type, defaultValue)
+  return IfNotMatch(type, defaultValue, calculate)
 }
 
 /**
@@ -190,8 +191,9 @@ export function Determine(factory) {
  * If not exists, ignore this rule.
  * @param {*} rule
  * @param {*} defaultValue
+ * @param {function} calculate a function to calculate new value with origin old value
  */
-export function IfExistsNotMatch(rule, defaultValue) {
+export function IfExistsNotMatch(rule, defaultValue, calculate) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule('IfExistsNotMatch', function(value) {
       if (value === undefined) {
@@ -201,7 +203,7 @@ export function IfExistsNotMatch(rule, defaultValue) {
       return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = defaultValue
+        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
       }
     })
   }
@@ -215,13 +217,13 @@ export function IfExistsNotMatch(rule, defaultValue) {
       return xError(error, { target: value, rule, type: this })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = defaultValue
+        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
       }
     })
   }
 
   let type = new Type(rule)
-  return IfExistsNotMatch(type, defaultValue)
+  return IfExistsNotMatch(type, defaultValue, calculate)
 }
 
 /**

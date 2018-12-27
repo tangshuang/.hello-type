@@ -98,6 +98,27 @@ describe('Rule', () => {
     expect(() => { SomeType.assert(obj2) }).not.toThrowError()
     expect(obj2.age).toEqual(0)
   })
+  test('IfNotMatch with function', () => {
+    const SomeType = new Type({
+      name: String,
+      age: IfNotMatch(Number, null, value => typeof value === 'number' ? (value || 0) : (+value || 0)),
+    })
+
+    // exists, but not match
+    const obj = {
+      name: 'tomy',
+      age: '10',
+    }
+    expect(() => { SomeType.assert(obj) }).not.toThrowError()
+    expect(obj.age).toEqual(10)
+
+    // not exists
+    const obj2 = {
+      name: 'tomy',
+    }
+    expect(() => { SomeType.assert(obj2) }).not.toThrowError()
+    expect(obj2.age).toEqual(0)
+  })
   test('Validate', () => {
     const SomeType = new Type(Validate(Number, 'It should be a number.'))
     let error = SomeType.catch('string')
