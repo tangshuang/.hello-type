@@ -205,17 +205,17 @@ export const HelloType = {
   /**
    * whether to use console.error instead of throw when using HelloType.expect.to.match
    */
-  set Slient(value) {
-    HelloType.slient = value
+  set Silent(value) {
+    HelloType.silent = value
   },
-  get Slient() {
-    return HelloType.slient
+  get Silent() {
+    return HelloType.silent
   },
-  slient: false,
+  silent: false,
   throwError(e) {
     HelloType.dispatch(e, 'assert')
 
-    if (HelloType.slient) {
+    if (HelloType.silent) {
       console.error(e)
     }
     else {

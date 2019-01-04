@@ -578,16 +578,16 @@ SomeType can be original rule:
 HelloType.expect(10).to.match(Number)
 ```
 
-**slient**
+**silent**
 
-When you set `HelloType.slient` to be 'true', `HelloType.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
+When you set `HelloType.silent` to be 'true', `HelloType.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
 
 ```js
-HelloType.slient = true
+HelloType.silent = true
 HelloType.expect(some).to.match(SomeoType) // console.error(e)
 ```
 
-Notice, `slient` only works for `HelloType.expect.to.match`, not for `Type.assert`.
+Notice, `silent` only works for `HelloType.expect.to.match`, not for `Type.assert`.
 
 ### catch.by.with
 
@@ -648,7 +648,7 @@ HelloType.bind(showError) // use your own action to notice users
 HelloType.expect(some).to.match(SomeoType)
 
 // HelloType will not break the process
-HelloType.slient = true
+HelloType.silent = true
 // `fn` will run before console.error
 HelloType.expect(some).to.match(SomeoType)
 ```
