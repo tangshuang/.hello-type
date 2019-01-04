@@ -31,11 +31,11 @@ describe('HelloType', () => {
         done()
       })
     })
-    test('HelloType.slient', () => {
-      HelloType.slient = true
+    test('HelloType.silent', () => {
+      HelloType.silent = true
       const NumberType = new Type(Number)
       expect(() => { HelloType.expect(null).to.match(NumberType) }).not.toThrowError()
-      HelloType.slient = false
+      HelloType.silent = false
     })
     test('HelloType.define.by', () => {
       let ObjType = new Type({
@@ -46,7 +46,7 @@ describe('HelloType', () => {
           age: Number,
         },
       })
-      
+
       expect(() => { HelloType.define({}).by(ObjType) }).not.toThrowError()
       expect(() => {
         let obj = {
