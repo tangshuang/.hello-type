@@ -7,6 +7,7 @@ module.exports = {
     filename: 'hello-type.js',
     library: 'hello-type',
     libraryTarget: 'umd',
+    globalObject: 'typeof window !== undefined ? window : typeof global !== undefined ? global : typeof self !== undefined ? self : this',
   },
   module: {
     rules: [
