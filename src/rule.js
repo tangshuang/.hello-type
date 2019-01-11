@@ -79,6 +79,44 @@ export function Validate(rule, message) {
 }
 
 /**
+ * the passed value should match all passed rules
+ * @param  {...any} rules
+ * @example
+ * const SomeType = Dict({
+ *   value: ShouldMatch(
+ *    Validate(Number, 'it should be a number'),
+ *    Validate(value => value === parseInt(value, 10), 'it should be a int number')
+ *   )
+ * })
+ */
+export function ShouldMatch(...rules) {
+  const validate = (value, rule) => {
+    if (isInstanceOf(rule, Rule)) {
+      let error = rule.vaildate(value)
+      return xError(error, { target: value, rule, type: this })
+    }
+
+    if (isInstanceOf(rule, Type)) {
+      let error = rule.catch(value)
+      return xError(error, { target: value, rule, type: this })
+    }
+
+    let type = new Type(rule)
+    return validate(value, type)
+  }
+  return new Rule('ShouldMatch', function(value) {
+    for (let i = 0, len = rules.length; i < len; i ++) {
+      let rule = rules[i]
+      let error = validate(value, rule)
+      if (error) {
+        return error
+      }
+    }
+    return null
+  })
+}
+
+/**
  * If the value exists, use rule to vaildate.
  * If not exists, ignore this rule.
  * @param {*} rule
@@ -269,4 +307,5 @@ export function Lambda(InputRule, OutputRule) {
       target[prop] = lambda
     }
   })
+
 }
