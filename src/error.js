@@ -125,6 +125,9 @@ export class HelloTypeError extends TypeError {
             else if (typeof value === 'object') {
               return value.name ? value.name : value.constructor ? value.constructor.name : value.toString()
             }
+            else if (typeof value === 'function') { // for native function or class
+              return value.name
+            }
             else {
               return value.toString()
             }
