@@ -1,22 +1,22 @@
 import Type from './type'
 import Rule from './rule'
 import { isInstanceOf } from './utils'
-import { xError, HelloTypeError } from './error'
+import { xError, _ERROR_ } from './error'
 
-export default function Tuple(...patterns) {
+export function Tuple(...patterns) {
   const TupleType = new Type(...patterns)
   TupleType.name = 'Tuple'
   TupleType.assert = function(...targets) {
     let rules = this.rules
-    let ruleLength = rules.length
-    let targetLength = targets.length
-    let minLen = ruleLength
+    let ruleCount = rules.length
+    let targetCount = targets.length
+    let minLen = ruleCount
 
-    if (this.mode === 'strict' && targetLength !== ruleLength) {
-      throw new HelloTypeError('tuple.strict.arguments.length', { target: targets, type: this, ruleLength, targetLength })
+    if (this.mode === 'strict' && targetCount !== ruleCount) {
+      throw new _ERROR_('dirty', { type: this, action: 'assert', length: ruleCount })
     }
 
-    for (let i = ruleLength - 1; i > -1; i --) {
+    for (let i = ruleCount - 1; i > -1; i --) {
       let rule = rules[i]
       if (isInstanceOf(rule, Rule) && rule.name === 'IfExists') {
         minLen --
@@ -26,18 +26,19 @@ export default function Tuple(...patterns) {
       }
     }
 
-    if (targetLength < minLen || targetLength > ruleLength) {
-      throw new HelloTypeError('tuple.arguments.length', { target: targets, type: this, ruleLength, targetLength, minLen })
+    if (targetCount < minLen || targetCount > ruleCount) {
+      throw new _ERROR_('dirty', { type: this, action: 'assert', length: ruleCount })
     }
 
-    for (let i = 0; i < targetLength; i ++) {
-      let target = targets[i]
+    for (let i = 0; i < targetCount; i ++) {
+      let value = targets[i]
       let rule = rules[i]
-      let error = this.vaildate(target, rule)
+      let error = this.validate(value, rule)
       if (error) {
-        throw xError(error, { target, type: this })
+        throw xError(error, { value, rule, type: this, action: 'assert' })
       }
     }
   }
   return TupleType
 }
+export default Tuple

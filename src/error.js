@@ -1,40 +1,13 @@
 import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN } from './utils'
 
 export const messages = {
-  'dict.object': '{keyPath} should match {should}, but receive {value}.',
-  'enum': '{keyPath} should match {should}, but receive {value}.',
-  'hello.define.target.object': 'argument should be an object',
-  'hello.define.rule.object': '{rule} should be an object as a rule',
-  'hello.define.property.object': '{prop} property should be an object, but receive {value}.',
-  'list.array': '{keyPath} should match {should}, but receive {value}.',
-  'range.number': '{keyPath} should match {should}, but receive {value}.',
-  'range': '{keyPath} should match {should}, but receive {value}.',
-  'rule.equal': '{keyPath} should match {should}, but receive {value}.',
-  'rule.instanceof': '{keyPath} should match {should}, but receive {value}.',
-  'rule.lambda.function': '{keyPath} should match {should}, but receive {value}.',
-  'rule.null': '{keyPath} should match {should}, but receive {value}.',
-  'rule.undefined': '{keyPath} should match {should}, but receive {value}.',
-  'rule.numeric': '{keyPath} should match {should}, but receive {value}.',
-  'tuple.arguments.length': '{keyPath} does not match {should}, length should be {ruleLength}, but receive {targetLength}.',
-  'tuple.strict.arguments.length': '{keyPath} does not match {should} in strict mode, length should be {ruleLength}, but receive {targetLength}.',
-  'type.arguments.length': '{keyPath} does not match {should}, length should be {ruleLength}, but receive {targetLength}.',
-  'type.Array': '{keyPath} should match {should}, but receive {value}.',
-  'type.array.length': '{keyPath} should be array of length greater than {ruleLength}, but recieve length {targetLength}.',
-  'type.Boolean': '{keyPath} should match {should}, but receive {value}.',
-  'type.Function': '{keyPath} should match {should}, but receive {value}.',
-  'type.NaN': '{keyPath} should match {should}, but receive {value}.',
-  'type.Number': '{keyPath} should match {should}, but receive {value}.',
-  'type.Object': '{keyPath} should match {should}, but receive {value}.',
-  'type.object.key.missing': '{keyPath} does not exists.',
-  'type.regexp.string': '{keyPath} should be a string to match RegExp instance, but receive {value}.',
-  'type.regexp': '{keyPath} does not match RegExp instance {should}, receive {value}.',
-  'type.String': '{keyPath} should match {should}, but receive {value}.',
-  'type.Symbol': '{keyPath} should match {should}, but receive {value}.',
-  'type.strict.array.length': 'array at {keyPath} whose length should be {ruleLength} in strict mode, but receive {targetLength}.',
-  'type.strict.object.key.overflow': '{keyPath} should not exists, only {ruleKeys} allowed in strict mode.',
-  'type': '{keyPath} should match {should}, but receive {value}.',
+  refuse: '{keyPath} should match {should}, but receive {value}.',
+  dirty: '{keyPath} does not match {should}, length should be {length}.',
+  overflow: '{keyPath} should not exists, only {keys} allowed.',
+  missing: '{keyPath} does not exists.'
 }
-export function mError(key, params) {
+
+function makeErrorMessage(key, params) {
   let message = messages[key] || key
   let text = message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? params[key] : match)
   return text
@@ -72,7 +45,6 @@ export function xError(error, params) {
     let stacks = stack.split('\n')
     stacks.shift()
     stacks.shift()
-    stacks.shift()
     stack = stacks.join('\n')
 
     let trace = Object.assign({}, params, { stack, keyPath })
@@ -83,7 +55,8 @@ export function xError(error, params) {
 
   return null
 }
-export class HelloTypeError extends TypeError {
+
+export class _ERROR_ extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {
@@ -92,11 +65,8 @@ export class HelloTypeError extends TypeError {
       },
       summary: {
         get() {
-          const traces = this.traces
-          const info = traces[traces.length - 1] // use last trace which from the stack bottom as base info
-
           const shouldStringfy = value => typeof value !== 'number' && typeof value !== 'boolean' && !isNaN(value)
-          const getName = (value, masking = true) => {
+          const getName = (value, masking = false) => {
             let totype = typeof(value)
             if (inArray(totype, ['number', 'boolean']) || value === null || isNaN(value)) {
               return shouldStringfy(value) ? stringify(value) : value
@@ -116,11 +86,25 @@ export class HelloTypeError extends TypeError {
               return `Function:${value.name}()`
             }
             else if (isArray(value)) {
-              return `Array(${value.map(item => isArray(item) ? 'Array' : getName(item)).join(',')})`
+              if (masking) {
+                return `Array(${value.length})`
+              }
+              else {
+                return `Array(${value.map(item => isArray(item) ? 'Array' : getName(item)).join(',')})`
+              }
             }
             else if (isObject(value)) {
               let keys = Object.keys(value)
-              return `Object({${keys.join(',')}})`
+              if (masking) {
+                return `Object({${keys.join(',')}})`
+              }
+              else {
+                let values = []
+                keys.forEach((key) => {
+                  values.push(`${key}:` + getName(value[key]))
+                })
+                return `Object({${values.join(',')}})`
+              }
             }
             else if (typeof value === 'object') {
               return value.name ? value.name : value.constructor ? value.constructor.name : value.toString()
@@ -132,40 +116,62 @@ export class HelloTypeError extends TypeError {
               return value.toString()
             }
           }
-          const getShould = (info) => {
-            const { type, rule } = info
-            const typeName = getName(type)
-
-            // don't care rule any more
-            if (!rule) {
-              return typeName
+          const getShould = (type) => {
+            if (!type) {
+              return 'unknown'
             }
 
-            const ruleValue = getName(rule, false)
+            let name = getName(type)
+            let should = name
 
-            if (typeName === 'Type') {
-              return ruleValue
+            if (name === 'List') {
+              let rules = type.rules[0].map(item => getShould(item))
+              should = `List([${rules.join(',')}])`
             }
-            else if (typeName === 'List') {
-              return 'List([' + ruleValue + '])'
+            else if (name === 'Dict') {
+              let rules = type.rules[0]
+              let keys = Object.keys(rules)
+              should = `Dict({${keys.join(',')}})`
             }
-            else {
-              return typeName ? typeName + '(' + ruleValue + ')' : ruleValue
+            else if (inArray(name, ['Enum', 'Tuple', 'Range', 'Type'])) {
+              let rules = type.rules.map(item => getShould(item))
+              should = `${name}(${rules.join(',')})`
             }
+            else if (inArray(name, ['IfExists', 'IfNotMatch', 'IfExistsNotMatch', 'ShouldMatch', 'Equal', 'InstanceOf', 'Validate', 'Determine'])) {
+              let rule = type.arguments[0]
+              let ruleName = getShould(rule)
+              should = `${name}(${ruleName})`
+            }
+
+            return should
           }
 
+          const traces = this.traces
+          let info = traces[traces.length - 1] // use last trace which from the stack bottom as base info
           let research = ''
+
           traces.forEach((item, i) => {
             let next = traces[i + 1]
             let keyPath = item.keyPath
-            if (!next || (next.keyPath !== keyPath)) {
-              research += (i > 0 ? '/' : '') + getShould(item)
+            let sep = ''
+
+            if (next && next.keyPath !== keyPath) { // keyPath changed
+              sep = '/'
+            }
+            else {
+              sep = '.'
+            }
+
+            research += (i > 0 ? sep : '') + getShould(item)
+
+            if (keyPath === info.keyPath) {
+              info = Object.assign({}, info, item)
             }
           })
 
           let summary = {
-            value: getName(info.target), // received node value
-            should: getShould(info), // node rule
+            value: getName(info.value, true), // received node value
+            should: getShould(info.rule || info.type), // node rule
             research,
           }
           let res = Object.assign({}, info, summary)
@@ -181,7 +187,7 @@ export class HelloTypeError extends TypeError {
       },
       message: {
         get() {
-          let message = mError(key, this.summary)
+          let message = makeErrorMessage(key, this.summary)
           return message
         },
       },
@@ -197,7 +203,7 @@ export class HelloTypeError extends TypeError {
             // after this, error.message will get new text
             key = text
           }
-          return mError(text, this.summary)
+          return makeErrorMessage(text, this.summary)
         }
       },
     })

@@ -1,21 +1,21 @@
 import Type from './type'
 import { isInstanceOf } from './utils'
-import { HelloTypeError } from './error'
+import { _ERROR_ } from './error'
 
-export default function Enum(...patterns) {
+export function Enum(...patterns) {
   const EnumType = new Type(...patterns)
   EnumType.name = 'Enum'
-  EnumType.assert = function(target) {
+  EnumType.assert = function(value) {
     let rules = this.rules
     for (let i = 0, len = rules.length; i < len; i ++) {
       let rule = rules[i]
       let match
       if (isInstanceOf(rule, Type)) {
-        match = rule.test(target)
+        match = rule.test(value)
       }
       else {
         let type = new Type(rule)
-        match = type.test(target)
+        match = type.test(value)
       }
 
       // if there is one match, break the loop
@@ -24,7 +24,8 @@ export default function Enum(...patterns) {
       }
     }
 
-    throw new HelloTypeError('enum', { target, rule: rules, type: this })
+    throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
   }
   return EnumType
 }
+export default Enum

@@ -1,8 +1,8 @@
 import Type from './type'
 import { isObject } from './utils'
-import { HelloTypeError, xError } from './error'
+import { _ERROR_, xError } from './error'
 
-export default function Dict(pattern) {
+export function Dict(pattern) {
   // if pattern is not an object, it treated undefined
   if (!isObject(pattern)) {
     pattern = Object
@@ -10,17 +10,18 @@ export default function Dict(pattern) {
 
   const DictType = new Type(pattern)
   DictType.name = 'Dict'
-  DictType.assert = function(target) {
-    if (!isObject(target)) {
-      throw new HelloTypeError('dict.object', { target, type: this })
+  DictType.assert = function(value) {
+    if (!isObject(value)) {
+      throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
     }
 
     let rule = this.rules[0]
-    let error = this.vaildate(target, rule)
+    let error = this.validate(value, rule)
     if (error) {
-      throw xError(error, { target, rule, type: this })
+      throw xError(error, { value, rule, type: this, action: 'assert' })
     }
   }
 
   return DictType
 }
+export default Dict

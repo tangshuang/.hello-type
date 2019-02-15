@@ -1,21 +1,21 @@
-export { default as Type } from './type'
-export { default as Dict } from './dict'
-export { default as List } from './list'
-export { default as Tuple } from './tuple'
-export { default as Enum } from './enum'
-export { default as Range } from './range'
+import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils'
+import Type from './type'
+import { xError, _ERROR_ } from './error'
+
+export { Dict } from './dict'
+export { List } from './list'
+export { Tuple } from './tuple'
+export { Enum } from './enum'
+export { Range } from './range'
 export {
-  default as Rule,
+  Rule,
   Any, Null, Undefined, Numeric,
   IfExists, IfNotMatch, IfExistsNotMatch, ShouldMatch,
   Equal, InstanceOf, Lambda,
   Validate,
   Determine,
 } from './rule'
-
-import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils'
-import Type from './type'
-import { xError, HelloTypeError } from './error'
+export { Type }
 
 const HelloTypeListeners = []
 
@@ -233,13 +233,13 @@ export const HelloType = {
       }
 
       if (!isObject(target)) {
-        let error = new HelloTypeError('hello.define.target.object', { target, type })
+        let error = new _ERROR_('hello.define.target.object', { target, type, action: 'define.by' })
         HelloType.throwError(error)
       }
 
       let rule = getRule(type)
       if (!isObject(rule)) {
-        let error = new HelloTypeError('hello.define.rule.object', { target, type, rule })
+        let error = new _ERROR_('hello.define.rule.object', { target, type, rule, action: 'define.by' })
         HelloType.throwError(error)
       }
 
@@ -263,7 +263,7 @@ export const HelloType = {
             }
             // if original prop value is not an object but should be an object called by rule
             else {
-              let error = new HelloTypeError('hello.define.property.object', {
+              let error = new _ERROR_('hello.define.property.object', {
                 target,
                 type,
                 origin,
@@ -358,6 +358,7 @@ export const HelloType = {
       return proxy
     },
   }),
+  Error: _ERROR_,
 }
 
 export default HelloType

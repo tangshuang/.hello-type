@@ -333,7 +333,7 @@ Create a custom rule:
 ```js
 const CustomRule = new Rule(function(value) {
   if (value !== 'ok') {
-    return new Error(value + ' not equal `ok`')
+    return new _ERROR_(value + ' not equal `ok`')
   }
 })
 const CustomType = new Type(CustomRule)
@@ -341,7 +341,7 @@ CustomType.test('ok') // true
 ```
 
 The function which you passed into `new Rule()` should have a parameter.
-If you want to make assert fail, you should must return an instance of Error.
+If you want to make assert fail, you should must return an instance of _ERROR_.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
@@ -520,7 +520,7 @@ Sometimes, you want to use your own error message to be thrown out. `Validate` r
 ```js
 let MyRule = Validate(value => typeof value === 'object', 'target should be an object.')
 let MyType = new Type(MyRule)
-MyType.assert('111') // throw Error with 'Target should be an object.'
+MyType.assert('111') // throw _ERROR_ with 'Target should be an object.'
 ```
 
 ```js
@@ -638,7 +638,7 @@ const showError = (err) => Toast.error(err.message)
 window.addEventListener('error', (e) => {
   let { error } = e
   if (error.owner === 'hello-type') {
-    e.preventDefault() // when throw Error, there will no error massage in console
+    e.preventDefault() // when throw _ERROR_, there will no error massage in console
   }
 })
 
@@ -712,19 +712,19 @@ It is only works for object/sub-objects, not for any array/sub-arrays:
 obj.books[0].name = null // without any effects
 ```
 
-## HelloTypeError
+## _ERROR_
 
 Advance TypeError which has `addtrace` method.
 
 ```js
-import { HelloTypeError } from 'hello-type'
+import { _ERROR_ } from 'hello-type'
 ```
 
 - @param key/message
 - @param params
 
 ```js
-let error = new HelloTypeError('{arg} is not good.', { arg: 'tomy' })
+let error = new _ERROR_('{arg} is not good.', { arg: 'tomy' })
 error.addtrace({ arg: 'lily' })
 console.log(error.message) // 'lily is not good.'
 ```
@@ -732,7 +732,7 @@ console.log(error.message) // 'lily is not good.'
 Use `messages` to replace the default message text. Look into [error.js](./src/error.js) to find out which to replace.
 
 ```js
-HelloTypeError.messages.enum = '{target}不符合枚举类型{type}({rules})，请从枚举列表中选择。'
+_ERROR_.messages.enum = '{target}不符合枚举类型{type}({rules})，请从枚举列表中选择。'
 ```
 
 When you create your own rule, you should return an instance of HellTypeError:
@@ -740,7 +740,7 @@ When you create your own rule, you should return an instance of HellTypeError:
 ```js
 const MyRule = new Rule(function(value) {
   if (value !== 'tomy') {
-    return new HelloTypeError('{target} is not "tomy"', { target: value })
+    return new _ERROR_('{target} is not "tomy"', { target: value })
   }
 })
 ```

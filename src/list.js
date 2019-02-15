@@ -1,8 +1,8 @@
 import Type from './type'
 import { isArray } from './utils'
-import { xError, HelloTypeError } from './error'
+import { xError, _ERROR_ } from './error'
 
-export default function List(pattern) {
+export function List(pattern) {
   // if pattern is not an array, it treated undefined
   if (!isArray(pattern)) {
     pattern = Array
@@ -10,16 +10,17 @@ export default function List(pattern) {
 
   const ListType = new Type(pattern)
   ListType.name = 'List'
-  ListType.assert = function(target) {
-    if (!isArray(target)) {
-      throw new HelloTypeError('list.array', { target, type: this })
+  ListType.assert = function(value) {
+    if (!isArray(value)) {
+      throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
     }
 
     let rule = this.rules[0]
-    let error = this.vaildate(target, rule)
+    let error = this.validate(value, rule)
     if (error) {
-      throw xError(error, { target, rule, type: this })
+      throw xError(error, { value, rule, type: this, action: 'assert' })
     }
   }
   return ListType
 }
+export default List

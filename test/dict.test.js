@@ -7,17 +7,17 @@ describe('Dict', () => {
         name: String,
         age: Number,
       })
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
-        }) 
+        })
       }).not.toThrowError()
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: null,
           age: 10,
-        }) 
+        })
       }).toThrowError()
     })
     test('empty object', () => {
@@ -35,7 +35,7 @@ describe('Dict', () => {
           mother: Object,
         },
       })
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
@@ -43,16 +43,16 @@ describe('Dict', () => {
             father: {},
             mother: {},
           },
-        }) 
+        })
       }).not.toThrowError()
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
           parents: {
             father: {},
           },
-        }) 
+        })
       }).toThrowError()
     })
     test('nested Dict', () => {
@@ -64,7 +64,7 @@ describe('Dict', () => {
           mother: Object,
         }),
       })
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
@@ -72,16 +72,16 @@ describe('Dict', () => {
             father: {},
             mother: {},
           },
-        }) 
+        })
       }).not.toThrowError()
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
           parents: {
             father: {},
           },
-        }) 
+        })
       }).toThrowError()
     })
   })

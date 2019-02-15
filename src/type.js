@@ -8,9 +8,9 @@ import {
   toShallowObject,
   defineProperty,
 } from './utils'
-import { xError, HelloTypeError } from './error'
+import { xError, _ERROR_ } from './error'
 
-export default class Type {
+export class Type {
   constructor(...patterns) {
     defineProperty(this, 'id', Date.now()  + '.' + parseInt(Math.random() * 10000))
     defineProperty(this, 'mode', 'none', true)
@@ -35,172 +35,172 @@ export default class Type {
     defineProperty(this, 'rules', rules)
   }
   /**
-   * vaildate whether the argument match the rule
-   * @param {*} target
+   * validate whether the argument match the rule
+   * @param {*} value
    * @param {*} rule
    */
-  vaildate(target, rule) {
+  validate(value, rule) {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
-      let error = rule.vaildate(target)
-      return xError(error, { target, type: this })
+      let error = rule.validate(value)
+      return xError(error, { value, rule, type: this, action: 'validate' })
     }
 
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
     if (typeof rule === 'number' && isNaN(rule)) {
-      if (typeof target === 'number' && isNaN(target)) {
+      if (typeof value === 'number' && isNaN(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.NaN', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // Number
     // i.e. (new Type(Number).assert(1))
     if (rule === Number) {
-      if (isNumber(target)) {
+      if (isNumber(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Number', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // Boolean
     // i.e. (new Type(Boolean)).assert(true)
     if (rule === Boolean) {
-      if (isBoolean(target)) {
+      if (isBoolean(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Boolean', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // String
     // i.e. (new Type(String)).assert('name')
     if (rule === String) {
-      if (isString(target)) {
+      if (isString(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.String', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // regexp
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
-      if (!isString(target)) {
-        return new HelloTypeError('type.regexp.string', { target, type: rule })
+      if (!isString(value)) {
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
-      if (rule.test(target)) {
+      if (rule.test(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.regexp', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // Function
     // i.e. (new Type(Function)).assert(() => {})
     if (rule === Function) {
-      if (isFunction(target)) {
+      if (isFunction(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Function', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // Array
     // i.e. (new Type(Array)).assert([])
     if (rule === Array) {
-      if (isArray(target)) {
+      if (isArray(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Array', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     // object
     // i.e. (new Type(Object).assert({}))
     if (rule === Object) {
-      if (isObject(target)) {
+      if (isObject(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Object', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
     if (rule === Symbol) {
-      if (isSymbol(target)) {
+      if (isSymbol(value)) {
         return null
       }
       else {
-        return new HelloTypeError('type.Symbol', { target, type: rule })
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
-    if (isArray(rule) && isArray(target)) {
+    if (isArray(rule) && isArray(value)) {
       let rules = rule
-      let targets = target
-      let ruleLength = rules.length
-      let targetLength = targets.length
+      let items = value
+      let ruleCount = rules.length
+      let itemCount = items.length
 
       // array length should equal in strict mode
       if (this.mode === 'strict') {
-        if (ruleLength !== targetLength) {
-          return new HelloTypeError('type.strict.array.length', { target, ruleLength, targetLength, type: rule })
+        if (ruleCount !== itemCount) {
+          return new _ERROR_('dirty', { value, rule, type: this, action: 'validate', length: ruleCount })
         }
       }
 
       // if arguments.length is bigger than rules.length, use Enum to match left items
       let index = 0
-      for (let i = 0; i < ruleLength; i ++) {
-        let target = targets[i]
+      for (let i = 0; i < ruleCount; i ++) {
+        let value = items[i]
         let rule = rules[i]
 
         if (isInstanceOf(rule, Rule)) {
-          let error = rule.vaildate(target)
+          let error = rule.validate(value)
 
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            target = rule.override(error, i, targets) || targets[i]
-            error = rule.vaildate(target)
+            value = rule.override(error, i, items) || items[i]
+            error = rule.validate(value)
           }
 
           if (error) {
-            return xError(error, { target, index: i, items: targets, type: this })
+            return xError(error, { value, rule, type: this, action: 'validate', index })
           }
           else {
             continue
           }
         }
 
-        // normal vaildate
-        let error = this.vaildate(target, rule)
+        // normal validate
+        let error = this.validate(value, rule)
         if (error) {
-          return xError(error, { target, rule, index: i, items: targets, type: this })
+          return xError(error, { value, rule, type: this, action: 'validate', index })
         }
 
         index = i
       }
       // if target length is greater than rule length
-      if (ruleLength && targetLength > ruleLength) {
-        let RestType = ruleLength > 1 ? Enum(...rules) : rules[0]
-        for (let i = index+1; i < targetLength; i ++) {
-          let target = targets[i]
-          // normal vaildate
-          let error = this.vaildate(target, RestType)
+      if (ruleCount && itemCount > ruleCount) {
+        let RestType = ruleCount > 1 ? Enum(...rules) : rules[0]
+        for (let i = index+1; i < itemCount; i ++) {
+          let value = items[i]
+          // normal validate
+          let error = this.validate(value, RestType)
           if (error) {
-            return xError(error, { target, index: i, items: targets, type: this })
+            return xError(error, { value, rule: RestType, type: this, action: 'validate', index })
           }
         }
       }
@@ -208,19 +208,19 @@ export default class Type {
       return null
     }
 
-    if (isObject(rule) && isObject(target)) {
+    if (isObject(rule) && isObject(value)) {
       let rules = rule
-      let targets = target
-      let ruleKeys = Object.keys(rules).sort()
-      let targetKeys = Object.keys(targets).sort()
+      let target = value
+      let ruleKeys = Object.keys(rules)
+      let targetKeys = Object.keys(target)
 
       if (this.mode === 'strict') {
         // properties should be absolutely same
         for (let i = 0, len = targetKeys.length; i < len; i ++) {
           let key = targetKeys[i]
-          // targets has key beyond rules
+          // target has key beyond rules
           if (!inArray(key, ruleKeys)) {
-            return new HelloTypeError('type.strict.object.key.overflow', { target, rule, key, ruleKeys, node: targets, type: this })
+            return new _ERROR_('overflow', { value, rule, type: this, action: 'validate', key, keys: ruleKeys })
           }
         }
       }
@@ -228,20 +228,20 @@ export default class Type {
       for (let i = 0, len = ruleKeys.length; i < len; i ++) {
         let key = ruleKeys[i]
         let rule = rules[key]
-        let target = targets[key]
+        let value = target[key]
 
         // not found some key in target
         // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
         if (!inArray(key, targetKeys)) {
           // IfExists:
           if (isInstanceOf(rule, Rule) && this.mode !== 'strict') {
-            let error = rule.vaildate(target)
+            let error = rule.validate(value)
 
             // use rule to override property when not exists
             // override value and check again
             if (isFunction(rule.override)) {
-              target = rule.override(error, key, targets) || targets[key]
-              error = rule.vaildate(target)
+              value = rule.override(error, key, target) || target[key]
+              error = rule.validate(value)
             }
 
             if (!error) {
@@ -249,31 +249,31 @@ export default class Type {
             }
           }
 
-          return new HelloTypeError('type.object.key.missing', { target, rule, key, ruleKeys, node: targets, type: this })
+          return new _ERROR_('missing', { value, rule, type: this, action: 'validate', key })
         }
 
         if (isInstanceOf(rule, Rule)) {
-          let error = rule.vaildate(target)
+          let error = rule.validate(value)
 
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            target = rule.override(error, key, targets) || targets[key]
-            error = rule.vaildate(target)
+            value = rule.override(error, key, target) || target[key]
+            error = rule.validate(value)
           }
 
           if (error) {
-            return xError(error, { target, key, type: this })
+            return xError(error, { value, rule, type: this, action: 'validate', key })
           }
           else {
             continue
           }
         }
 
-        // normal vaildate
-        let error = this.vaildate(target, rule)
+        // normal validate
+        let error = this.validate(value, rule)
         if (error) {
-          return xError(error, { target, key, type: this })
+          return xError(error, { value, rule, type: this, action: 'validate', key })
         }
       }
 
@@ -282,13 +282,13 @@ export default class Type {
 
     // is the given value, rule should not be an object/instance
     // i.e. (new Type('name')).assert('name')
-    if (!isInstanceOf(rule, Object) && target === rule) {
+    if (!isInstanceOf(rule, Object) && value === rule) {
       return null
     }
 
     // instance of a class
     // i.e. (new Type(Person)).assert(person)
-    if (isConstructor(rule) && isInstanceOf(target, rule)) {
+    if (isConstructor(rule) && isInstanceOf(value, rule)) {
       return null
     }
 
@@ -299,29 +299,29 @@ export default class Type {
       if (this.mode === 'strict') {
         rule = rule.strict
       }
-      let error = rule.catch(target)
+      let error = rule.catch(value)
       if (error) {
-        return xError(error, { target, type: this.name })
+        return xError(error, { value, rule, type: this, action: 'validate' })
       }
 
       return null
     }
 
-    return new HelloTypeError('type', { target, type: rule })
+    return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
   }
   assert(...targets) {
     let rules = this.rules
 
     if (targets.length !== rules.length) {
-      throw new HelloTypeError('type.arguments.length', { target: 'arguments', type: this, ruleLength: this.rules.length })
+      throw new _ERROR_('dirty', { type: this, action: 'assert', length: this.rules.length })
     }
 
     for (let i = 0, len = targets.length; i < len; i ++) {
-      let target = targets[i]
+      let value = targets[i]
       let rule = rules[i]
-      let error = this.vaildate(target, rule)
+      let error = this.validate(value, rule)
       if (error) {
-        throw xError(error, { target, type: rule })
+        throw xError(error, { value, rule, type: this, action: 'assert' })
       }
     }
   }
@@ -403,3 +403,4 @@ export default class Type {
     return this.name
   }
 }
+export default Type

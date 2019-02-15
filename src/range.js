@@ -1,8 +1,8 @@
 import Type from './type'
 import { isNumber } from './utils'
-import { HelloTypeError } from './error'
+import { _ERROR_ } from './error'
 
-export default function Range(min, max) {
+export function Range(min, max) {
   if (!isNumber(min)) {
     min = 0
   }
@@ -16,17 +16,18 @@ export default function Range(min, max) {
 
   const RangeType = new Type(min, max)
   RangeType.name = 'Range'
-  RangeType.assert = function(target) {
-    if (!isNumber(target)) {
-      throw new HelloTypeError('range.number', { target, type: this })
+  RangeType.assert = function(value) {
+    if (!isNumber(value)) {
+      throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
     }
 
     let [min, max] = this.patterns
-    if (target >= min && target <= max) {
+    if (value >= min && value <= max) {
       return
     }
 
-    throw new HelloTypeError('range', { target, type: this, rule: [min, max], min, max })
+    throw new _ERROR_('refuse', { value, type: this, action: 'assert', min, max })
   }
   return RangeType
 }
+export default Range

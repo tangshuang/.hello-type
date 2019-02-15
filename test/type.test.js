@@ -28,13 +28,13 @@ describe('new Type', () => {
         age: Number,
       })
       expect(() => { DictType.assert(null) }).toThrowError()
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: 'tomy',
           age: 10,
         })
       }).not.toThrowError()
-      expect(() => { 
+      expect(() => {
         DictType.assert({
           name: null,
           age: 10,
