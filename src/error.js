@@ -1,7 +1,7 @@
-import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN } from './utils'
+import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN, isString } from './utils'
 
 export const messages = {
-  refuse: '{keyPath} should match {should}, but receive {value}.',
+  refuse: '{keyPath} should match {should}, but receive {receive}.',
   dirty: '{keyPath} does not match {should}, length should be {length}.',
   overflow: '{keyPath} should not exists, only {keys} allowed.',
   missing: '{keyPath} does not exists.'
@@ -65,80 +65,77 @@ export class _ERROR_ extends TypeError {
       },
       summary: {
         get() {
-          const shouldStringfy = value => typeof value !== 'number' && typeof value !== 'boolean' && !isNaN(value)
-          const getName = (value, masking = false) => {
+          const getReceive = (value, masking = false) => {
             let totype = typeof(value)
-            if (inArray(totype, ['number', 'boolean']) || value === null || isNaN(value)) {
-              return shouldStringfy(value) ? stringify(value) : value
-            }
-            else if (totype === 'undefined') {
-              return 'undefined'
+            if (inArray(totype, ['number', 'boolean', 'undefined']) || value === null || isNaN(value)) {
+              return value
             }
             else if (totype === 'string') {
-              if (masking) {
-                return value.length > 16 ? stringify(value.substr(0, 16) + '...') : stringify(value)
-              }
-              else {
-                return stringify(value)
-              }
+              let output = masking ? value.length > 16 ? value.substr(0, 16) + '...' : value : value
+              return stringify(output)
             }
             else if (isFunction(value)) {
               return `Function:${value.name}()`
             }
             else if (isArray(value)) {
+              let name = value.__name__ || 'Array'
               if (masking) {
-                return `Array(${value.length})`
+                return `${name}(${value.length})`
               }
               else {
-                return `Array(${value.map(item => isArray(item) ? 'Array' : getName(item)).join(',')})`
+                return `${name}(${value.map(item => getReceive(item, true)).join(',')})`
               }
             }
             else if (isObject(value)) {
+              let name = value.__name__ || 'Object'
               let keys = Object.keys(value)
               if (masking) {
-                return `Object({${keys.join(',')}})`
+                return `${name}({${keys.join(',')}})`
               }
               else {
                 let values = []
                 keys.forEach((key) => {
-                  values.push(`${key}:` + getName(value[key]))
+                  values.push(`${key}:` + getReceive(value[key], true))
                 })
-                return `Object({${values.join(',')}})`
+                return `${name}({${values.join(',')}})`
               }
             }
-            else if (typeof value === 'object') {
-              return value.name ? value.name : value.constructor ? value.constructor.name : value.toString()
+            else if (typeof value === 'object') { // for class instances
+              return value.name ? value.name : value.constructor ? value.constructor.name : 'Object'
             }
-            else if (typeof value === 'function') { // for native function or class
-              return value.name
+            else if (typeof value === 'function') { // for native functions or classes
+              return value.name ? value.name : value.constructor ? value.constructor.name : 'Function'
             }
             else {
-              return value.toString()
+              let output = value.toString()
+              let res = masking ? output.length > 16 ? output.substr(0, 16) + '...' : output : output
+              return res
             }
           }
-          const getShould = (type) => {
-            if (!type) {
+          const getShould = (rule, type) => {
+            if (!rule && !type) {
               return 'unknown'
             }
 
-            let name = getName(type)
+            let source = rule || type
+            let name = getReceive(source)
             let should = name
 
             if (name === 'List') {
-              let rules = type.rules[0].map(item => getShould(item))
+              let rules = source.rules[0].map(item => getShould(item))
               should = `List([${rules.join(',')}])`
             }
             else if (name === 'Dict') {
-              let rules = type.rules[0]
+              let rules = source.rules[0]
               let keys = Object.keys(rules)
               should = `Dict({${keys.join(',')}})`
             }
             else if (inArray(name, ['Enum', 'Tuple', 'Range', 'Type'])) {
-              let rules = type.rules.map(item => getShould(item))
+              let rules = source.rules.map(item => getShould(item))
               should = `${name}(${rules.join(',')})`
             }
             else if (inArray(name, ['IfExists', 'IfNotMatch', 'IfExistsNotMatch', 'ShouldMatch', 'Equal', 'InstanceOf', 'Validate', 'Determine'])) {
-              let rule = type.arguments[0]
+              let rule = source.arguments[0]
               let ruleName = getShould(rule)
               should = `${name}(${ruleName})`
             }
@@ -150,19 +147,30 @@ export class _ERROR_ extends TypeError {
           let info = traces[traces.length - 1] // use last trace which from the stack bottom as base info
           let research = ''
 
+          let lastResearch = ''
           traces.forEach((item, i) => {
-            let next = traces[i + 1]
+            let prev = traces[i - 1]
             let keyPath = item.keyPath
             let sep = ''
+            let nextResearch = getShould(item.rule || item.type)
 
-            if (next && next.keyPath !== keyPath) { // keyPath changed
+            if (prev && prev.keyPath !== keyPath) { // keyPath changed
               sep = '/'
             }
-            else {
-              sep = '.'
+            else if (nextResearch !== lastResearch) {
+              sep = ';'
+            }
+            research += i > 0 ? sep : ''
+
+            if (prev && prev.keyPath !== keyPath && (item.key || item.index)) {
+              research += (item.key || item.index) + ':'
             }
 
-            research += (i > 0 ? sep : '') + getShould(item)
+            if (nextResearch !== lastResearch) {
+              research += nextResearch
+            }
+
+            lastResearch = nextResearch
 
             if (keyPath === info.keyPath) {
               info = Object.assign({}, info, item)
@@ -170,8 +178,9 @@ export class _ERROR_ extends TypeError {
           })
 
           let summary = {
-            value: getName(info.value, true), // received node value
-            should: getShould(info.rule || info.type), // node rule
+            value: info.value,
+            receive: getReceive(info.value, true), // received node value
+            should: getShould(info.rule, info.type), // node rule
             research,
           }
           let res = Object.assign({}, info, summary)
