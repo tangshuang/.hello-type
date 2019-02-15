@@ -292,6 +292,13 @@ export const Equal = makeRuleGenerator('Equal', function(rule) {
  * @param {Any} OutputType
  */
 export const Lambda = makeRuleGenerator('Lambda', function(InputType, OutputType) {
+  if (!isInstanceOf(InputType, Type)) {
+    InputType = new Type(InputType)
+  }
+  if (!isInstanceOf(OutputType, Type)) {
+    OutputType = new Type(OutputType)
+  }
+
   return new Rule(function(value) {
     if (!isFunction(value)) {
       return new _ERROR_('refuse', { value, rule: this, action: 'rule' })

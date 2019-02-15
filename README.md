@@ -1,14 +1,14 @@
 HelloType
 =========
 
-An ECMAScript data type check library.
+An ECMAScript data type/structure check library.
 
 【[中文文档](https://www.tangshuang.net/5625.html)】
 
 ## Install
 
 ```
-npm i -S hello-type
+npm i hello-type
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ import HelloType, { Dict, Enum, Tuple, List, Type, Rule, Self, IfExists } from '
 or
 
 ```js
-const { Dict, Enum, Tuple, List, Type, Rule, Self, HelloType, IfExists } = require('hello-type')
+const { HelloType, Dict, Enum, Tuple, List, Type, Rule, Self, IfExists } = require('hello-type')
 ```
 
 ## Type
@@ -68,14 +68,14 @@ Rules:
 - List()
 - Enum()
 - Tuple()
-- new Type
+- new Type()
 - Null
 - Undefined
 - Any
 - IfExists()
 - InstanceOf()
 - Equal()
-- new Rule
+- new Rule()
 - *: any value to equal
 
 A type instance have members:
@@ -196,7 +196,7 @@ const MyType = new Type({
 })
 ```
 
-## Dict
+## Dict()
 
 A Dict is a type of object which has only one level properties.
 
@@ -235,7 +235,7 @@ _What's the difference between Dict and new Type?_
 - _Dict_ only receive object, _new Type_ receive any.
 - If you pass only one object into _new Type_, they are the same.
 
-## List
+## List()
 
 A list is an array in which each item has certain structure.
 
@@ -265,7 +265,7 @@ _What's the difference between List and Tuple?_
 
 Tuple has no relation with array, it is a group of scattered items with certain order.
 
-## Tuple
+## Tuple()
 
 A tuple is a group of scattered items with certain order, the length of tuple can not be changed, each item can have different structure.
 
@@ -290,7 +290,7 @@ const SomeType = Tuple(Object, IfExists(Number), IfExists(String))
 SomeType.test({}, 1) // false, arguments length not match
 ```
 
-## Enum
+## Enum()
 
 A enum is a set of values from which the given value should pick.
 
@@ -311,7 +311,7 @@ ColorType.test(2) // true
 ColorType.test([]) // false
 ```
 
-## Range
+## Range()
 
 A range is a threshold of numbers. The given value should be a nunmber and in the range.
 
@@ -333,7 +333,7 @@ Create a custom rule:
 ```js
 const CustomRule = new Rule(function(value) {
   if (value !== 'ok') {
-    return new _ERROR_(value + ' not equal `ok`')
+    return new Error(value + ' not equal `ok`')
   }
 })
 const CustomType = new Type(CustomRule)
@@ -341,7 +341,7 @@ CustomType.test('ok') // true
 ```
 
 The function which you passed into `new Rule()` should have a parameter.
-If you want to make assert fail, you should must return an instance of _ERROR_.
+If you want to make assert fail, you should must return an instance of Error.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
@@ -482,7 +482,7 @@ const MyType = Dict({
 MyType.assert({ type: Number })
 ```
 
-**Lambda(InputRule, OutputRule)**
+**Lambda(InputType, OutputType)**
 
 The value should be a function, and the parameters and return value should match passed rules.
 
@@ -520,7 +520,7 @@ Sometimes, you want to use your own error message to be thrown out. `Validate` r
 ```js
 let MyRule = Validate(value => typeof value === 'object', 'target should be an object.')
 let MyType = new Type(MyRule)
-MyType.assert('111') // throw _ERROR_ with 'Target should be an object.'
+MyType.assert('111') // throw Error with 'Target should be an object.'
 ```
 
 ```js
@@ -638,7 +638,7 @@ const showError = (err) => Toast.error(err.message)
 window.addEventListener('error', (e) => {
   let { error } = e
   if (error.owner === 'hello-type') {
-    e.preventDefault() // when throw _ERROR_, there will no error massage in console
+    e.preventDefault() // when throw Error, there will no error massage in console
   }
 })
 
@@ -712,43 +712,35 @@ It is only works for object/sub-objects, not for any array/sub-arrays:
 obj.books[0].name = null // without any effects
 ```
 
-## _ERROR_
+## Error
 
 Advance TypeError which has `addtrace` method.
 
 ```js
-import { _ERROR_ } from 'hello-type'
+import HelloType from 'hello-type'
+const { Error } = HelloType
 ```
 
 - @param key/message
 - @param params
 
 ```js
-let error = new _ERROR_('{arg} is not good.', { arg: 'tomy' })
+let error = new Error('{arg} is not good.', { arg: 'tomy' })
 error.addtrace({ arg: 'lily' })
 console.log(error.message) // 'lily is not good.'
 ```
 
-Use `messages` to replace the default message text. Look into [error.js](./src/error.js) to find out which to replace.
+Use `translate` to change message dymaticly:
 
 ```js
-_ERROR_.messages.enum = '{target}不符合枚举类型{type}({rules})，请从枚举列表中选择。'
+let message = error.translate('{arg}有问题，请检查。')
 ```
 
-When you create your own rule, you should return an instance of HellTypeError:
+Or you can change the error message by set the second parameter to be `true`:
 
 ```js
-const MyRule = new Rule(function(value) {
-  if (value !== 'tomy') {
-    return new _ERROR_('{target} is not "tomy"', { target: value })
-  }
-})
-```
-
-## Test
-
-```
-npm test
+error.translate('{arg}有问题，请检查。', true)
+let message = error.message
 ```
 
 ## MIT License
