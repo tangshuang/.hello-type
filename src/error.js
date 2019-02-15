@@ -96,7 +96,7 @@ export class HelloTypeError extends TypeError {
           const info = traces[traces.length - 1] // use last trace which from the stack bottom as base info
 
           const shouldStringfy = value => typeof value !== 'number' && typeof value !== 'boolean' && !isNaN(value)
-          const getValue = (value) => {
+          const getName = (value, masking = true) => {
             let totype = typeof(value)
             if (inArray(totype, ['number', 'boolean']) || value === null || isNaN(value)) {
               return shouldStringfy(value) ? stringify(value) : value
@@ -105,49 +105,29 @@ export class HelloTypeError extends TypeError {
               return 'undefined'
             }
             else if (totype === 'string') {
-              return value.length > 16 ? stringify(value.substr(0, 16) + '...') : stringify(value)
+              if (masking) {
+                return value.length > 16 ? stringify(value.substr(0, 16) + '...') : stringify(value)
+              }
+              else {
+                return stringify(value)
+              }
             }
             else if (isFunction(value)) {
-              return `Function(${value.name}(){[code]})`
+              return `Function:${value.name}()`
             }
             else if (isArray(value)) {
-              return `Array(${value.map(item => isArray(item) ? 'Array' : getValue(item))})`
+              return `Array(${value.map(item => isArray(item) ? 'Array' : getName(item)).join(',')})`
             }
             else if (isObject(value)) {
               let keys = Object.keys(value)
               return `Object({${keys.join(',')}})`
             }
-            else {
+            else if (typeof value === 'object') {
               return value.name ? value.name : value.constructor ? value.constructor.name : value.toString()
             }
-          }
-
-          const getName = (obj) => {
-            return obj.name ? obj.name : obj.constructor ? obj.constructor.name : obj.toString()
-          }
-          const getRuleValue = (rule) => {
-            let ruleValue = ''
-            let ruleProto = typeof(rule)
-            if (inArray(ruleProto, ['number', 'boolean', 'string']) || rule === null || isNaN(rule)) {
-              ruleValue = shouldStringfy(rule) ? stringify(rule) : rule
-            }
-            else if (ruleProto === 'undefined') {
-              return 'undefined'
-            }
-            else if (isFunction(rule)) {
-              ruleValue = rule.name || `Function`
-            }
-            else if (isArray(rule)) {
-              ruleValue = rule.map(item => isArray(item) ? 'Array' : getRuleValue(item)).join(',')
-            }
-            else if (isObject(rule)) {
-              let keys = Object.keys(rule)
-              ruleValue = '{' + keys.join(',') + '}'
-            }
             else {
-              ruleValue = getName(rule)
+              return value.toString()
             }
-            return ruleValue
           }
           const getShould = (info) => {
             const { type, rule } = info
@@ -158,7 +138,7 @@ export class HelloTypeError extends TypeError {
               return typeName
             }
 
-            const ruleValue = getRuleValue(rule)
+            const ruleValue = getName(rule, false)
 
             if (typeName === 'Type') {
               return ruleValue
@@ -181,7 +161,7 @@ export class HelloTypeError extends TypeError {
           })
 
           let summary = {
-            value: getValue(info.target), // received node value
+            value: getName(info.target), // received node value
             should: getShould(info), // node rule
             research,
           }
