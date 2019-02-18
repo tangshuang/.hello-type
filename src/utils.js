@@ -68,29 +68,20 @@ export function stringify(obj) {
   return JSON.stringify(obj)
 }
 
-export function toFlatObject(obj, parentPath = '', result = {}) {
-  let keys = Object.keys(obj)
-  keys.sort() // make sure the output are the same order
-  keys.forEach((key) => {
-    let path = parentPath ? parentPath + '.' + key : key
-    let value = obj[key]
-    if (isObject(value)) {
-      toFlatObject(value, path, result)
-    }
-    else {
-      result[path] = value
-    }
-  })
-  return result
-}
+export function map(obj, fn) {
+  if (!isObject(obj) || !isArray(obj)) {
+    return obj
+  }
 
-export function toShallowObject(obj, factory) {
-  let result = {}
+  if (!isFunction(fn)) {
+    return obj
+  }
+
+  let result = isArray(obj) ? [] : {}
   let keys = Object.keys(obj)
-  keys.sort() // make sure the output are the same order
   keys.forEach((key) => {
     let value = obj[key]
-    result[key] = isFunction(factory) ? factory(value, key) || value : value
+    result[key] = isFunction(fn) ? fn(value, key) || value : value
   })
   return result
 }
@@ -179,45 +170,6 @@ export function clone(obj, fn) {
   let result = clone(obj, '', obj)
   parents = null
   return result
-}
-
-export function each(obj, fn) {
-  if (!isFunction(fn)) {
-    return
-  }
-
-  let parents = []
-  let recursive = function(origin, path = '') {
-    if (!isObject(origin) && !isArray(origin)) {
-      return
-    }
-
-    parents.push(origin)
-
-    let keys = Object.keys(origin)
-    for (let i = 0, len = keys.length; i < len; i ++) {
-      let key = keys[i]
-      let value = origin[key]
-      let referer = inArray(value, parents)
-      if (isFunction(fn)) {
-        let res = fn(value, key, origin, path, obj, referer)
-        if (!res) {
-          return false
-        }
-      }
-      if (!referer) {
-        let res = recursive(value, path ? path + '.' + key : key)
-        if (!res) {
-          return false
-        }
-      }
-    }
-
-    return true
-  }
-
-  recursive(obj)
-  parents = null
 }
 
 export function defineProperty(obj, prop, value, writable, enumerable) {

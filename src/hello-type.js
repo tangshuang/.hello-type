@@ -14,6 +14,7 @@ export {
   Equal, InstanceOf, Lambda,
   Validate,
   Determine,
+  Async,
 } from './rule'
 export { Type }
 
