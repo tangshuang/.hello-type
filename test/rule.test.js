@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine } from '../src/rule'
+import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine, Async } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -164,5 +164,20 @@ describe('Rule', () => {
     expect(SomeType.catch({ is: true, has: 'one' })).toBeNull()
     expect(() => SomeType.assert({ is: false, has: 'one' })).toThrowError()
     expect(SomeType.catch({ is: false, has: null })).toBeNull()
+  })
+  test('Async', (done) => {
+    const AsyncRule = Async(async () => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(String)
+        })
+      })
+    })
+    const SomeType = new Type({ text: AsyncRule })
+    expect(SomeType.catch({ text: null })).toBeNull()
+    AsyncRule.__async__.then(() => {
+      expect(() => SomeType.assert({ text: null })).toThrowError()
+      done()
+    })
   })
 })

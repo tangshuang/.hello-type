@@ -344,7 +344,7 @@ CustomType.test('ok') // true
 ```
 
 The function which you passed into `new Rule()` should have a parameter.
-If you want to make assert fail, you should must return an error or true/false.
+If you want to make assert fail, you should must return: 1) an error, 2) true or false, 3) any even undefined.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 

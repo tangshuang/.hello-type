@@ -40,9 +40,6 @@ function makeRule(name, determine, message = 'refuse') {
     if ((isFunction(determine) && !determine.call(this, value)) || (isBoolean(determine) && !determine)) {
       return new _ERROR_(msg, { value, rule: this, action: 'rule' })
     }
-    else {
-      return null
-    }
   })
 }
 
@@ -67,9 +64,28 @@ export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isStri
  * @param {Function} fn which can be an async function and should return a rule
  */
 export const Async = makeRuleGenerator('Async', function(fn) {
-  const rule = new Rule()
-  Promise.resolve().then(() => fn()).then((type) => {
+  const rule = new Rule(function(value) {
+    if (this.__await__) {
+      let rule = this.__await__
+      if (isInstanceOf(rule, Rule)) {
+        let error = rule.validate(value)
+        return xError(error, { value, rule, action: 'rule' })
+      }
+      else if (isInstanceOf(rule, Type)) {
+        let error = rule.catch(value)
+        return xError(error, { value, rule, action: 'rule' })
+      }
+      else {
+        let type = new Type(rule)
+        let error = type.catch(value)
+        return xError(error, { value, rule, action: 'rule' })
+      }
+    }
+    return true
+  })
+  rule.__async__ = Promise.resolve().then(() => fn()).then((type) => {
     rule.__await__ = type
+    return type
   })
   return rule
 })
@@ -130,7 +146,6 @@ export const ShouldMatch = makeRuleGenerator('ShouldMatch', function(...rules) {
         return error
       }
     }
-    return null
   })
 })
 
@@ -143,7 +158,7 @@ export const IfExists = makeRuleGenerator('IfExists', function(rule) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
       if (value === undefined) {
-        return null
+        return
       }
       let error = rule.validate(value)
       return xError(error, { value, rule: this, action: 'rule' })
@@ -153,7 +168,7 @@ export const IfExists = makeRuleGenerator('IfExists', function(rule) {
   if (isInstanceOf(rule, Type)) {
     return new Rule(function(value) {
       if (value === undefined) {
-        return null
+        return
       }
       let error = rule.catch(value)
       return xError(error, { value, rule: this, action: 'rule' })
@@ -253,7 +268,7 @@ export const IfExistsNotMatch = makeRuleGenerator('IfExistsNotMatch', function(r
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
       if (value === undefined) {
-        return null
+        return
       }
       let error = rule.validate(value)
       return xError(error, { value, rule: this, action: 'rule' })
@@ -267,7 +282,7 @@ export const IfExistsNotMatch = makeRuleGenerator('IfExistsNotMatch', function(r
   if (isInstanceOf(rule, Type)) {
     return new Rule(function(value) {
       if (value === undefined) {
-        return null
+        return
       }
       let error = rule.catch(value)
       return xError(error, { value, rule: this, action: 'rule' })

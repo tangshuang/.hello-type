@@ -7,6 +7,7 @@ import {
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   map,
   defineProperty,
+  inObject,
 } from './utils'
 import { xError, _ERROR_ } from './error'
 
@@ -35,19 +36,13 @@ export class Type {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
-      // async rule
-      if (isInstanceOf(rule.__await__, Rule)) {
-        let error = this.validate(value, rule.__await__)
-        return xError(error, { value, rule, type: this, action: 'validate' })
-      }
-
       let res = rule.validate(value)
       // if validate return an error
       if (isInstanceOf(res, Error)) {
-        return xError(error, { value, rule, type: this, action: 'validate' })
+        return xError(res, { value, rule, type: this, action: 'validate' })
       }
       // if validate return false
-      else if (!res) {
+      else if (isBoolean(res) && !res) {
         return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
       }
       // if validate return true
