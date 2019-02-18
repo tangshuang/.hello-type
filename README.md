@@ -334,12 +334,9 @@ Create a custom rule:
 const CustomRule = new Rule(function(value) {
   if (value !== 'ok') {
     return new Error(value + ' not equal `ok`')
-<<<<<<< HEAD
-=======
   }
   else {
     return true
->>>>>>> dev
   }
 })
 const CustomType = new Type(CustomRule)
@@ -347,11 +344,7 @@ CustomType.test('ok') // true
 ```
 
 The function which you passed into `new Rule()` should have a parameter.
-<<<<<<< HEAD
-If you want to make assert fail, you should must return an instance of Error.
-=======
 If you want to make assert fail, you should must return an error or true/false.
->>>>>>> dev
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
