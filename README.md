@@ -333,7 +333,10 @@ Create a custom rule:
 ```js
 const CustomRule = new Rule(function(value) {
   if (value !== 'ok') {
-    return new _ERROR_(value + ' not equal `ok`')
+    return new Error(value + ' not equal `ok`')
+  }
+  else {
+    return true
   }
 })
 const CustomType = new Type(CustomRule)
@@ -341,7 +344,7 @@ CustomType.test('ok') // true
 ```
 
 The function which you passed into `new Rule()` should have a parameter.
-If you want to make assert fail, you should must return an instance of _ERROR_.
+If you want to make assert fail, you should must return an error or true/false.
 
 Notice: CustomRule is just a instance of Rule, it is not a type, do not have `assert` `trace` and so on.
 
@@ -555,6 +558,25 @@ const SomeType = Dict({
       return Null
     }
   }),
+})
+```
+
+**Async**
+
+Make a rule which not build the rule immediately.
+
+- @param function fn a function which should return a rule
+- @return Rule
+
+```js
+const AsyncRule = Async(async () => {
+  const data = await fetch(url)
+  if (data.type === 'list') {
+    return Array
+  }
+  else {
+    return Any
+  }
 })
 ```
 

@@ -5,7 +5,7 @@ import Enum from './enum'
 import {
   isArray, inArray, isBoolean, isNumber, isObject, isNaN,
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
-  toShallowObject,
+  map,
   defineProperty,
 } from './utils'
 import { xError, _ERROR_ } from './error'
@@ -18,19 +18,11 @@ export class Type {
     defineProperty(this, 'patterns', patterns)
 
     let rules = patterns.map((rule) => {
-      if (isObject(rule)) {
-        // if rule is an object, it will be converted to be a shallow object
-        // if the value of a property is an object, it will be converted to be a Dict
-        // if the value of a property is an array, it will be converted to be a List
-        return toShallowObject(rule, item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
-      }
+      // if rule is an object, it will be converted to be a shallow object
+      // if the value of a property is an object, it will be converted to be a Dict
+      // if the value of a property is an array, it will be converted to be a List
       // if rule is an array, it will be converted to be a 'List'
-      else if (isArray(rule)) {
-        return rule.map(item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
-      }
-      else {
-        return rule
-      }
+      return map(rule, item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
     })
     defineProperty(this, 'rules', rules)
   }
@@ -43,8 +35,25 @@ export class Type {
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(rule, Rule)) {
-      let error = rule.validate(value)
-      return xError(error, { value, rule, type: this, action: 'validate' })
+      // async rule
+      if (isInstanceOf(rule.__await__, Rule)) {
+        let error = this.validate(value, rule.__await__)
+        return xError(error, { value, rule, type: this, action: 'validate' })
+      }
+
+      let res = rule.validate(value)
+      // if validate return an error
+      if (isInstanceOf(res, Error)) {
+        return xError(error, { value, rule, type: this, action: 'validate' })
+      }
+      // if validate return false
+      else if (!res) {
+        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+      }
+      // if validate return true
+      else {
+        return null
+      }
     }
 
     // NaN

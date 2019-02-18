@@ -28,7 +28,7 @@ export class Rule {
 export default Rule
 
 // create a simple rule
-function makeRule(name, determine, message) {
+function makeRule(name, determine, message = 'refuse') {
   if (isFunction(name)) {
     message = determine
     determine = name
@@ -57,10 +57,22 @@ function makeRuleGenerator(name, fn) {
   }
 }
 
-export const Null = makeRule('Null', (value) => value === null, 'rule.null')
-export const Undefined = makeRule('Undefined', (value) => value === undefined, 'rule.undefined')
+export const Null = makeRule('Null', (value) => value === null)
+export const Undefined = makeRule('Undefined', (value) => value === undefined)
 export const Any = makeRule('Any', true)
-export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isString(value) && /^[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value)), 'rule.numeric')
+export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isString(value) && /^[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value)))
+
+/**
+ * Async rule
+ * @param {Function} fn which can be an async function and should return a rule
+ */
+export const Async = makeRuleGenerator('Async', function(fn) {
+  const rule = new Rule()
+  Promise.resolve().then(() => fn()).then((type) => {
+    rule.__await__ = type
+  })
+  return rule
+})
 
 /**
  * Verify a rule by using custom error message
