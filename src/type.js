@@ -17,33 +17,12 @@ export class Type {
     defineProperty(this, 'name', 'Type', true, true)
     defineProperty(this, 'patterns', patterns)
 
-<<<<<<< HEAD
-    let rules = patterns.map((pattern) => {
-      if (isObject(pattern)) {
-        // if pattern is an object, it will be converted to be a shallow object
-        // if the value of a property is an object, it will be converted to be a Dict
-        // if the value of a property is an array, it will be converted to be a List
-        let rule = toShallowObject(pattern, item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
-        defineProperty(rule, '__name__', 'Dict')
-        return rule
-      }
-      // if pattern is an array, it will be converted to be a 'List'
-      else if (isArray(pattern)) {
-        let rule = pattern.map(item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
-        defineProperty(rule, '__name__', 'List')
-        return rule
-      }
-      else {
-        return pattern
-      }
-=======
     let rules = patterns.map((rule) => {
       // if rule is an object, it will be converted to be a shallow object
       // if the value of a property is an object, it will be converted to be a Dict
       // if the value of a property is an array, it will be converted to be a List
       // if rule is an array, it will be converted to be a 'List'
       return map(rule, item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
->>>>>>> dev
     })
     defineProperty(this, 'rules', rules)
   }
