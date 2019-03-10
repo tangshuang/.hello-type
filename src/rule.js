@@ -119,7 +119,7 @@ export const Validate = makeRuleGenerator('Validate', function(rule, message) {
  * const SomeType = Dict({
  *   value: ShouldMatch(
  *    Validate(Number, 'it should be a number'),
- *    Validate(value => value === parseInt(value, 10), 'it should be a int number')
+ *    Validate(value => value === parseInt(value, 10), 'it should be an int number')
  *   )
  * })
  */
@@ -312,7 +312,7 @@ export const IfExistsNotMatch = makeRuleGenerator('IfExistsNotMatch', function(r
  * @param {*} rule should be a class constructor
  */
 export const InstanceOf = makeRuleGenerator('InstanceOf', function(rule) {
-  return makeRule((value) => isInstanceOf(value, rule, true), 'rule.instanceof')
+  return makeRule((value) => isInstanceOf(value, rule, true))
 })
 
 /**
@@ -320,7 +320,7 @@ export const InstanceOf = makeRuleGenerator('InstanceOf', function(rule) {
  * @param {*} rule
  */
 export const Equal = makeRuleGenerator('Equal', function(rule) {
-  return makeRule((value) => value === rule, 'rule.equal')
+  return makeRule((value) => value === rule)
 })
 
 /**
