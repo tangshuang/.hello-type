@@ -183,10 +183,15 @@ export const IfExists = makeRuleGenerator('IfExists', function(rule) {
  * If the value not match rule, use defaultValue as value.
  * Notice, this will modify original data, which may cause error, so be careful.
  * @param {*} rule
- * @param {*} defaultValue
+ * @param {*} [defaultValue]
  * @param {function} calculate a function to calculate new value with origin old value
  */
 export const IfNotMatch = makeRuleGenerator('IfNotMatch', function(rule, defaultValue, calculate) {
+  if (isFunction(defaultValue)) {
+    calculate = defaultValue
+    defaultValue = undefined
+  }
+
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
       let error = rule.validate(value)
@@ -261,10 +266,15 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
  * If the value exists, and if the value not match rule, use defaultValue as value.
  * If not exists, ignore this rule.
  * @param {*} rule
- * @param {*} defaultValue
+ * @param {*} [defaultValue]
  * @param {function} calculate a function to calculate new value with origin old value
  */
 export const IfExistsNotMatch = makeRuleGenerator('IfExistsNotMatch', function(rule, defaultValue, calculate) {
+  if (isFunction(defaultValue)) {
+    calculate = defaultValue
+    defaultValue = undefined
+  }
+
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
       if (value === undefined) {
