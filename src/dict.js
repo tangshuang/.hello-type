@@ -1,5 +1,5 @@
 import Type from './type'
-import { isObject } from './utils'
+import { isObject, inArray, isBoolean } from './utils'
 import { _ERROR_, xError } from './error'
 
 const prototypes = {
@@ -24,11 +24,48 @@ const prototypes = {
     const originalPattern = this.patterns[0]
     const originalKeys = Object.keys(originalPattern)
     const newPattern = {}
-    originalKeys.forEach((key) => {
-      if (pattern[key]) {
-        newPattern[key] = originalPattern[key]
+
+    const useKeys = []
+    const removeKeys = []
+    const passKeys = Object.keys(pattern)
+    passKeys.forEach((key) => {
+      let value = pattern[key]
+      if (value === true) {
+        useKeys.push(key)
+      }
+      else if (value === false) {
+        removeKeys.push(key)
       }
     })
+    const passCount = passKeys.length
+    const removeCount = removeKeys.length
+    const useCount = useKeys.length
+    originalKeys.forEach((key) => {
+      const whether = pattern[key]
+
+      if (whether === false) {
+        return
+      }
+
+      if (!isBoolean(whether)) {
+        // if all passed are true, treat undefined as false
+        if (useCount === passCount) {
+          return
+        }
+
+        // treat undefined as false
+        if (removeCount !== passCount) {
+          return
+        }
+
+        // if all passed are false, treat undefined as true
+      }
+
+      let value = originalPattern[key]
+      newPattern[key] = value
+    })
+
+
     const newType = Dict(newPattern)
     return newType
   },
