@@ -41,8 +41,17 @@ export function isNaN(value) {
   return typeof value === 'number' && Number.isNaN(value)
 }
 
-export function isEmpty(obj) {
-  return object === null || obj === undefined || Object.keys(obj).length === 0
+export function isEmpty(value) {
+  if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+		return true
+	}
+	else if (isArray(value)) {
+		return value.length === 0
+	}
+	else if (isObject(value)) {
+		return Object.keys(value).length === 0
+	}
+	return false
 }
 
 export function isConstructor(f) {

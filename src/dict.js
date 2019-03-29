@@ -1,7 +1,6 @@
 import Type from './type'
-import { isObject, inObject } from './utils'
+import { isObject } from './utils'
 import { _ERROR_, xError } from './error'
-
 
 const prototypes = {
   assert: function(value) {
@@ -43,10 +42,7 @@ export function Dict(pattern) {
 
   const DictType = new Type(pattern)
   DictType.name = 'Dict'
-
-  DictType.assert = prototypes.assert.bind(DictType)
-  DictType.extend = prototypes.extend.bind(DictType)
-  DictType.shrink = prototypes.shrink.bind(DictType)
+  Object.assign(DictType, prototypes)
 
   return DictType
 }
