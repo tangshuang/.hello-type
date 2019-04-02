@@ -243,19 +243,20 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
     if (!isMade) {
       return new _ERROR_('You should return a rule by Determine.', { value, rule: this })
     }
+
     if (isInstanceOf(rule, Rule)) {
       let error = rule.validate(value)
       return xError(error, { value, rule: this, action: 'rule' })
     }
-    else if (isInstanceOf(rule, Type)) {
+
+    if (isInstanceOf(rule, Type)) {
       let error = rule.catch(value)
       return xError(error, { value, rule: this, action: 'rule' })
     }
-    else {
-      rule = new Type(rule)
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    }
+
+    let type = new Type(rule)
+    let error = type.catch(value)
+    return xError(error, { value, rule: this, action: 'rule' })
   }, function(error, porp, target) {
     rule = factory(target)
     isMade = true
@@ -294,15 +295,15 @@ export const DetermineExists = makeRuleGenerator('DetermineExists', function(det
       let error = rule.validate(value)
       return xError(error, { value, rule: this, action: 'rule' })
     }
-    else if (isInstanceOf(rule, Type)) {
+
+    if (isInstanceOf(rule, Type)) {
       let error = rule.catch(value)
       return xError(error, { value, rule: this, action: 'rule' })
     }
-    else {
-      rule = new Type(rule)
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    }
+
+    let type = new Type(rule)
+    let error = type.catch(value)
+    return xError(error, { value, rule: this, action: 'rule' })
   }, function(error, prop, target) {
     shouldExists = determine(target)
     isChecked = true
