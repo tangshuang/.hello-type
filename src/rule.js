@@ -241,7 +241,7 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
   let isMade = false
   return new Rule(function(value) {
     if (!isMade) {
-      return new _ERROR_('You should pass a rule to Determine.', { value, rule: this })
+      return new _ERROR_('You should return a rule by Determine.', { value, rule: this })
     }
     if (isInstanceOf(rule, Rule)) {
       let error = rule.validate(value)
@@ -259,6 +259,53 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
   }, function(error, porp, target) {
     rule = factory(target)
     isMade = true
+  })
+})
+
+/**
+ * Advance version of IfExists, determine whether a prop can not exist with a determine function,
+ * if the prop is existing, use the passed type to check.
+ * @param {function} determine the function to return true or false,
+ * if true, it means the prop should must exists and will use the second parameter to check data type,
+ * if false, it means the prop can not exist
+ * @param {*} rule when the determine function return true, use this to check data type
+ * @example
+ * const SomeType = Dict({
+ *   name: String,
+ *   isMale: Boolean,
+ *   // data type check based on person.isMale, if person.isMale is true, touch should be String, or touch can not exist
+ *   touch: DetermineExists(person => person.isMale, String),
+ * })
+ */
+export const DetermineExists = makeRuleGenerator('DetermineExists', function(determine, rule) {
+  let isChecked = false
+  let shouldExists = true
+  return new Rule(function(value) {
+    if (!isChecked) {
+      return new _ERROR_('You should return a boolean by DetermineExists.', { value, rule: this })
+    }
+
+    // can not exists and it not exists, do nothing
+    if (!shouldExists && value === undefined) {
+      return
+    }
+
+    if (isInstanceOf(rule, Rule)) {
+      let error = rule.validate(value)
+      return xError(error, { value, rule: this, action: 'rule' })
+    }
+    else if (isInstanceOf(rule, Type)) {
+      let error = rule.catch(value)
+      return xError(error, { value, rule: this, action: 'rule' })
+    }
+    else {
+      rule = new Type(rule)
+      let error = rule.catch(value)
+      return xError(error, { value, rule: this, action: 'rule' })
+    }
+  }, function(error, prop, target) {
+    shouldExists = determine(target)
+    isChecked = true
   })
 })
 
