@@ -4,7 +4,7 @@ export const messages = {
   refuse: '{keyPath} should match {should}, but receive {receive}.',
   dirty: '{keyPath} does not match {should}, length should be {length}.',
   overflow: '{keyPath} should not exists, only {keys} allowed.',
-  missing: '{keyPath} does not exists.'
+  missing: '{keyPath} is missing.'
 }
 
 function makeErrorMessage(key, params) {
@@ -29,10 +29,10 @@ export function xError(error, params) {
     let traces = error.traces ? error.traces : (error.traces = [])
 
     let keyPath = inObject('key', params) ? params.key : inObject('index', params) ? `[${params.index}]` : ''
-    let currentPath = '#'
+    let currentPath = ''
     traces.forEach((item) => {
       if (inObject('key', item)) {
-        currentPath = currentPath + '.' + item.key
+        currentPath = currentPath ? + '.' + item.key : item.key
       }
       if (inObject('index', item)) {
         currentPath = currentPath + '[' + item.index + ']'
