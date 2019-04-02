@@ -14,13 +14,13 @@ const prototypes = {
       throw xError(error, { value, rule, type: this, action: 'assert' })
     }
   },
-  extend: function(pattern) {
+  extends: function(pattern) {
     const originalPattern = this.patterns[0]
     const newPattern = Object.assign({}, originalPattern, pattern)
     const newType = Dict(newPattern)
     return newType
   },
-  shrink: function(pattern) {
+  extract: function(pattern) {
     const originalPattern = this.patterns[0]
     const originalKeys = Object.keys(originalPattern)
     const newPattern = {}
