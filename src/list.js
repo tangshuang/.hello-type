@@ -1,6 +1,6 @@
 import Type from './type'
 import { isArray } from './utils'
-import { xError, _ERROR_ } from './error'
+import { xError, ErrorX } from './error'
 
 export function List(pattern) {
   // if pattern is not an array, it treated undefined
@@ -12,7 +12,7 @@ export function List(pattern) {
   ListType.name = 'List'
   ListType.assert = function(value) {
     if (!isArray(value)) {
-      throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
+      throw new ErrorX('refuse', { value, type: this, action: 'assert' })
     }
 
     let rule = this.rules[0]

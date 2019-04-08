@@ -1,23 +1,14 @@
 import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils'
 import Type from './type'
-import { xError, _ERROR_ } from './error'
+import { xError, ErrorX } from './error'
 
 export { Dict } from './dict'
 export { List } from './list'
 export { Tuple } from './tuple'
 export { Enum } from './enum'
 export { Range } from './range'
-export {
-  Rule,
-  Any, Null, Undefined, Numeric,
-  IfExists, IfNotMatch, IfExistsNotMatch, ShouldMatch,
-  Equal, InstanceOf, Lambda,
-  Validate,
-  Determine,
-  DetermineExists,
-  Async,
-} from './rule'
-export { Type }
+export { Type, ErrorX }
+export * from './rule'
 
 const HelloTypeListeners = []
 
@@ -235,13 +226,13 @@ export const HelloType = {
       }
 
       if (!isObject(target)) {
-        let error = new _ERROR_('hello.define.target.object', { target, type, action: 'define.by' })
+        let error = new ErrorX('hello.define.target.object', { target, type, action: 'define.by' })
         HelloType.throwError(error)
       }
 
       let rule = getRule(type)
       if (!isObject(rule)) {
-        let error = new _ERROR_('hello.define.rule.object', { target, type, rule, action: 'define.by' })
+        let error = new ErrorX('hello.define.rule.object', { target, type, rule, action: 'define.by' })
         HelloType.throwError(error)
       }
 
@@ -265,7 +256,7 @@ export const HelloType = {
             }
             // if original prop value is not an object but should be an object called by rule
             else {
-              let error = new _ERROR_('hello.define.property.object', {
+              let error = new ErrorX('hello.define.property.object', {
                 target,
                 type,
                 origin,
@@ -360,7 +351,7 @@ export const HelloType = {
       return proxy
     },
   }),
-  Error: _ERROR_,
+  Error: ErrorX,
 }
 
 export default HelloType

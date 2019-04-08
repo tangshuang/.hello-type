@@ -1,7 +1,7 @@
 import Type from './type'
 import Rule from './rule'
 import { isInstanceOf } from './utils'
-import { xError, _ERROR_ } from './error'
+import { xError, ErrorX } from './error'
 
 export function Tuple(...patterns) {
   const TupleType = new Type(...patterns)
@@ -13,7 +13,7 @@ export function Tuple(...patterns) {
     let minLen = ruleCount
 
     if (this.mode === 'strict' && targetCount !== ruleCount) {
-      throw new _ERROR_('dirty', { type: this, action: 'assert', length: ruleCount })
+      throw new ErrorX('dirty', { type: this, action: 'assert', length: ruleCount })
     }
 
     for (let i = ruleCount - 1; i > -1; i --) {
@@ -27,7 +27,7 @@ export function Tuple(...patterns) {
     }
 
     if (targetCount < minLen || targetCount > ruleCount) {
-      throw new _ERROR_('dirty', { type: this, action: 'assert', length: ruleCount })
+      throw new ErrorX('dirty', { type: this, action: 'assert', length: ruleCount })
     }
 
     for (let i = 0; i < targetCount; i ++) {

@@ -56,7 +56,7 @@ export function xError(error, params) {
   return null
 }
 
-export class _ERROR_ extends TypeError {
+export class ErrorX extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {

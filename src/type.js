@@ -9,7 +9,7 @@ import {
   defineProperty,
   inObject,
 } from './utils'
-import { xError, _ERROR_ } from './error'
+import { xError, ErrorX } from './error'
 
 export class Type {
   constructor(...patterns) {
@@ -43,7 +43,7 @@ export class Type {
       }
       // if validate return false
       else if (isBoolean(res) && !res) {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
       // if validate return true
       else {
@@ -58,7 +58,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -69,7 +69,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -80,7 +80,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -91,7 +91,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -99,13 +99,13 @@ export class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(value)) {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
       if (rule.test(value)) {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -116,7 +116,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -127,7 +127,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -138,7 +138,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -147,7 +147,7 @@ export class Type {
         return null
       }
       else {
-        return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
       }
     }
 
@@ -160,7 +160,7 @@ export class Type {
       // array length should equal in strict mode
       if (this.mode === 'strict') {
         if (ruleCount !== itemCount) {
-          return new _ERROR_('dirty', { value, rule, type: this, action: 'validate', length: ruleCount })
+          return new ErrorX('dirty', { value, rule, type: this, action: 'validate', length: ruleCount })
         }
       }
 
@@ -224,7 +224,7 @@ export class Type {
           let key = targetKeys[i]
           // target has key beyond rules
           if (!inArray(key, ruleKeys)) {
-            return new _ERROR_('overflow', { value, rule, type: this, action: 'validate', key, keys: ruleKeys })
+            return new ErrorX('overflow', { value, rule, type: this, action: 'validate', key, keys: ruleKeys })
           }
         }
       }
@@ -253,7 +253,7 @@ export class Type {
             }
           }
 
-          return new _ERROR_('missing', { value, rule, type: this, action: 'validate', key })
+          return new ErrorX('missing', { value, rule, type: this, action: 'validate', key })
         }
 
         if (isInstanceOf(rule, Rule)) {
@@ -311,13 +311,13 @@ export class Type {
       return null
     }
 
-    return new _ERROR_('refuse', { value, rule, type: this, action: 'validate' })
+    return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
   }
   assert(...targets) {
     let rules = this.rules
 
     if (targets.length !== rules.length) {
-      throw new _ERROR_('dirty', { type: this, action: 'assert', length: this.rules.length })
+      throw new ErrorX('dirty', { type: this, action: 'assert', length: this.rules.length })
     }
 
     for (let i = 0, len = targets.length; i < len; i ++) {

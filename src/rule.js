@@ -1,6 +1,6 @@
 import Type from './type'
 import { isFunction, isInstanceOf, isNumber, isString, isBoolean } from './utils'
-import { xError, _ERROR_ } from './error'
+import { xError, ErrorX } from './error'
 
 export class Rule {
   /**
@@ -38,7 +38,7 @@ function makeRule(name, determine, message = 'refuse') {
   return new Rule(name, function(value) {
     const msg = isFunction(message) ? message(value) : message
     if ((isFunction(determine) && !determine.call(this, value)) || (isBoolean(determine) && !determine)) {
-      return new _ERROR_(msg, { value, rule: this, action: 'rule' })
+      return new ErrorX(msg, { value, rule: this, action: 'rule' })
     }
   })
 }
@@ -241,7 +241,7 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
   let isMade = false
   return new Rule(function(value) {
     if (!isMade) {
-      return new _ERROR_('You should return a rule by Determine.', { value, rule: this })
+      return new ErrorX('You should return a rule by Determine.', { value, rule: this })
     }
 
     if (isInstanceOf(rule, Rule)) {
@@ -283,7 +283,7 @@ export const DetermineExists = makeRuleGenerator('DetermineExists', function(det
   let shouldExists = true
   return new Rule(function(value) {
     if (!isChecked) {
-      return new _ERROR_('You should return a boolean by DetermineExists.', { value, rule: this })
+      return new ErrorX('You should return a boolean by DetermineExists.', { value, rule: this })
     }
 
     // can not exists and it not exists, do nothing
@@ -386,7 +386,7 @@ export const Lambda = makeRuleGenerator('Lambda', function(InputType, OutputType
 
   return new Rule(function(value) {
     if (!isFunction(value)) {
-      return new _ERROR_('refuse', { value, rule: this, action: 'rule' })
+      return new ErrorX('refuse', { value, rule: this, action: 'rule' })
     }
   }, function(error, prop, target) {
     if (!error) {

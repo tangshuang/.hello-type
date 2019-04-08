@@ -1,11 +1,11 @@
 import Type from './type'
-import { isObject, inArray, isBoolean } from './utils'
-import { _ERROR_, xError } from './error'
+import { isObject, isBoolean } from './utils'
+import { ErrorX, xError } from './error'
 
 const prototypes = {
   assert: function(value) {
     if (!isObject(value)) {
-      throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
+      throw new ErrorX('refuse', { value, type: this, action: 'assert' })
     }
 
     let rule = this.rules[0]

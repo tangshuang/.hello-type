@@ -1,6 +1,6 @@
 import Type from './type'
 import { isInstanceOf } from './utils'
-import { _ERROR_ } from './error'
+import { ErrorX } from './error'
 
 export function Enum(...patterns) {
   const EnumType = new Type(...patterns)
@@ -24,7 +24,7 @@ export function Enum(...patterns) {
       }
     }
 
-    throw new _ERROR_('refuse', { value, type: this, action: 'assert' })
+    throw new ErrorX('refuse', { value, type: this, action: 'assert' })
   }
   return EnumType
 }
