@@ -165,7 +165,6 @@ export class Type {
       }
 
       // if arguments.length is bigger than rules.length, use Enum to match left items
-      let index = 0
       for (let i = 0; i < ruleCount; i ++) {
         let value = items[i]
         let rule = rules[i]
@@ -181,7 +180,7 @@ export class Type {
           }
 
           if (error) {
-            return xError(error, { value, rule, type: this, action: 'validate', index })
+            return xError(error, { value, rule, type: this, action: 'validate', index: i })
           }
           else {
             continue
@@ -191,20 +190,20 @@ export class Type {
         // normal validate
         let error = this.validate(value, rule)
         if (error) {
-          return xError(error, { value, rule, type: this, action: 'validate', index })
+          return xError(error, { value, rule, type: this, action: 'validate', index: i })
         }
-
-        index = i
       }
+
       // if target length is greater than rule length
       if (ruleCount && itemCount > ruleCount) {
         let RestType = ruleCount > 1 ? Enum(...rules) : rules[0]
-        for (let i = index+1; i < itemCount; i ++) {
+        // validate from index=ruleCount which is following the previous checking
+        for (let i = ruleCount; i < itemCount; i ++) {
           let value = items[i]
           // normal validate
           let error = this.validate(value, RestType)
           if (error) {
-            return xError(error, { value, rule: RestType, type: this, action: 'validate', index })
+            return xError(error, { value, rule: RestType, type: this, action: 'validate', index: i })
           }
         }
       }
