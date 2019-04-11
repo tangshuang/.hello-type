@@ -32,7 +32,7 @@ export function xError(error, params) {
     let currentPath = ''
     traces.forEach((item) => {
       if (inObject('key', item)) {
-        currentPath = currentPath ? currentPath + '.' + item.key : item.key
+        currentPath = currentPath + '.' + item.key
       }
       if (inObject('index', item)) {
         currentPath = currentPath + '[' + item.index + ']'
