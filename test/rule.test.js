@@ -1,5 +1,5 @@
 import Type from '../src/type'
-import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine, Async } from '../src/rule'
+import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine, Async, Numeric } from '../src/rule'
 import Tuple from '../src/tuple'
 
 describe('Rule', () => {
@@ -179,5 +179,16 @@ describe('Rule', () => {
       expect(() => SomeType.assert({ text: null })).toThrowError()
       done()
     })
+  })
+  test('Numeric', () => {
+    const SomeType = new Type({
+      number: Numeric,
+      numeral: Numeric,
+    })
+    const some = {
+      number: 1234,
+      numeral: '-23132.23423'
+    }
+    expect(() => SomeType.assert(some)).not.toThrowError()
   })
 })

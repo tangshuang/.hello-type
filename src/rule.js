@@ -57,7 +57,7 @@ function makeRuleGenerator(name, fn) {
 export const Null = makeRule('Null', (value) => value === null)
 export const Undefined = makeRule('Undefined', (value) => value === undefined)
 export const Any = makeRule('Any', true)
-export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isString(value) && /^[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value)))
+export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isString(value) && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value)))
 
 /**
  * Async rule
