@@ -1,19 +1,21 @@
-import Type from './type'
-import Rule from './rule'
-import { isInstanceOf } from './utils'
-import { xError, ErrorX } from './error'
+import Type from './type.js'
+import Rule from './rule.js'
+import { isInstanceOf } from './utils.js'
+import { xError, TxpeError } from './error.js'
 
-export function Tuple(...patterns) {
-  const TupleType = new Type(...patterns)
-  TupleType.name = 'Tuple'
-  TupleType.assert = function(...targets) {
+export class Tuple extends Type {
+  constructor(...patterns) {
+    super(...patterns)
+    this.name = 'Tuple'
+  }
+  assert(...targets) {
     let rules = this.rules
     let ruleCount = rules.length
     let targetCount = targets.length
     let minLen = ruleCount
 
     if (this.mode === 'strict' && targetCount !== ruleCount) {
-      throw new ErrorX('dirty', { type: this, action: 'assert', length: ruleCount })
+      throw new TxpeError('dirty', { type: this, level: 'assert', length: ruleCount })
     }
 
     for (let i = ruleCount - 1; i > -1; i --) {
@@ -27,7 +29,7 @@ export function Tuple(...patterns) {
     }
 
     if (targetCount < minLen || targetCount > ruleCount) {
-      throw new ErrorX('dirty', { type: this, action: 'assert', length: ruleCount })
+      throw new TxpeError('dirty', { type: this, level: 'assert', length: ruleCount })
     }
 
     for (let i = 0; i < targetCount; i ++) {
@@ -35,10 +37,15 @@ export function Tuple(...patterns) {
       let rule = rules[i]
       let error = this.validate(value, rule)
       if (error) {
-        throw xError(error, { value, rule, type: this, action: 'assert' })
+        throw xError(error, { value, rule, type: this, level: 'assert' })
       }
     }
   }
-  return TupleType
 }
+
+export function tuple(...patterns) {
+  const type = new Tuple(...patterns)
+  return type
+}
+
 export default Tuple

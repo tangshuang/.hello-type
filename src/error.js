@@ -1,14 +1,15 @@
-import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN, isString } from './utils'
+import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN } from './utils.js'
 
-export const messages = {
-  refuse: '{keyPath} should match {should}, but receive {receive}.',
+const MESSAGES = {
+  shouldmatch: '{keyPath} should match {should}, but receive {receive}.',
+  shouldnotmatch: '{keyPath} should not match {should}, but receive {receive}.',
   dirty: '{keyPath} does not match {should}, length should be {length}.',
-  overflow: '{keyPath} should not exists, only {keys} allowed.',
-  missing: '{keyPath} is missing.'
+  overflow: '{keyPath} should not exists.',
+  missing: '{keyPath} is missing.',
 }
 
 function makeErrorMessage(key, params) {
-  let message = messages[key] || key
+  let message = MESSAGES[key] || key
   let text = message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? params[key] : match)
   return text
 }
@@ -56,7 +57,7 @@ export function xError(error, params) {
   return null
 }
 
-export class ErrorX extends TypeError {
+export class TxpeError extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {
@@ -220,6 +221,8 @@ export class ErrorX extends TypeError {
   }
 
   static get messages() {
-    return messages
+    return MESSAGES
   }
 }
+
+export default TxpeError

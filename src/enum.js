@@ -1,11 +1,13 @@
-import Type from './type'
-import { isInstanceOf } from './utils'
-import { ErrorX } from './error'
+import Type from './type.js'
+import { isInstanceOf } from './utils.js'
+import { TxpeError } from './error.js'
 
-export function Enum(...patterns) {
-  const EnumType = new Type(...patterns)
-  EnumType.name = 'Enum'
-  EnumType.assert = function(value) {
+export class Enum extends Type {
+  constructor(...patterns) {
+    super(...patterns)
+    this.name = 'Enum'
+  }
+  assert(value) {
     let rules = this.rules
     for (let i = 0, len = rules.length; i < len; i ++) {
       let rule = rules[i]
@@ -24,8 +26,13 @@ export function Enum(...patterns) {
       }
     }
 
-    throw new ErrorX('refuse', { value, type: this, action: 'assert' })
+    throw new TxpeError('shouldmatch', { value, type: this, level: 'assert' })
   }
-  return EnumType
 }
+
+export function enumerate(...patterns) {
+  const type = new Enum(...patterns)
+  return type
+}
+
 export default Enum

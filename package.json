@@ -1,8 +1,8 @@
 {
-  "name": "hello-type",
-  "version": "2.24.5",
+  "name": "txpe",
+  "version": "0.1.0",
   "description": "An ECMAScript data type check library",
-  "main": "dist/hello-type.js",
+  "main": "index.js",
   "scripts": {
     "prepublishOnly": "npm run test && npm run build",
     "build": "webpack",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangshuang/hello-type.git"
+    "url": "git+https://github.com/tangshuang/txpe.git"
   },
   "keywords": [
     "type"
@@ -19,9 +19,9 @@
   "author": "tangshuang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tangshuang/hello-type/issues"
+    "url": "https://github.com/tangshuang/txpe/issues"
   },
-  "homepage": "https://github.com/tangshuang/hello-type#readme",
+  "homepage": "https://github.com/tangshuang/txpe#readme",
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",

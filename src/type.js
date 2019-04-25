@@ -1,15 +1,14 @@
-import Rule, { Any } from './rule'
-import Dict from './dict'
-import List from './list'
-import Enum from './enum'
+import Rule from './rule.js'
+import dict from './dict.js'
+import list from './list.js'
+import enumerate from './enum.js'
 import {
   isArray, inArray, isBoolean, isNumber, isObject, isNaN,
   isString, isFunction, isSymbol, isConstructor, isInstanceOf,
   map,
   defineProperty,
-  inObject,
-} from './utils'
-import { xError, ErrorX } from './error'
+} from './utils.js'
+import { xError, TxpeError } from './error.js'
 
 export class Type {
   constructor(...patterns) {
@@ -20,10 +19,10 @@ export class Type {
 
     let rules = patterns.map((rule) => {
       // if rule is an object, it will be converted to be a shallow object
-      // if the value of a property is an object, it will be converted to be a Dict
-      // if the value of a property is an array, it will be converted to be a List
+      // if the value of a property is an object, it will be converted to be a dict
+      // if the value of a property is an array, it will be converted to be a list
       // if rule is an array, it will be converted to be a 'List'
-      return map(rule, item => isObject(item) ? Dict(item) : isArray(item) ? List(item) : item)
+      return map(rule, item => isObject(item) ? dict(item) : isArray(item) ? list(item) : item)
     })
     defineProperty(this, 'rules', rules)
   }
@@ -39,11 +38,11 @@ export class Type {
       let res = rule.validate(value)
       // if validate return an error
       if (isInstanceOf(res, Error)) {
-        return xError(res, { value, rule, type: this, action: 'validate' })
+        return xError(res, { value, rule, type: this, level: 'validate' })
       }
       // if validate return false
       else if (isBoolean(res) && !res) {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
       // if validate return true
       else {
@@ -58,7 +57,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -69,7 +68,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -80,7 +79,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -91,7 +90,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -99,13 +98,13 @@ export class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(rule, RegExp)) {
       if (!isString(value)) {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
       if (rule.test(value)) {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -116,7 +115,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -127,7 +126,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -138,7 +137,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -147,7 +146,7 @@ export class Type {
         return null
       }
       else {
-        return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
       }
     }
 
@@ -160,11 +159,11 @@ export class Type {
       // array length should equal in strict mode
       if (this.mode === 'strict') {
         if (ruleCount !== itemCount) {
-          return new ErrorX('dirty', { value, rule, type: this, action: 'validate', length: ruleCount })
+          return new TxpeError('dirty', { value, rule, type: this, level: 'validate', length: ruleCount })
         }
       }
 
-      // if arguments.length is bigger than rules.length, use Enum to match left items
+      // if arguments.length is bigger than rules.length, use enumerate to match left items
       for (let i = 0; i < ruleCount; i ++) {
         let value = items[i]
         let rule = rules[i]
@@ -175,12 +174,13 @@ export class Type {
           // use rule to override property when not match
           // override value and check again
           if (isFunction(rule.override)) {
-            value = rule.override(error, i, items) || items[i]
+            rule.override(error, i, items)
+            value = items[i]
             error = rule.validate(value)
           }
 
           if (error) {
-            return xError(error, { value, rule, type: this, action: 'validate', index: i })
+            return xError(error, { value, rule, type: this, level: 'validate', index: i })
           }
           else {
             continue
@@ -190,20 +190,20 @@ export class Type {
         // normal validate
         let error = this.validate(value, rule)
         if (error) {
-          return xError(error, { value, rule, type: this, action: 'validate', index: i })
+          return xError(error, { value, rule, type: this, level: 'validate', index: i })
         }
       }
 
       // if target length is greater than rule length
       if (ruleCount && itemCount > ruleCount) {
-        let RestType = ruleCount > 1 ? Enum(...rules) : rules[0]
+        let RestType = ruleCount > 1 ? enumerate(...rules) : rules[0]
         // validate from index=ruleCount which is following the previous checking
         for (let i = ruleCount; i < itemCount; i ++) {
           let value = items[i]
           // normal validate
           let error = this.validate(value, RestType)
           if (error) {
-            return xError(error, { value, rule: RestType, type: this, action: 'validate', index: i })
+            return xError(error, { value, rule: RestType, type: this, level: 'validate', index: i })
           }
         }
       }
@@ -223,7 +223,7 @@ export class Type {
           let key = targetKeys[i]
           // target has key beyond rules
           if (!inArray(key, ruleKeys)) {
-            return new ErrorX('overflow', { value, rule, type: this, action: 'validate', key, keys: ruleKeys })
+            return new TxpeError('overflow', { value, rule, type: this, level: 'validate', key, keys: ruleKeys })
           }
         }
       }
@@ -252,7 +252,7 @@ export class Type {
             }
           }
 
-          return new ErrorX('missing', { value, rule, type: this, action: 'validate', key })
+          return new TxpeError('missing', { value, rule, type: this, level: 'validate', key })
         }
 
         if (isInstanceOf(rule, Rule)) {
@@ -266,7 +266,7 @@ export class Type {
           }
 
           if (error) {
-            return xError(error, { value, rule, type: this, action: 'validate', key })
+            return xError(error, { value, rule, type: this, level: 'validate', key })
           }
           else {
             continue
@@ -276,7 +276,7 @@ export class Type {
         // normal validate
         let error = this.validate(value, rule)
         if (error) {
-          return xError(error, { value, rule, type: this, action: 'validate', key })
+          return xError(error, { value, rule, type: this, level: 'validate', key })
         }
       }
 
@@ -296,7 +296,7 @@ export class Type {
     }
 
     // instance of Type
-    // const BooksType = List(BookType)
+    // const BooksType = list(BookType)
     // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
     if (isInstanceOf(rule, Type)) {
       if (this.mode === 'strict') {
@@ -304,19 +304,19 @@ export class Type {
       }
       let error = rule.catch(value)
       if (error) {
-        return xError(error, { value, rule, type: this, action: 'validate' })
+        return xError(error, { value, rule, type: this, level: 'validate' })
       }
 
       return null
     }
 
-    return new ErrorX('refuse', { value, rule, type: this, action: 'validate' })
+    return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
   }
   assert(...targets) {
     let rules = this.rules
 
     if (targets.length !== rules.length) {
-      throw new ErrorX('dirty', { type: this, action: 'assert', length: this.rules.length })
+      throw new TxpeError('dirty', { type: this, level: 'assert', length: this.rules.length })
     }
 
     for (let i = 0, len = targets.length; i < len; i ++) {
@@ -324,7 +324,7 @@ export class Type {
       let rule = rules[i]
       let error = this.validate(value, rule)
       if (error) {
-        throw xError(error, { value, rule, type: this, action: 'assert' })
+        throw xError(error, { value, rule, type: this, level: 'assert' })
       }
     }
   }

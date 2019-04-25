@@ -1,4 +1,4 @@
-import HelloType from '../src/hello-type'
+import HelloType from '../src/txpe'
 import Type from '../src/type'
 
 describe('HelloType', () => {

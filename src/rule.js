@@ -1,6 +1,6 @@
-import Type from './type'
-import { isFunction, isInstanceOf, isNumber, isString, isBoolean } from './utils'
-import { xError, ErrorX } from './error'
+import Type from './type.js'
+import { isFunction, isInstanceOf, isNumber, isString, isBoolean, inObject, isNumeric, isNull, isUndefined } from './utils.js'
+import { xError, TxpeError } from './error.js'
 
 export class Rule {
   /**
@@ -27,8 +27,9 @@ export class Rule {
 
 export default Rule
 
+
 // create a simple rule
-function makeRule(name, determine, message = 'refuse') {
+export function makeRule(name, determine, message = 'shouldmatch') {
   if (isFunction(name)) {
     message = determine
     determine = name
@@ -38,7 +39,7 @@ function makeRule(name, determine, message = 'refuse') {
   return new Rule(name, function(value) {
     const msg = isFunction(message) ? message(value) : message
     if ((isFunction(determine) && !determine.call(this, value)) || (isBoolean(determine) && !determine)) {
-      return new ErrorX(msg, { value, rule: this, action: 'rule' })
+      return new TxpeError(msg, { value, rule: this, level: 'rule' })
     }
   })
 }
@@ -54,31 +55,33 @@ function makeRuleGenerator(name, fn) {
   }
 }
 
-export const Null = makeRule('Null', (value) => value === null)
-export const Undefined = makeRule('Undefined', (value) => value === undefined)
+export const Null = makeRule('Null', isNull)
+export const Undefined = makeRule('Undefined', isUndefined)
 export const Any = makeRule('Any', true)
-export const Numeric = makeRule('Numeric', (value) => isNumber(value) || (isString(value) && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value)))
+export const Numeric = makeRule('Numeric', isNumeric)
+export const Int = makeRule('Int', value => isNumber(value) && parseInt(value) === value)
+export const Float = makeRule('Float', value => isNumber(value) && float % 1 !== 0)
 
 /**
- * Async rule
+ * asynchronous rule
  * @param {Function} fn which can be an async function and should return a rule
  */
-export const Async = makeRuleGenerator('Async', function(fn) {
+export const asynchronous = makeRuleGenerator('asynchronous', function(fn) {
   const rule = new Rule(function(value) {
     if (this.__await__) {
       let rule = this.__await__
       if (isInstanceOf(rule, Rule)) {
         let error = rule.validate(value)
-        return xError(error, { value, rule, action: 'rule' })
+        return xError(error, { value, rule, level: 'rule' })
       }
       else if (isInstanceOf(rule, Type)) {
         let error = rule.catch(value)
-        return xError(error, { value, rule, action: 'rule' })
+        return xError(error, { value, rule, level: 'rule' })
       }
       else {
         let type = new Type(rule)
         let error = type.catch(value)
-        return xError(error, { value, rule, action: 'rule' })
+        return xError(error, { value, rule, level: 'rule' })
       }
     }
     return true
@@ -95,7 +98,7 @@ export const Async = makeRuleGenerator('Async', function(fn) {
  * @param {Rule|Type|Function} rule
  * @param {String|Function} message
  */
-export const Validate = makeRuleGenerator('Validate', function(rule, message) {
+export const validate = makeRuleGenerator('validate', function(rule, message) {
   if (isFunction(rule)) {
     return makeRule(rule, message)
   }
@@ -109,31 +112,65 @@ export const Validate = makeRuleGenerator('Validate', function(rule, message) {
   }
 
   let type = new Type(rule)
-  return Validate(type, message)
+  return validate(type, message)
 })
 
 /**
  * the passed value should match all passed rules
- * @param  {...any} rules
+ * @param {...any} rules
  * @example
  * const SomeType = Dict({
- *   value: ShouldMatch(
- *    Validate(Number, 'it should be a number'),
- *    Validate(value => value === parseInt(value, 10), 'it should be an int number')
+ *   value: shouldmatch(
+ *     validate(Number, 'it should be a number'),
+ *     validate(value => value === parseInt(value, 10), 'it should be an int number')
  *   )
  * })
  */
-export const ShouldMatch = makeRuleGenerator('ShouldMatch', function(...rules) {
+export const shouldmatch = makeRuleGenerator('shouldmatch', function(...rules) {
   return new Rule(function(value) {
     const validate = (value, rule) => {
       if (isInstanceOf(rule, Rule)) {
         let error = rule.validate(value)
-        return xError(error, { value, rule: this, action: 'rule' })
+        return xError(error, { value, rule: this, level: 'rule' })
       }
 
       if (isInstanceOf(rule, Type)) {
         let error = rule.catch(value)
-        return xError(error, { value, rule: this, action: 'rule' })
+        return xError(error, { value, rule: this, level: 'rule' })
+      }
+
+      let type = new Type(rule)
+      return validate(value, type)
+    }
+    for (let i = 0, len = rules.length; i < len; i ++) {
+      let rule = rules[i]
+      let error = validate(value, rule)
+      if (error) {
+        return error
+      }
+    }
+  })
+})
+
+/**
+ * the passed value should not match rules
+ * @param {...any} rules
+ */
+export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(...rules) {
+  return new Rule(function(value) {
+    const validate = (value, rule) => {
+      if (isInstanceOf(rule, Rule)) {
+        let error = rule.validate(value)
+        if (!error) {
+          return new TxpeError('shouldnotmatch', { value, rule: this, level: 'rule' })
+        }
+      }
+
+      if (isInstanceOf(rule, Type)) {
+        let error = rule.catch(value)
+        if (!error) {
+          return new TxpeError('shouldnotmatch', { value, rule: this, level: 'rule' })
+        }
       }
 
       let type = new Type(rule)
@@ -154,51 +191,76 @@ export const ShouldMatch = makeRuleGenerator('ShouldMatch', function(...rules) {
  * If not exists, ignore this rule.
  * @param {*} rule
  */
-export const IfExists = makeRuleGenerator('IfExists', function(rule) {
+export const ifexist = makeRuleGenerator('ifexist', function(rule) {
+  let isReady = false
+  let isExist = false
+  let data = []
+
+  const prepare = function(error, prop, target) {
+    isReady = true
+    if (inObject(prop, target)) {
+      isExist = true
+    }
+    data = [prop, target]
+  }
+
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
-      if (value === undefined) {
-        return
+      if (!isReady) {
+        return new TxpeError('ifexist not ready', { value, rule: this })
       }
+      if (!isExist) {
+        return null
+      }
+
       let error = rule.validate(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    })
+
+      // use rule to override property when not match
+      // override value and check again
+      // so that you can use `ifexist(ifnotmatch(String, ''))`
+      if (error && isFunction(rule.override)) {
+        let [prop, target] = data
+        rule.override(error, prop, target)
+        value = target[prop]
+        error = rule.validate(value)
+      }
+
+      return xError(error, { value, rule: this, level: 'rule' })
+    }, prepare)
   }
 
   if (isInstanceOf(rule, Type)) {
     return new Rule(function(value) {
-      if (value === undefined) {
-        return
+      if (!isReady) {
+        return new TxpeError('ifexist not ready.', { value, rule: this })
       }
+      if (!isExist) {
+        return null
+      }
+
       let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    })
+      return xError(error, { value, rule: this, level: 'rule' })
+    }, prepare)
   }
 
   let type = new Type(rule)
-  return IfExists(type)
+  return ifexist(type)
 })
 
 /**
  * If the value not match rule, use defaultValue as value.
  * Notice, this will modify original data, which may cause error, so be careful.
  * @param {*} rule
- * @param {*} [defaultValue]
- * @param {function} calculate a function to calculate new value with origin old value
+ * @param {function} callback a function to return new value with origin old value
  */
-export const IfNotMatch = makeRuleGenerator('IfNotMatch', function(rule, defaultValue, calculate) {
-  if (isFunction(defaultValue)) {
-    calculate = defaultValue
-    defaultValue = undefined
-  }
-
+export const ifnotmatch = makeRuleGenerator('ifnotmatch', function(rule, callback) {
   if (isInstanceOf(rule, Rule)) {
     return new Rule(function(value) {
       let error = rule.validate(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+      return xError(error, { value, rule: this, level: 'rule' })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
+        target[prop] = isFunction(callback) ? callback(target[prop]) : callback
       }
     })
   }
@@ -206,16 +268,16 @@ export const IfNotMatch = makeRuleGenerator('IfNotMatch', function(rule, default
   if (isInstanceOf(rule, Type)) {
     return new Rule(function(value) {
       let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+      return xError(error, { value, rule: this, level: 'rule' })
     }, function(error, prop, target) {
       if (error) {
-        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
+        target[prop] = isFunction(callback) ? callback(target[prop]) : callback
       }
     })
   }
 
   let type = new Type(rule)
-  return IfNotMatch(type, defaultValue, calculate)
+  return ifnotmatch(type, callback)
 })
 
 /**
@@ -226,7 +288,7 @@ export const IfNotMatch = makeRuleGenerator('IfNotMatch', function(rule, default
  *   name: String,
  *   isMale: Boolean,
  *   // data type check based on person.isMale
- *   touch: Determine(function(person) {
+ *   touch: determine(function(value, key, person) {
  *     if (person.isMale) {
  *       return String
  *     }
@@ -236,35 +298,50 @@ export const IfNotMatch = makeRuleGenerator('IfNotMatch', function(rule, default
  *   }),
  * })
  */
-export const Determine = makeRuleGenerator('Determine', function(factory) {
+export const determine = makeRuleGenerator('determine', function(determine) {
+  let isReady = false
   let rule
-  let isMade = false
+
   return new Rule(function(value) {
-    if (!isMade) {
-      return new ErrorX('You should return a rule by Determine.', { value, rule: this })
+    if (!isReady) {
+      return new TxpeError('determine not ready.', { value, rule: this })
     }
 
     if (isInstanceOf(rule, Rule)) {
       let error = rule.validate(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+
+      // use rule to override property when not match
+      // override value and check again
+      // so that you can use `determine((value, key, data) => {
+      //   if (data.isMale) return ifnotmatch(String, '')
+      //   else return null
+      // })`
+      if (error && isFunction(rule.override)) {
+        let [prop, target] = data
+        rule.override(error, prop, target)
+        value = target[prop]
+        error = rule.validate(value)
+      }
+
+      return xError(error, { value, rule: this, level: 'rule' })
     }
 
     if (isInstanceOf(rule, Type)) {
       let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+      return xError(error, { value, rule: this, level: 'rule' })
     }
 
     let type = new Type(rule)
     let error = type.catch(value)
-    return xError(error, { value, rule: this, action: 'rule' })
-  }, function(error, porp, target) {
-    rule = factory(target)
-    isMade = true
+    return xError(error, { value, rule: this, level: 'rule' })
+  }, function(error, prop, target) {
+    rule = determine(target[prop], prop, target)
+    isReady = true
   })
 })
 
 /**
- * Advance version of IfExists, determine whether a prop can not exist with a determine function,
+ * Advance version of ifexist, determine whether a prop can not exist with a determine function,
  * if the prop is existing, use the passed type to check.
  * @param {function} determine the function to return true or false,
  * if true, it means the prop should must exists and will use the second parameter to check data type,
@@ -275,91 +352,101 @@ export const Determine = makeRuleGenerator('Determine', function(factory) {
  *   name: String,
  *   isMale: Boolean,
  *   // data type check based on person.isMale, if person.isMale is true, touch should be String, or touch can not exist
- *   touch: DetermineExists(person => person.isMale, String),
+ *   touch: shouldexist((value, key, person) => person.isMale, String),
  * })
  */
-export const DetermineExists = makeRuleGenerator('DetermineExists', function(determine, rule) {
-  let isChecked = false
-  let shouldExists = true
+export const shouldexist = makeRuleGenerator('shouldexist', function(determine, rule) {
+  let isReady = false
+  let shouldExist = true
+  let isExist = false
+
   return new Rule(function(value) {
-    if (!isChecked) {
-      return new ErrorX('You should return a boolean by DetermineExists.', { value, rule: this })
+    if (!isReady) {
+      return new TxpeError('shouldexist not ready.', { value, rule: this })
     }
 
     // can not exists and it not exists, do nothing
-    if (!shouldExists && value === undefined) {
-      return
+    if (!shouldExist && !isExist) {
+      return null
     }
 
     if (isInstanceOf(rule, Rule)) {
       let error = rule.validate(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+
+      // use rule to override property when not match
+      // override value and check again
+      // so that you can use `shouldexist(() => true, ifnotmatch(String, ''))`
+      if (error && isFunction(rule.override)) {
+        let [prop, target] = data
+        rule.override(error, prop, target)
+        value = target[prop]
+        error = rule.validate(value)
+      }
+
+      return xError(error, { value, rule: this, level: 'rule' })
     }
 
     if (isInstanceOf(rule, Type)) {
       let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
+      return xError(error, { value, rule: this, level: 'rule' })
     }
 
     let type = new Type(rule)
     let error = type.catch(value)
-    return xError(error, { value, rule: this, action: 'rule' })
+    return xError(error, { value, rule: this, level: 'rule' })
   }, function(error, prop, target) {
-    shouldExists = determine(target)
-    isChecked = true
+    shouldExist = determine(target[prop], prop, target)
+    isReady = true
+    isExist = inObject(prop, target)
   })
 })
 
 /**
- * If the value exists, and if the value not match rule, use defaultValue as value.
- * If not exists, ignore this rule.
- * @param {*} rule
- * @param {*} [defaultValue]
- * @param {function} calculate a function to calculate new value with origin old value
- */
-export const IfExistsNotMatch = makeRuleGenerator('IfExistsNotMatch', function(rule, defaultValue, calculate) {
-  if (isFunction(defaultValue)) {
-    calculate = defaultValue
-    defaultValue = undefined
-  }
+ * Advance version of ifexist, determine whether a prop can not exist with a determine function,
+ * if the prop is existing, use the passed type to check.
+ * @param {function} determine the function to return true or false,
+ * if true, it means the prop should must exists and will use the second parameter to check data type,
+ * if false, it means the prop can not exist
+ * @param {*} rule when the determine function return true, use this to check data type
+ * @example
+ * const SomeType = Dict({
+  *   name: String,
+  *   isMale: Boolean,
+  *   // data type check based on person.isMale, if person.isMale is true, touch should be String, or touch can not exist
+  *   touch: shouldnotexist((value, key, person) => person.isMale, String),
+  * })
+  */
+ export const shouldnotexist = makeRuleGenerator('shouldnotexist', function(determine, rule) {
+   let isReady = false
+   let shouldNotExist = false
+   let isExist = false
+   let data = []
 
-  if (isInstanceOf(rule, Rule)) {
-    return new Rule(function(value) {
-      if (value === undefined) {
-        return
-      }
-      let error = rule.validate(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    }, function(error, prop, target) {
-      if (error) {
-        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
-      }
-    })
-  }
+   return new Rule(function(value) {
+     if (!isReady) {
+       return new TxpeError('shouldnotexist not ready.', { value, rule: this })
+     }
 
-  if (isInstanceOf(rule, Type)) {
-    return new Rule(function(value) {
-      if (value === undefined) {
-        return
-      }
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, action: 'rule' })
-    }, function(error, prop, target) {
-      if (error) {
-        target[prop] = isFunction(calculate) ? calculate(target[prop], defaultValue) : defaultValue
-      }
-    })
-  }
+     // can not exists and it not exists, do nothing
+     if (shouldNotExist && !isExist) {
+       return null
+     }
 
-  let type = new Type(rule)
-  return IfExistsNotMatch(type, defaultValue, calculate)
-})
+     const [key] = data
+     return new TxpeError('overflow', { value, rule: this, level: 'rule', key })
+   }, function(error, prop, target) {
+    shouldNotExist = determine(target[prop], prop, target)
+    isReady = true
+    isExist = inObject(prop, target)
+    data = [prop, target]
+   })
+ })
 
 /**
  * Whether the value is an instance of given class
  * @param {*} rule should be a class constructor
  */
-export const InstanceOf = makeRuleGenerator('InstanceOf', function(rule) {
+export const implement = makeRuleGenerator('implement', function(rule) {
   return makeRule((value) => isInstanceOf(value, rule, true))
 })
 
@@ -367,7 +454,7 @@ export const InstanceOf = makeRuleGenerator('InstanceOf', function(rule) {
  * Whether the value is eqaul to the given value
  * @param {*} rule
  */
-export const Equal = makeRuleGenerator('Equal', function(rule) {
+export const equal = makeRuleGenerator('equal', function(rule) {
   return makeRule((value) => value === rule)
 })
 
@@ -376,7 +463,7 @@ export const Equal = makeRuleGenerator('Equal', function(rule) {
  * @param {Tuple} InputType
  * @param {Any} OutputType
  */
-export const Lambda = makeRuleGenerator('Lambda', function(InputType, OutputType) {
+export const lambda = makeRuleGenerator('lambda', function(InputType, OutputType) {
   if (!isInstanceOf(InputType, Type)) {
     InputType = new Type(InputType)
   }
@@ -386,7 +473,7 @@ export const Lambda = makeRuleGenerator('Lambda', function(InputType, OutputType
 
   return new Rule(function(value) {
     if (!isFunction(value)) {
-      return new ErrorX('refuse', { value, rule: this, action: 'rule' })
+      return new TxpeError('shouldmatch', { value, rule: this, level: 'rule' })
     }
   }, function(error, prop, target) {
     if (!error) {

@@ -1,24 +1,25 @@
-import Type from './type'
-import { isNumber } from './utils'
-import { ErrorX } from './error'
+import Type from './type.js'
+import { isNumber } from './utils.js'
+import { TxpeError } from './error.js'
 
-export function Range(min, max) {
-  if (!isNumber(min)) {
-    min = 0
+export class Range extends Type {
+  constructor(min, max) {
+    if (!isNumber(min)) {
+      min = 0
+    }
+    if (!isNumber(max)) {
+      max = 1
+    }
+    if (min > max) {
+      min = 0
+      max = 1
+    }
+    super(min, max)
+    this.name = 'Range'
   }
-  if (!isNumber(max)) {
-    max = 1
-  }
-  if (min > max) {
-    min = 0
-    max = 1
-  }
-
-  const RangeType = new Type(min, max)
-  RangeType.name = 'Range'
-  RangeType.assert = function(value) {
+  assert(value) {
     if (!isNumber(value)) {
-      throw new ErrorX('refuse', { value, type: this, action: 'assert' })
+      throw new TxpeError('shouldmatch', { value, type: this, level: 'assert' })
     }
 
     let [min, max] = this.patterns
@@ -26,8 +27,13 @@ export function Range(min, max) {
       return
     }
 
-    throw new ErrorX('refuse', { value, type: this, action: 'assert', min, max })
+    throw new TxpeError('shouldmatch', { value, type: this, level: 'assert', min, max })
   }
-  return RangeType
 }
+
+export function range(min, max) {
+  const type = new Range(min, max)
+  return type
+}
+
 export default Range

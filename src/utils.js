@@ -2,6 +2,10 @@ export function isNumber(value) {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+export function isNumeric(value) {
+  return isNumber(value) || (isString(value) && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value))
+}
+
 export function isBoolean(value) {
   return value === true || value === false
 }
@@ -35,6 +39,14 @@ export function inArray(value, arr) {
 
 export function inObject(key, obj) {
   return inArray(key, Object.keys(obj))
+}
+
+export function isNull(value) {
+  return value === null
+}
+
+export function isUndefined(value) {
+  return value === undefined
 }
 
 export function isNaN(value) {
@@ -95,7 +107,7 @@ export function map(obj, fn) {
   return result
 }
 
-export function decorate(factory, method = 'input') {
+export function decorate(factory, method) {
   return function(target, prop, descriptor) {
     // decorate class constructor function
     if (target && !prop) {

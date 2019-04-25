@@ -1,27 +1,37 @@
-import Type from './type'
-import { isObject, isBoolean } from './utils'
-import { ErrorX, xError } from './error'
+import Type from './type.js'
+import { isObject, isBoolean } from './utils.js'
+import { TxpeError, xError } from './error.js'
 
-const prototypes = {
-  assert: function(value) {
+export class Dict extends Type {
+  constructor(pattern) {
+    // if pattern is not an object, it treated undefined
+    if (!isObject(pattern)) {
+      pattern = {}
+    }
+
+    super(pattern)
+    this.name = 'Dict'
+    this.pattern = pattern
+  }
+  assert(value) {
     if (!isObject(value)) {
-      throw new ErrorX('refuse', { value, type: this, action: 'assert' })
+      throw new TxpeError('shouldmatch', { value, type: this, level: 'assert' })
     }
 
     let rule = this.rules[0]
     let error = this.validate(value, rule)
     if (error) {
-      throw xError(error, { value, rule, type: this, action: 'assert' })
+      throw xError(error, { value, rule, type: this, level: 'assert' })
     }
-  },
-  extends: function(pattern) {
-    const originalPattern = this.patterns[0]
+  }
+  extends(pattern) {
+    const originalPattern = this.pattern
     const newPattern = Object.assign({}, originalPattern, pattern)
     const newType = Dict(newPattern)
     return newType
-  },
-  extract: function(pattern) {
-    const originalPattern = this.patterns[0]
+  }
+  extract(pattern) {
+    const originalPattern = this.pattern
     const originalKeys = Object.keys(originalPattern)
     const newPattern = {}
 
@@ -65,22 +75,14 @@ const prototypes = {
       newPattern[key] = value
     })
 
-
     const newType = Dict(newPattern)
     return newType
-  },
-}
-
-export function Dict(pattern) {
-  // if pattern is not an object, it treated undefined
-  if (!isObject(pattern)) {
-    pattern = Object
   }
-
-  const DictType = new Type(pattern)
-  DictType.name = 'Dict'
-  Object.assign(DictType, prototypes)
-
-  return DictType
 }
+
+export function dict(pattern) {
+  const type = new Dict(pattern)
+  return type
+}
+
 export default Dict

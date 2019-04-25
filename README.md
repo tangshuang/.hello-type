@@ -1,4 +1,4 @@
-HelloType
+Txpe
 =========
 
 An ECMAScript data type/structure check library.
@@ -8,19 +8,28 @@ An ECMAScript data type/structure check library.
 ## Install
 
 ```
-npm i hello-type
+npm i txpe
 ```
 
 ## Usage
 
 ```js
-import HelloType, { Dict, Enum, Tuple, List, Type, Rule, Self, IfExists } from 'hello-type'
+import { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } from 'txpe'
 ```
 
 or
 
 ```js
-const { HelloType, Dict, Enum, Tuple, List, Type, Rule, Self, IfExists } = require('hello-type')
+const { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } = require('txpe')
+```
+
+or
+
+```html
+<script src="/node_modules/txpe/dist/index.js"></script>
+<script>
+const { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } = window['txpe']
+</script>
 ```
 
 ## Type
@@ -353,7 +362,7 @@ Notice: CustomRule is just a instance of Rule, it is not a type, do not have `as
 There is a special rule called `Any`, it means your given value can be any type:
 
 ```js
-import { Dict, Any } from 'hello-type'
+import { Dict, Any } from 'txpe'
 
 const MyType = Dict({
   top: Any,
@@ -378,7 +387,7 @@ If there is no value, or the value is undefined, this rule can be ignored.
 - @return instance of Type/Rule
 
 ```js
-import { Dict, IfExists } from 'hello-type'
+import { Dict, IfExists } from 'txpe'
 
 const PersonType = Dict({
   name: String,
@@ -580,68 +589,68 @@ const AsyncRule = Async(async () => {
 })
 ```
 
-## HelloType
+## Txpe
 
-The `HelloType` is a set of methods to use type assertions more unified.
+The `Txpe` is a set of methods to use type assertions more unified.
 
 ```js
-import { HelloType } from 'hello-type'
+import { Txpe } from 'txpe'
 ```
 
 ### expect.to.match
 
 ```js
-HelloType.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
+Txpe.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
 ```
 
 SomeType can be original rule:
 
 ```js
-HelloType.expect(10).to.match(Number)
+Txpe.expect(10).to.match(Number)
 ```
 
 **silent**
 
-When you set `HelloType.silent` to be 'true', `HelloType.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
+When you set `Txpe.silent` to be 'true', `Txpe.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
 
 ```js
-HelloType.silent = true
-HelloType.expect(some).to.match(SomeoType) // console.error(e)
+Txpe.silent = true
+Txpe.expect(some).to.match(SomeoType) // console.error(e)
 ```
 
-Notice, `silent` only works for `HelloType.expect.to.match`, not for `Type.assert`.
+Notice, `silent` only works for `Txpe.expect.to.match`, not for `Type.assert`.
 
 ### catch.by.with
 
 ```js
-let error = HelloType.catch(some).by(SomeType)
-let error = HelloType.catch(10).by(Number)
+let error = Txpe.catch(some).by(SomeType)
+let error = Txpe.catch(10).by(Number)
 ```
 
 ### is.typeof
 
 ```js
-let bool = HelloType.is(SomeType).typeof(some)
-let bool = HelloType.is(Number).typeof(10)
+let bool = Txpe.is(SomeType).typeof(some)
+let bool = Txpe.is(Number).typeof(10)
 ```
 
 ### is.of
 
 ```js
-let bool = HelloType.is(some).of(SomeType)
-let bool = HelloType.is(10).of(Number)
+let bool = Txpe.is(some).of(SomeType)
+let bool = Txpe.is(10).of(Number)
 ```
 
 ### trace.by.with
 
 ```js
-HelloType.trace(some).by(SomeType).with(fn)
+Txpe.trace(some).by(SomeType).with(fn)
 ```
 
 ### track.by.with
 
 ```js
-HelloType.track(some).by(SomeType).with(fn)
+Txpe.track(some).by(SomeType).with(fn)
 ```
 
 ### bind/unbind
@@ -649,8 +658,8 @@ HelloType.track(some).by(SomeType).with(fn)
 Bind some functions, so that when assert fail, the functions will run.
 
 ```js
-HelloType.bind(fn)
-HelloType.unbind(fn)
+Txpe.bind(fn)
+Txpe.unbind(fn)
 ```
 
 example:
@@ -659,20 +668,20 @@ example:
 const showError = (err) => Toast.error(err.message)
 window.addEventListener('error', (e) => {
   let { error } = e
-  if (error.owner === 'hello-type') {
+  if (error.owner === 'txpe') {
     e.preventDefault() // when throw Error, there will no error massage in console
   }
 })
 
-HelloType.bind(showError) // use your own action to notice users
+Txpe.bind(showError) // use your own action to notice users
 
 // when the assert fail, it throw TypeError, however, `fn` will run before error thrown
-HelloType.expect(some).to.match(SomeoType)
+Txpe.expect(some).to.match(SomeoType)
 
-// HelloType will not break the process
-HelloType.silent = true
+// Txpe will not break the process
+Txpe.silent = true
 // `fn` will run before console.error
-HelloType.expect(some).to.match(SomeoType)
+Txpe.expect(some).to.match(SomeoType)
 ```
 
 A callback function:
@@ -680,15 +689,15 @@ A callback function:
 - @param error
 - @param action: 'assert', 'test', 'trace', 'track', 'catch'
 
-Notice, `bind` only works for `HelloType` , `Type` methods will not follow this rule.
+Notice, `bind` only works for `Txpe` , `Type` methods will not follow this rule.
 
 ```js
-HelloType.bind(function(error, action) {
+Txpe.bind(function(error, action) {
   if (action === 'trace') {
     bugReportJs.report(error)
   }
 })
-HelloType.trace(args).by(someType) // without `.with` on tail
+Txpe.trace(args).by(someType) // without `.with` on tail
 ```
 
 ### decorate
@@ -696,14 +705,14 @@ HelloType.trace(args).by(someType) // without `.with` on tail
 Use to decorate class and its members:
 
 ```js
-@HelloType.decorate.with((...args) => SomeTupleType.assert(...args)) // decorate constructor
+@Txpe.decorate.with((...args) => SomeTupleType.assert(...args)) // decorate constructor
 class SomeClass {
-  @HelloType.decorate.with((value) => SomeType.assert(value)) // decorate a property member
+  @Txpe.decorate.with((value) => SomeType.assert(value)) // decorate a property member
   propertyName = null
 
-  @HelloType.decorate.input.with((...args) => SomeTupleType.assert(...args)) // decorate the parameters of a property method
-  @HelloType.decorate.output.with((value) => SomeType.assert(value)) // decorate the return value of a property method
-  @HelloType.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
+  @Txpe.decorate.input.with((...args) => SomeTupleType.assert(...args)) // decorate the parameters of a property method
+  @Txpe.decorate.output.with((value) => SomeType.assert(value)) // decorate the return value of a property method
+  @Txpe.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
   methodName(...args) {}
 }
 ```
@@ -722,7 +731,7 @@ const SomeType = Dict({
   },
   books: [Object],
 })
-const obj = HelloType.define({}).by(SomeType)
+const obj = Txpe.define({}).by(SomeType)
 obj.child.age === undefined // true
 obj.age = '10' // throw TypeError
 obj.child.name = null // throw TypeError
@@ -739,8 +748,8 @@ obj.books[0].name = null // without any effects
 Advance TypeError which has `addtrace` method.
 
 ```js
-import HelloType from 'hello-type'
-const { Error } = HelloType
+import Txpe from 'txpe'
+const { Error } = Txpe
 ```
 
 - @param key/message
