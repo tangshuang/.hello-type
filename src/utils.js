@@ -289,3 +289,38 @@ export function sortBy(items, keyPath) {
   })
   return res
 }
+
+/**
+ * 将一个对象的属性层级打平，多级变为一级，主要用于表单提交使用
+ * @param {*} obj
+ * @param {function} determine 用于决定一个对象是否要更深一步去打平，返回true表示要更深一层，返回false则直接将该对象作为键值
+ */
+export function flatObject(obj, determine) {
+  const flat = (input, path = '', result = {}) => {
+    if (isArray(input)) {
+      input.forEach((item, i) => flat(item, `${path}[${i}]`, result));
+      return result;
+    }
+    else if (isObject(input)) {
+      if (isFunction(determine) && !determine(input)) {
+        result[path] = input;
+        return result
+      }
+
+      let keys = Object.keys(input);
+      keys.forEach((key) => {
+        let value = input[key];
+        flat(value, !path ? key : `${path}[${key}]`, result);
+      });
+      return result;
+    }
+    else {
+      result[path] = input;
+      return result;
+    }
+  }
+  if (!obj || typeof obj !== 'object') {
+    return {}
+  }
+  return flat(obj)
+}
