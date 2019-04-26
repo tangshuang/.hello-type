@@ -13,10 +13,17 @@ import Txpe from './txpe.js'
  * {
  *   // 字段名
  *   key: {
- *     value: '', // 必填，默认值
+ *     value: '', // 必填，默认值，普通数据类型 string|number|boolean
  *     type: String, // 可选，数据类型，修改值的时候，会触发校验
  *
- *      // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
+ *     // 第一阶段：
+ *     // 从后台api拿到数据后恢复数据相关
+ *     prepare: data => !!data.on_market, // 可选，配合set方法使用
+ *       // 在执行parse的时候，用一个数据去恢复模型数据，这个数据被当作prepare的参数data，prepare的返回值，将作为property的恢复后值使用
+ *       // data就是parse接收的参数
+ *
+ *     // 第二阶段：
+ *     // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
  *     // 当给了validators，其他的校验配置失效（determine会保留，并且在所有的determine前执行
  *     validators: [
  *       {
@@ -30,11 +37,7 @@ import Txpe from './txpe.js'
  *       },
  *     ],
  *
- *     // 从后台api拿到数据后恢复数据相关
- *     prepare: data => !!data.on_market, // 可选，配合set方法使用
- *       // 在执行set的时候，用一个数据去恢复模型数据，这个数据被当作prepare的参数data，prepare的返回值，将作为property的恢复后值使用
- *       // data就是set接收的参数
- *
+ *     // 第三阶段：
  *     // 准备上传数据，格式化数据相关
  *     drop: (value) => Boolean, // 可选，是否要在调用.jsondata或.formdata的时候排除当前这个字段
  *     flat: (value) => ({ keyPath: value }), // 可选，在制作表单数据的时候，把原始值转换为新值赋值给model的keyPath。
@@ -45,7 +48,7 @@ import Txpe from './txpe.js'
  *       // flat的优先级更高，它会在drop之前运行，因此，drop对它没有影响，这也符合逻辑，flat之后，如果需要从原始数据中删除自身，需要设置drop
  *     map: (value) => newValue, // 可选，使用新值覆盖原始值输出，例如 map: region => region.region_id 使当前这个字段使用region.region_id作为最终结果输出。
  *       // 注意：它仅在drop为false的情况下生效，drop为true，map结果不会出现在结果中。
- *   },
+ *   }
  * }
  *
  * 需要注意：只有definition中规定的属性会被当作model最终生成formdata的字段，不在definition中规定的，但是仍然存在于model中的属性不会被加入到formdata中。
@@ -54,29 +57,96 @@ import Txpe from './txpe.js'
  * 当一个属性的值为一个新的FormModel，或者为一个包含了FormModel的数组时，在生成最终的formdata的时候，会从这些FormModel中提取出真正的结果。
  */
 export class Schema {
-  constructor(definition) {
-    this.definition = definition
+  constructor(pattern) {
+    this.pattern = pattern
     this.name = 'Schema'
     this.data = {}
     this.txpe = new Txpe()
-  }
 
-  throw(error) {
-    console.error(error)
-  }
+    this.__listeners = []
+    this.__isBatchUpdating = null
+    this.__batch = []
 
+    this.init()
+  }
   get(key) {
-    return key ? parse(this.data, key) : this.data
+    return key ? this.data[key] : this.data
   }
-  set(data) {
-    const definition = this.definition
-    const keys = Object.keys(definition)
-    const set = (data, parentPath = '') => {
-      keys.forEach((key) => {
-        const property = definition[key]
-      })
+  set(key, value, silent = false) {
+    if (!this.pattern[key]) {
+      throw new Error(`${key} not exist in schema.`)
     }
-    set(data)
+
+    this.assert(key, value)
+
+    this.data[key] = value
+
+    if (!silent) {
+      this.dispatch(key, value)
+    }
+
+    return this
+  }
+
+  // 批量更新，异步动作，多次更新一个值，只会触发一次
+  update(data) {
+    const keys = Object.keys(data)
+    keys.forEach((key) => {
+      const value = data[key]
+      this.__batch.push({ key, value })
+    })
+
+    // 异步更新和触发
+    clearTimeout(this.__isBatchUpdating)
+    this.__isBatchUpdating = setTimeout(() => {
+      const updating = this.__batch
+      this.__batch = []
+
+      // 去除已经存在的
+      const table = {}
+      updating.forEach((item, i) => {
+        table[item.key] = i
+      })
+
+      const indexes = Object.values(table)
+      const items = indexes.map(i => updating[i])
+
+      items.forEach(({ key, value }) => this.set(key, value))
+    })
+
+    return this
+  }
+  watch(key, fn, priority = 10) {
+    // 数组，则一次性添加多个
+    if (isArray(key)) {
+      key.forEach((key) => this.watch(key, fn, priority))
+      return this
+    }
+
+    this.__listeners.push({ key, fn, priority })
+    return this
+  }
+  unwatch(key, fn) {
+    // 数组，则一次性添加多个
+    if (isArray(key)) {
+      key.forEach((key) => this.unwatch(key, fn))
+      return this
+    }
+
+    this.__listeners.forEach((item, i) => {
+      if (item.key === key && (item.fn === undefined || item.fn === fn)) {
+        this.__listeners.splice(i, 1)
+      }
+    })
+    return this
+  }
+  dispatch(key, value) {
+    const listeners = this.__listeners.filter(item => item.key === key)
+    const watchers = sortBy(listeners, 'priority')
+    watchers.forEach(({ fn }) => {
+      fn.call(this, key, value)
+    })
+
     return this
   }
 
@@ -94,7 +164,6 @@ export class Schema {
     })
     return dict(types)
   }
-
   assert(key, value, parentPath = '') {
     if (arguments.length < 1) {
       throw new Error('need at least one parameter.')
@@ -135,7 +204,6 @@ export class Schema {
       }
     }
   }
-
   validate(key) {
     const pattern = this.pattern
     if (!key) {
@@ -175,15 +243,9 @@ export class Schema {
     this.txpe.expect(value).to.be(type)
   }
 
-  /**
-   * 获取数据
-   * @param {*} mode
-   * 0: 获取原始数据
-   * 1: 获取经过map之后的数据
-   * 2: 在1的基础上获取扁平化数据
-   * 3: 在2的基础上转化为FormData
-   */
-  data(mode = 0) {}
+  data() {}
+  jsondata() {}
+  formdata() {}
 }
 
 export default Schema

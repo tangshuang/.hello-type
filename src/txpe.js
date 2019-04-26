@@ -51,6 +51,10 @@ export class Txpe {
     return {
       to: {
         match: (type) => {
+          if (!isInstanceOf(type, Type)) {
+            type = new Type(type)
+          }
+
           try {
             type.assert(...targets)
             return true
@@ -61,9 +65,6 @@ export class Txpe {
           }
         },
         be: (type) => {
-          if (!isInstanceOf(type, Type)) {
-            type = new Type(type)
-          }
           return this.expect(...targets).to.match(type)
         },
       },
@@ -329,5 +330,8 @@ export class Txpe {
   }
 
 }
+
+export const txpe = new Txpe()
+
 
 export default Txpe

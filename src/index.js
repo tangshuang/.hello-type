@@ -19,5 +19,5 @@ export {
   lambda,
 } from './rule.js'
 
-export { Txpe } from './txpe.js'
+export { Txpe, txpe } from './txpe.js'
 export { TxpeError } from './error.js'

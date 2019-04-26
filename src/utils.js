@@ -196,3 +196,96 @@ export function clone(obj, fn) {
 export function defineProperty(obj, prop, value, writable, enumerable) {
   return Object.defineProperty(obj, prop, { value, writable, enumerable })
 }
+
+function makeKeyChain(path) {
+  let chain = path.toString().split(/\.|\[|\]/).filter(item => !!item)
+  return chain
+}
+
+/**
+ * 根据keyPath读取对象属性值
+ * @param {*} obj
+ * @param {*} path
+ * @example
+ * parse({ child: [ { body: { head: true } } ] }, 'child[0].body.head') => true
+ */
+export function parse(obj, path) {
+  let chain = makeKeyChain(path)
+
+  if (!chain.length) {
+    return obj
+  }
+
+  let target = obj
+  for (let i = 0, len = chain.length; i < len; i ++) {
+    let key = chain[i]
+    if (target[key] === undefined) {
+      return undefined
+    }
+    target = target[key]
+  }
+  return target
+}
+
+/**
+ * 根据keyPath设置对象的属性值
+ * @param {*} obj
+ * @param {*} path
+ * @param {*} value
+ * @example
+ * assign({}, 'body.head', true) => { body: { head: true } }
+ */
+export function assign(obj, path, value) {
+  let chain = makeKeyChain(path)
+
+  if (!chain.length) {
+    return obj
+  }
+
+  let key = chain.pop()
+
+  if (!chain.length) {
+    obj[key] = value
+    return obj
+  }
+
+  let target = obj
+
+  for (let i = 0, len = chain.length; i < len; i ++) {
+    let key = chain[i]
+    let next = chain[i + 1] || key
+    if (/^[0-9]+$/.test(next) && !isArray(target[key])) {
+      target[key] = []
+    }
+    else if (typeof target[key] !== 'object') {
+      target[key] = {}
+    }
+    target = target[key]
+  }
+
+  target[key] = value
+
+  return obj
+}
+
+export function sortBy(items, keyPath) {
+  let res = [].concat(items)
+  res.sort((a, b) => {
+    let oa = parse(a, keyPath)
+    let ob = parse(b, keyPath)
+
+    oa = typeof oa === 'number' && !isNaN(oa) ? oa : 10
+    ob = typeof ob === 'number' && !isNaN(ob) ? ob : 10
+
+    if (oa < ob) {
+      return -1
+    }
+    if (oa === ob) {
+      return 0
+    }
+    if (oa > ob) {
+      return 1
+    }
+  })
+  return res
+}
