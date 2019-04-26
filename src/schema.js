@@ -129,12 +129,11 @@ export class Schema {
   // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   override(data) {
-    const definition = this.definition
-    const keys = Object.keys(definition)
-
     return new Promise((resolve, reject) => {
       clearTimeout(this.__isOverriding)
       this.__isOverriding = setTimeout(() => {
+        const definition = this.definition
+        const keys = Object.keys(definition)
         const items = []
         keys.forEach((key) => {
           const def = definition[key]
