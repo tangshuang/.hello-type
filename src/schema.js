@@ -27,17 +27,25 @@ const SCHEMAS = {
 /**
  * 基于简单的Schema语法去定义类型
  * @example
+ * const Child = new Schema({
+ *   name: 'string',
+ *   age: '?int',
+ * })
+ * Schema.define('Child', Child)
+ *
  * const schema = new Schema({
  *   name: 'string',
  *   age: '?int', // ?表示可选的，置于语法开头
- *   children: 'Child[]', // Child为自己通过schema.define创建的新类型，[]表示这是一个Child的数组
+ *   books: 'string[]', // []表示这是一个数组
  *   neighbor: '?number|null', // |表示其中之一，这里表示neighbor字段可以是number也可以是null
+ *   dogs: ['kily', 'ximen'], // 表示一个枚举值，只能从这中间选一个
+ *   children: 'Child[]', // 使用前面定义的Child
+ *   body: { // 直接表示body是一个对象，并且对对象内部结果进行规定
+ *     head: 'boolean',
+ *     feet: 'boolean',
+ *   },
  * })
- * const Child = new Schema({
-  *   name: 'string',
-  *   age: '?int',
-  * })
- * schema.define('Child', Child)
+
  *
  * // 因为Schema是基于Dict扩展的，因此，它其实拥有Dict的所有方法
  */
@@ -67,7 +75,7 @@ export class Schema extends Dict {
         }
         else if (isArray(value)) {
           value = value.map(item => isObject(item) ? make(pattern) : this.parse(item))
-          value = list(value)
+          value = enumerate(value)
         }
         else {
           value = this.parse(value) // should be a rule
@@ -82,7 +90,7 @@ export class Schema extends Dict {
 
   parse(exp) {
     if (!isString(exp)) {
-      return exp
+      return 'any'
     }
 
     // const split = (exp) => {
