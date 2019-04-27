@@ -1,21 +1,13 @@
 import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN } from './utils.js'
 
-const MESSAGES = {
-  shouldmatch: '{keyPath} should match {should}, but receive {receive}.',
-  shouldnotmatch: '{keyPath} should not match {should}, but receive {receive}.',
-  dirty: '{keyPath} does not match {should}, length should be {length}.',
-  overflow: '{keyPath} should not exists.',
-  missing: '{keyPath} is missing.',
-}
-
 function makeErrorMessage(key, params) {
-  let message = MESSAGES[key] || key
+  let message = RtsmError.messages[key] || key
   let text = message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? params[key] : match)
   return text
 }
 
 /**
- *
+ * add trace into an error
  * @param {*} error
  * @param {*} params the logic:
  * {
@@ -25,39 +17,39 @@ function makeErrorMessage(key, params) {
  *  ... other props which may be needed
  * }
  */
-export function xError(error, params) {
-  if (isInstanceOf(error, Error)) {
-    let traces = error.traces ? error.traces : (error.traces = [])
-
-    let keyPath = inObject('key', params) ? params.key : inObject('index', params) ? `[${params.index}]` : ''
-    let currentPath = ''
-    traces.forEach((item) => {
-      if (inObject('key', item)) {
-        currentPath = currentPath + '.' + item.key
-      }
-      if (inObject('index', item)) {
-        currentPath = currentPath + '[' + item.index + ']'
-      }
-      item.keyPath = currentPath
-    })
-
-    let e = new Error()
-    let stack = e.stack || e.stacktrace
-    let stacks = stack.split('\n')
-    stacks.shift()
-    stacks.shift()
-    stack = stacks.join('\n')
-
-    let trace = Object.assign({}, params, { stack, keyPath })
-    traces.unshift(trace)
-
-    return error
+export function makeError(error, params) {
+  if (!isInstanceOf(error, Error)) {
+    return null
   }
 
-  return null
+  let traces = error.traces ? error.traces : (error.traces = [])
+
+  let keyPath = inObject('key', params) ? params.key : inObject('index', params) ? `[${params.index}]` : ''
+  let currentPath = ''
+  traces.forEach((item) => {
+    if (inObject('key', item)) {
+      currentPath = currentPath + '.' + item.key
+    }
+    if (inObject('index', item)) {
+      currentPath = currentPath + '[' + item.index + ']'
+    }
+    item.keyPath = currentPath
+  })
+
+  let e = new Error()
+  let stack = e.stack || e.stacktrace
+  let stacks = stack.split('\n')
+  stacks.shift()
+  stacks.shift()
+  stack = stacks.join('\n')
+
+  let trace = Object.assign({}, params, { stack, keyPath })
+  traces.unshift(trace)
+
+  return error
 }
 
-export class TxpeError extends TypeError {
+export class RtsmError extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {
@@ -122,20 +114,24 @@ export class TxpeError extends TypeError {
             let name = getReceive(source)
             let should = name
 
-            if (name === 'List') {
-              let rules = source.rules[0].map(item => getShould(item))
-              should = `List([${rules.join(',')}])`
+            if (name === 'List' || name === 'Tuple') {
+              let pattern = source.pattern.map(item => getShould(item))
+              should = `${name}(${pattern.join(',')})`
             }
             else if (name === 'Dict') {
-              let rules = source.rules[0]
-              let keys = Object.keys(rules)
+              let pattern = source.pattern
+              let keys = Object.keys(pattern)
               should = `Dict({${keys.join(',')}})`
             }
-            else if (inArray(name, ['Enum', 'Tuple', 'Range', 'Type'])) {
-              let rules = source.rules.map(item => getShould(item))
-              should = `${name}(${rules.join(',')})`
+            else if (inArray(name, ['Enum', 'Range'])) {
+              let pattern = source.pattern.map(item => getShould(item))
+              should = `${name}(${pattern.join(',')})`
             }
-            else if (inArray(name, ['IfExists', 'IfNotMatch', 'IfExistsNotMatch', 'ShouldMatch', 'Equal', 'InstanceOf', 'Validate', 'Determine'])) {
+            else if (name === 'Type') {
+              let pattern = source.pattern
+              should = getShould(pattern)
+            }
+            else if (inArray(name, ['asynchronous', 'validate', 'match', 'ifexist', 'ifnotmatch', 'shouldexist', 'shouldnotexist', 'implement', 'equal', 'lambda'])) {
               let rule = source.arguments[0]
               let ruleName = getShould(rule)
               should = `${name}(${ruleName})`
@@ -203,7 +199,7 @@ export class TxpeError extends TypeError {
       },
       addtrace: {
         value: function(params) {
-          xError(this, params)
+          makeError(this, params)
           return this
         },
       },
@@ -217,12 +213,16 @@ export class TxpeError extends TypeError {
         }
       },
     })
-    xError(this, params)
-  }
-
-  static get messages() {
-    return MESSAGES
+    makeError(this, params)
   }
 }
 
-export default TxpeError
+RtsmError.messages = {
+  mistaken: '{keyPath} should match {should}, but receive {receive}.',
+  unexcepted: '{keyPath} should not match {should}, but receive {receive}.',
+  dirty: '{keyPath} does not match {should}, length should be {length}.',
+  overflow: '{keyPath} should not exists.',
+  missing: '{keyPath} is missing.',
+}
+
+export default RtsmError

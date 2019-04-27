@@ -1,93 +1,169 @@
-Txpe
-=========
+RTSM
+==========
 
-An ECMAScript data type/structure check library.
+An ECMAScript data arrangement system.
 
 【[中文文档](https://www.tangshuang.net/5625.html)】
+
+RTSM is a js runtime data arrangement system, which contains 4 parts: Rule, Type, Schema and Model.
+You can use RTSM to:
+
+- delimit data with type
+- validate data
+- formulate data by type
+
+RTSM is always used to check data type or sturcture when interact with backend api in frontend, however, you can use it anywhere even in nodejs.
 
 ## Install
 
 ```
-npm i txpe
+npm i rtsm
 ```
 
 ## Usage
 
 ```js
-import { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } from 'txpe'
+import Rtsm from 'rtsm'
 ```
 
 or
 
 ```js
-const { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } = require('txpe')
+const { Rtsm } = require('rtsm')
 ```
 
 or
 
 ```html
-<script src="/node_modules/txpe/dist/index.js"></script>
+<script src="/node_modules/rtsm/dist/index.js"></script>
 <script>
-const { dict, enumerate, tuple, list, range, ifexist, equal, ifnotmatch } = window['txpe']
+const { Rtsm } = window['rtsm']
 </script>
 ```
 
-## Type
+## Rule
 
-To define a type of data, you can use `Type`. It is a class.
+A `Rule` is a Behavior Definition of an automic data.
+For example, `var a = 10` and we know `a` is a number.
+But how do you know `a` is a number? And how do you know a variable is a what behavior definition?
 
-```js
-const PersonType = new Type({
-  name: String,
-  age: Number,
-  male: Boolean,
-  body: {
-    head: HeadType, // HeadType is another custom type made of `Type`
-    neck: NeckType,
-    foot: FootType,
-  },
-  friends: [FriendType],
-  familyCount: Enum(3, 4, 5), // use `Enum()` to make a Enum type
-})
-```
-
-Then use this data type to check a data:
-
-```js
-function welcome(person) {
-  PersonType.assert(person) // If the param `person` not match PersonType, an error will be thrown out
-}
-```
-
-Rules:
+We have native prototypes/definition:
 
 - String
-- Number: should be a finite number, `NaN` `"123"` and `Infinity` will not match
+- Number: should be a finite number, not match `NaN` `"123"` and `Infinity`
 - Boolean: should be one of `true` or `false`
-- Object: should be a normal object like `{}`, instance of class, array and Object self will not match
-- Array
+- Object: should be a normal object like `{}`, not match instance of class, array and Object self
+- Array: should be a normal array like `[]`, not match instance of class inherited from Array and Array self
 - Function
-- RegExp
-- Symbol
+- RegExp: should be a string match regexp
+- Symbol: should be a symbol
 - NaN
 - Infinity
 - Date
 - Promise
-- Dict()
-- List()
-- Enum()
-- Tuple()
-- new Type()
+
+But these do not contains all of what we want, we want more.
+Now you can use Rule to define a behavior definition of a variable.
+
+And we extended so that we now have:
+
+- Int
+- Float
+- Numeric: number or number string
 - Null
 - Undefined
 - Any
-- IfExists()
-- InstanceOf()
-- Equal()
-- new Rule()
-- *: any value to equal
 
-A type instance have members:
+And to use `Rule` conveniently, we provide functions to generate rules:
+
+- asynchronous(fn:type)
+- validate(fn, msg)
+- match(...types)
+- ifexist(type)
+- ifnotmatch(type, defaultValue)
+- determine(fn:type)
+- shouldexist(fn, type)
+- shouldnotexist(fn)
+- implement(Constructor)
+- equal(value)
+- lambda(inputType, outputType)
+
+After you learn the usage of `Rule`, you can define your own rule to create new definition.
+
+```js
+// example
+import { Rule } from 'rtsm'
+export const NumberString = new Rule('NumberString', value => typeof value === 'string' && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value))
+```
+
+## Type
+
+A `Type` is a data nature, quality or characteristic.
+You call a data as some type data, it means you know what genera it belongs to. For example, you call a boy as a Person, because you know the boy has what a Person should contains: a head, two hands and may talk.
+In summary, Type contains the data behavior definition, the data structure and the ability to maintain data change as defined.
+So a Type has the ability to check and trace data's characteristic, and throw out warn to user if the data is not of current Type.
+
+To create a type, you can use:
+
+- new Type(pattern)
+
+And we have define some data structure:
+
+- new Dict({ ... })
+- new List([ ... ])
+- new Tuple([ ... ])
+- new Enum([ ... ])
+
+The output of these constructors are all types which can be used in our system.
+And these 4 types are extended from `Type`.
+Later I will tell you how to create type by using these constructors.
+
+And to use `Type` conveniently, we provide functions to generate types:
+
+- type(...)
+- dict({ ... })
+- list([ ... ])
+- tuple(...)
+- enumerate(...)
+
+**Pattern**
+
+To define a type, you should provide data behavior definition and data structure, these make up a Pattern.
+A Pattern is what passed into `Type` constructors.
+
+```js
+const SomePattern = {
+  name: String,
+  age: Number,
+}
+const SomeType = new Dict(SomePattern)
+```
+
+Pattern is the design of type to implement the type's ability.
+You can use js native prototypes/class/value or Rule or Type in a Pattern.
+And different type constructor need different pattern form.
+
+## Schema
+
+A Schema is to describe fields' behaviour logic.
+In javascript, we use object to reflect data set which contains fields, so in RTSM you should use object to define Schema.
+
+
+
+
+
+### Type Instance
+
+In TypeSchema, the basic class constructor is `Type`, which is extended to `Dict` `List` `Enum` and `Tuple`.
+You can create an instance:
+
+```js
+import { Type } from 'rtsm'
+const SomeType = new Type(String)
+// so that you can use methods' feature with SomeType
+```
+
+A `Type` instance have members:
 
 **assert(...args)**
 
@@ -109,47 +185,13 @@ Return null if match, and return error object if not match.
 let error = PersonType.catch(person)
 ```
 
-If there is no error, `null` will be returned.
-
-**trace(...args).with(fn)**
+**track(...args).with(fn)**
 
 Assert whether the args match the type.
-It will run completely asynchronously.
 If not match, `fn` will run. You can do like:
 
 ```js
-PersonType.trace(person).with((error) => console.log(error))
-```
-
-`fn` has three parameters:
-
-- error: the catched error, if pass, it will be undefined
-- args: array, targets to match
-- type: which type be used to match
-
-```js
-PersonType.trace(person).with((error, [person], type) => {
-  if (error) {
-    console.log(person, 'not match', type, 'error:', error)
-  }
-})
-```
-
-It will return a resolved promise anyway:
-
-```js
-let error = await PersonType.trace(person).with(fn)
-if (error) {
-  // ...
-}
-```
-
-**track(...args).with(fn)**
-
-The difference between trace and track is: `trace` will run assert action completely asynchronously, `track` will run assert action synchronously, and run `fn` asynchronously.
-
-```js
-const SomeType = Dict({
+const SomeType = dict({
   name: String,
   age: Number,
 })
@@ -158,28 +200,37 @@ const some = {
   age: 10,
 }
 
-SomeType.trace(some).with((error) => console.log(1, error))
-SomeType.track(some).with((error) => console.log(2, error))
-
-some.age = null
-
-// => 2 null
-// => 1 TypeError
+SomeType.track(some).with((error) => console.log(error))
 ```
 
-As you see, track will be run at the point it placed, trace will be run asynchronously.
+It will return a resolved promise anyway.
+`fn` has three parameters:
+
+- error: the catched error, if pass, it will be undefined
+- args: array, targets to match
+- type: which type be used to match
+
+**trace(...args).with(fn)**
+
+Assert (asynchronously) whether the args match the type.
+If not match, `fn` will run. It is the same usage with tack:
+
+```js
+SomeType.trace(some).with((error) => console.log(error))
+```
+
+*The difference between `track` and `trace` is trace will validate parameters asynchronously, so that if you change the data after trace, it may cause validate failure.*
+
 
 **toBeStrict()/strict/Strict**
 
-Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match, even you use `IfExists`.
+Whether use strict mode, default mode is false. If you use strict mode, object properties count should match, array length should match, even you use `ifexist`.
 
 ```js
-const MyType = new Type([Number, Number])
+const MyType = list([Number, Number])
 MyType.Strict.assert([1]) // array length should be 2, but here just passed only one
-```
 
-```js
-const MyType = new Type({
+const MyType = dict({
   name: String,
   age: Number,
 })
@@ -188,26 +239,37 @@ MyType.Strict.assert({
   age: 10,
   height: 172, // this property is not defined in type, so assert will throw an error
 })
-MyType.toBeStrict().assert({
-  name: 'tomy',
-  age: 10,
-  height: 172,
-})
 ```
 
 However, `MyType.Strict` is different from `MyType.toBeStrict()`, `.toBeStrict()` is to covert current instance to be in strict mode, but `.Strict` or `.strict` will get a _new_ instance which is in strict mode. If you want to use a type container instance only one in strict mode, you can use `.toBeStrict()`, if you want to use multiple times, use `.Strict` instead.
 
 ```js
-const MyType = new Type({
-  body: Dict({
+const MyType = dict({
+  body: dict({
     head: Object,
   }).toBeStrict(), // here I will use Dict directly in strict mode
 })
 ```
 
-## Dict()
+### Dict/List/Enum/Tuple
 
-A Dict is a type of object which has only one level properties.
+These 4 types of data structure is extended from `Type`. So they have the same methods with `Type`.
+
++-------------+----------+----------+--
+| TypeSchema  |    JS    |  Python  |
++-------------+----------+----------+--
+|    Dict     |  Object  |   dict   |
++-------------+----------+----------+-------------------
+|    List     |  Array   |   list   |  mutable array
++-------------+----------+----------+--------------------
+|    Enum     |   Set    |   set    |
++-------------+----------+----------+-------------------
+|    Tuple    |          |   tuple  |  immutable array
++-------------+----------+----------+-------------------
+
+**Dict**
+
+A Dict is a type of object.
 
 - @type function
 - @param object
@@ -323,7 +385,6 @@ ColorType.test([]) // false
 ## Range()
 
 A range is a threshold of numbers. The given value should be a nunmber and in the range.
-
 - @type function
 - @params number, only two
 - @return an instance of `Type`
@@ -362,7 +423,7 @@ Notice: CustomRule is just a instance of Rule, it is not a type, do not have `as
 There is a special rule called `Any`, it means your given value can be any type:
 
 ```js
-import { Dict, Any } from 'txpe'
+import { Dict, Any } from 'rtsm'
 
 const MyType = Dict({
   top: Any,
@@ -387,7 +448,7 @@ If there is no value, or the value is undefined, this rule can be ignored.
 - @return instance of Type/Rule
 
 ```js
-import { Dict, IfExists } from 'txpe'
+import { Dict, IfExists } from 'rtsm'
 
 const PersonType = Dict({
   name: String,
@@ -589,68 +650,68 @@ const AsyncRule = Async(async () => {
 })
 ```
 
-## Txpe
+## Ts
 
-The `Txpe` is a set of methods to use type assertions more unified.
+The `Ts` is a set of methods to use type assertions more unified.
 
 ```js
-import { Txpe } from 'txpe'
+import { Ts } from 'rtsm'
 ```
 
 ### expect.to.match
 
 ```js
-Txpe.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
+Ts.expect(some).to.match(SomeType) // it is almostly lik `SomeType.assert(someobject)`
 ```
 
 SomeType can be original rule:
 
 ```js
-Txpe.expect(10).to.match(Number)
+Ts.expect(10).to.match(Number)
 ```
 
 **silent**
 
-When you set `Txpe.silent` to be 'true', `Txpe.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
+When you set `Ts.silent` to be 'true', `Ts.expect.to.match` will use `console.error` instead of `throw TypeError`, and will not break the program.
 
 ```js
-Txpe.silent = true
-Txpe.expect(some).to.match(SomeoType) // console.error(e)
+Ts.silent = true
+Ts.expect(some).to.match(SomeoType) // console.error(e)
 ```
 
-Notice, `silent` only works for `Txpe.expect.to.match`, not for `Type.assert`.
+Notice, `silent` only works for `Ts.expect.to.match`, not for `Type.assert`.
 
 ### catch.by.with
 
 ```js
-let error = Txpe.catch(some).by(SomeType)
-let error = Txpe.catch(10).by(Number)
+let error = Ts.catch(some).by(SomeType)
+let error = Ts.catch(10).by(Number)
 ```
 
 ### is.typeof
 
 ```js
-let bool = Txpe.is(SomeType).typeof(some)
-let bool = Txpe.is(Number).typeof(10)
+let bool = Ts.is(SomeType).typeof(some)
+let bool = Ts.is(Number).typeof(10)
 ```
 
 ### is.of
 
 ```js
-let bool = Txpe.is(some).of(SomeType)
-let bool = Txpe.is(10).of(Number)
+let bool = Ts.is(some).of(SomeType)
+let bool = Ts.is(10).of(Number)
 ```
 
 ### trace.by.with
 
 ```js
-Txpe.trace(some).by(SomeType).with(fn)
+Ts.trace(some).by(SomeType).with(fn)
 ```
 
 ### track.by.with
 
 ```js
-Txpe.track(some).by(SomeType).with(fn)
+Ts.track(some).by(SomeType).with(fn)
 ```
 
 ### bind/unbind
@@ -658,8 +719,8 @@ Txpe.track(some).by(SomeType).with(fn)
 Bind some functions, so that when assert fail, the functions will run.
 
 ```js
-Txpe.bind(fn)
-Txpe.unbind(fn)
+Ts.bind(fn)
+Ts.unbind(fn)
 ```
 
 example:
@@ -668,20 +729,20 @@ example:
 const showError = (err) => Toast.error(err.message)
 window.addEventListener('error', (e) => {
   let { error } = e
-  if (error.owner === 'txpe') {
+  if (error.owner === 'rtsm') {
     e.preventDefault() // when throw Error, there will no error massage in console
   }
 })
 
-Txpe.bind(showError) // use your own action to notice users
+Ts.bind(showError) // use your own action to notice users
 
 // when the assert fail, it throw TypeError, however, `fn` will run before error thrown
-Txpe.expect(some).to.match(SomeoType)
+Ts.expect(some).to.match(SomeoType)
 
-// Txpe will not break the process
-Txpe.silent = true
+// Ts will not break the process
+Ts.silent = true
 // `fn` will run before console.error
-Txpe.expect(some).to.match(SomeoType)
+Ts.expect(some).to.match(SomeoType)
 ```
 
 A callback function:
@@ -689,15 +750,15 @@ A callback function:
 - @param error
 - @param action: 'assert', 'test', 'trace', 'track', 'catch'
 
-Notice, `bind` only works for `Txpe` , `Type` methods will not follow this rule.
+Notice, `bind` only works for `Ts` , `Type` methods will not follow this rule.
 
 ```js
-Txpe.bind(function(error, action) {
+Ts.bind(function(error, action) {
   if (action === 'trace') {
     bugReportJs.report(error)
   }
 })
-Txpe.trace(args).by(someType) // without `.with` on tail
+Ts.trace(args).by(someType) // without `.with` on tail
 ```
 
 ### decorate
@@ -705,14 +766,14 @@ Txpe.trace(args).by(someType) // without `.with` on tail
 Use to decorate class and its members:
 
 ```js
-@Txpe.decorate.with((...args) => SomeTupleType.assert(...args)) // decorate constructor
+@Ts.decorate.with((...args) => SomeTupleType.assert(...args)) // decorate constructor
 class SomeClass {
-  @Txpe.decorate.with((value) => SomeType.assert(value)) // decorate a property member
+  @Ts.decorate.with((value) => SomeType.assert(value)) // decorate a property member
   propertyName = null
 
-  @Txpe.decorate.input.with((...args) => SomeTupleType.assert(...args)) // decorate the parameters of a property method
-  @Txpe.decorate.output.with((value) => SomeType.assert(value)) // decorate the return value of a property method
-  @Txpe.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
+  @Ts.decorate.input.with((...args) => SomeTupleType.assert(...args)) // decorate the parameters of a property method
+  @Ts.decorate.output.with((value) => SomeType.assert(value)) // decorate the return value of a property method
+  @Ts.decorate.with((value) => SomeFunctionType.assert(value)) // decorate the property with a Function type
   methodName(...args) {}
 }
 ```
@@ -731,7 +792,7 @@ const SomeType = Dict({
   },
   books: [Object],
 })
-const obj = Txpe.define({}).by(SomeType)
+const obj = Ts.define({}).by(SomeType)
 obj.child.age === undefined // true
 obj.age = '10' // throw TypeError
 obj.child.name = null // throw TypeError
@@ -748,8 +809,8 @@ obj.books[0].name = null // without any effects
 Advance TypeError which has `addtrace` method.
 
 ```js
-import Txpe from 'txpe'
-const { Error } = Txpe
+import Ts from 'rtsm'
+const { Error } = Ts
 ```
 
 - @param key/message

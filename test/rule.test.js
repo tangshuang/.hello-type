@@ -2,7 +2,7 @@ import Type from '../src/type'
 import Rule, { Any, Null, Undefined, IfExists, InstanceOf, Equal, IfNotMatch, Validate, IfExistsNotMatch, Determine, Async, Numeric } from '../src/rule'
 import Tuple from '../src/tuple'
 
-describe('Rule', () => {
+xdescribe('Rule', () => {
   test('create a rule match object', () => {
     const ObjectRule = new Rule(function(value) {
       if (typeof value !== 'object') {

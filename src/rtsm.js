@@ -1,8 +1,8 @@
 import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils.js'
 import Type from './type.js'
-import { xError, TxpeError } from './error.js'
+import RtsmError, { makeError } from './error.js'
 
-export class Txpe {
+export class Rtsm {
   constructor() {
     this._listeners = []
     this._silent = false
@@ -45,7 +45,7 @@ export class Txpe {
 
   /**
    * @example
-   * txpe.expect(10).to.match(Number)
+   * ts.expect(10).to.match(Number)
    */
   expect(...targets) {
     return {
@@ -73,7 +73,7 @@ export class Txpe {
 
   /**
    * @example
-   * let error = txpe.catch(10).by(Number)
+   * let error = ts.catch(10).by(Number)
    */
   catch(...targets) {
     return {
@@ -93,7 +93,7 @@ export class Txpe {
 
   /**
    * @example
-   * txpe.trace('10').by(Number).with(error => console.log(error.stack))
+   * ts.trace('10').by(Number).with(error => console.log(error.stack))
    */
   trace(...targets) {
     return {
@@ -120,7 +120,7 @@ export class Txpe {
 
   /**
    * @example
-   * txpe.track('10').by(Number).with(error => console.log(error.stack))
+   * ts.track('10').by(Number).with(error => console.log(error.stack))
    */
   track(...targets) {
     return {
@@ -148,8 +148,8 @@ export class Txpe {
   /**
    * determine whether type match
    * @example
-   * let bool = txpe.is(Number).typeof(10)
-   * let bool = txpe.is(10).of(Number)
+   * let bool = ts.is(Number).typeof(10)
+   * let bool = ts.is(10).of(Number)
    */
   is(...args) {
     return {
@@ -175,7 +175,7 @@ export class Txpe {
   /**
    * @param {string|undefined} which input|output
    * @example
-   * @txpe.decorate('input').with((target) => SomeType.assertf(target))
+   * @ts.decorate('input').with((target) => SomeType.assertf(target))
    */
   decorate(which) {
     return {
@@ -200,7 +200,7 @@ export class Txpe {
     }
 
     if (!isObject(target)) {
-      let error = new TxpeError('define should recieve a object.', { target, type, level: 'define.by' })
+      let error = new RtsmError('define should recieve a object.', { target, type, level: 'define.by' })
       this.throw(error)
     }
 
@@ -208,7 +208,7 @@ export class Txpe {
       by: (type) => {
         let rule = getRule(type)
         if (!isObject(rule)) {
-          let error = new TxpeError('object should be defined by a dict.', { target, type, rule, level: 'define.by' })
+          let error = new RtsmError('object should be defined by a dict.', { target, type, rule, level: 'define.by' })
           this.throw(error)
         }
 
@@ -232,7 +232,7 @@ export class Txpe {
               }
               // if original prop value is not an object but should be an object called by rule
               else {
-                let error = new TxpeError('object property should be by a object required by {should}.', {
+                let error = new RtsmError('object property should be by a object required by {should}.', {
                   target,
                   type,
                   origin,
@@ -297,7 +297,7 @@ export class Txpe {
                   let PropType = getRuleType(propRule)
                   let error = this.catch(value).by(PropType)
                   if (error) {
-                    let e = xError(error, { origin, rule, key, value, propRule, type, target, level: 'define.by' })
+                    let e = makeError(error, { origin, rule, key, value, propRule, type, target, level: 'define.by' })
                     this.throw(e)
                   }
 
@@ -331,7 +331,13 @@ export class Txpe {
 
 }
 
-export const txpe = new Txpe()
+export const ts = new Rtsm()
+Rtsm.expect = ts.expect.bind(ts)
+Rtsm.catch = ts.catch.bind(ts)
+Rtsm.trace = ts.trace.bind(ts)
+Rtsm.track = ts.track.bind(ts)
+Rtsm.is = ts.is.bind(ts)
+Rtsm.decorate = ts.decorate.bind(ts)
+Rtsm.define = ts.define.bind(ts)
 
-
-export default Txpe
+export default Rtsm

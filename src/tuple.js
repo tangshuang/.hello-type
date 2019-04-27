@@ -1,44 +1,54 @@
 import Type from './type.js'
 import Rule from './rule.js'
 import { isInstanceOf } from './utils.js'
-import { xError, TxpeError } from './error.js'
+import { makeError, RtsmError } from './error.js'
 
 export class Tuple extends Type {
-  constructor(...patterns) {
-    super(...patterns)
+  constructor(pattern) {
+    if (!isArray(pattern)) {
+      throw new Error('Tuple pattern should be an array.')
+    }
+
+    super(pattern)
     this.name = 'Tuple'
   }
-  assert(...targets) {
-    let rules = this.rules
-    let ruleCount = rules.length
-    let targetCount = targets.length
-    let minLen = ruleCount
-
-    if (this.mode === 'strict' && targetCount !== ruleCount) {
-      throw new TxpeError('dirty', { type: this, level: 'assert', length: ruleCount })
+  validate(value, pattern) {
+    if (!isArray(value)) {
+      return new RtsmError('mistaken', { value, pattern, type: this, level: 'validate' })
     }
 
-    for (let i = ruleCount - 1; i > -1; i --) {
-      let rule = rules[i]
-      if (isInstanceOf(rule, Rule) && rule.name === 'IfExists') {
-        minLen --
-      }
-      else {
-        break
-      }
+    const items = value
+    const patterns = pattern
+    const ruleCount = patterns.length
+    const itemCount = items.length
+    const info = { value, pattern, type: this, level: 'validate' }
+
+    if (itemCount !== ruleCount) {
+      return new RtsmError('dirty', { ...info, length: ruleCount })
     }
 
-    if (targetCount < minLen || targetCount > ruleCount) {
-      throw new TxpeError('dirty', { type: this, level: 'assert', length: ruleCount })
-    }
-
-    for (let i = 0; i < targetCount; i ++) {
-      let value = targets[i]
-      let rule = rules[i]
-      let error = this.validate(value, rule)
+    for (let i = 0; i < itemCount; i ++) {
+      let item = items[i]
+      let pattern = patterns[i]
+      let error = super.validate(item, pattern)
       if (error) {
-        throw xError(error, { value, rule, type: this, level: 'assert' })
+        return makeError(error, info)
       }
+    }
+
+    return null
+  }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'assert' }
+
+    if (!isArray(value)) {
+      throw new RtsmError('mistaken', info)
+    }
+
+    const error = this.validate(value, pattern)
+    if (error) {
+      throw makeError(error, info)
     }
   }
 }

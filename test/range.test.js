@@ -1,6 +1,6 @@
 import Range from '../src/range'
 
-describe('Range', () => {
+xdescribe('Range', () => {
   describe('assert', () => {
     test('basic', () => {
       const RangeType = Range(0, 1)

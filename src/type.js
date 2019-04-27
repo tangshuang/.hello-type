@@ -1,48 +1,40 @@
 import Rule from './rule.js'
-import dict from './dict.js'
-import list from './list.js'
-import enumerate from './enum.js'
-import {
-  isArray, inArray, isBoolean, isNumber, isObject, isNaN,
-  isString, isFunction, isSymbol, isConstructor, isInstanceOf,
-  map,
-  defineProperty,
-} from './utils.js'
-import { xError, TxpeError } from './error.js'
+import RtsmError, { makeError } from './error.js'
+import { isArray, isBoolean, isNumber, isObject, isNaN, isString, isFunction, isSymbol, isConstructor, isInstanceOf } from './utils.js'
+
+import Dict from './dict.js'
+import List from './list.js'
 
 export class Type {
-  constructor(...patterns) {
-    defineProperty(this, 'id', Date.now()  + '.' + parseInt(Math.random() * 10000))
-    defineProperty(this, 'mode', 'none', true)
-    defineProperty(this, 'name', 'Type', true, true)
-    defineProperty(this, 'patterns', patterns)
 
-    let rules = patterns.map((rule) => {
-      // if rule is an object, it will be converted to be a shallow object
-      // if the value of a property is an object, it will be converted to be a dict
-      // if the value of a property is an array, it will be converted to be a list
-      // if rule is an array, it will be converted to be a 'List'
-      return map(rule, item => isObject(item) ? dict(item) : isArray(item) ? list(item) : item)
-    })
-    defineProperty(this, 'rules', rules)
-  }
   /**
-   * validate whether the argument match the rule
-   * @param {*} value
-   * @param {*} rule
+   * create a Type instance
+   * @param  {Any} pattern should be native prototypes or a Rule instance, i.e. String, Number, Boolean... Null, Any, Float...
    */
-  validate(value, rule) {
-    // custom rule
+  constructor(pattern) {
+    this.mode = 'none'
+    this.name = 'Type'
+    this.pattern = pattern
+  }
+
+  /**
+   * validate whether the argument match the pattern
+   * @param {*} value
+   * @param {*} pattern
+   */
+  validate(value, pattern) {
+    const info = { value, pattern, type: this, level: 'validate' }
+    // custom pattern
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
-    if (isInstanceOf(rule, Rule)) {
-      let res = rule.validate(value)
+    if (isInstanceOf(pattern, Rule)) {
+      const res = pattern.validate(value)
       // if validate return an error
       if (isInstanceOf(res, Error)) {
-        return xError(res, { value, rule, type: this, level: 'validate' })
+        return makeError(res, info)
       }
       // if validate return false
       else if (isBoolean(res) && !res) {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
       // if validate return true
       else {
@@ -52,334 +44,199 @@ export class Type {
 
     // NaN
     // i.e. (new Type(NaN)).assert(NaN)
-    if (typeof rule === 'number' && isNaN(rule)) {
+    if (typeof pattern === 'number' && isNaN(pattern)) {
       if (typeof value === 'number' && isNaN(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // Number
     // i.e. (new Type(Number).assert(1))
-    if (rule === Number) {
+    if (pattern === Number) {
       if (isNumber(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // Boolean
     // i.e. (new Type(Boolean)).assert(true)
-    if (rule === Boolean) {
+    if (pattern === Boolean) {
       if (isBoolean(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // String
     // i.e. (new Type(String)).assert('name')
-    if (rule === String) {
+    if (pattern === String) {
       if (isString(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // regexp
     // i.e. (new Type(/a/)).assert('name')
-    if (isInstanceOf(rule, RegExp)) {
+    if (isInstanceOf(pattern, RegExp)) {
       if (!isString(value)) {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
-      if (rule.test(value)) {
+      if (pattern.test(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // Function
     // i.e. (new Type(Function)).assert(() => {})
-    if (rule === Function) {
+    if (pattern === Function) {
       if (isFunction(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // Array
     // i.e. (new Type(Array)).assert([])
-    if (rule === Array) {
+    if (pattern === Array) {
       if (isArray(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
     // object
     // i.e. (new Type(Object).assert({}))
-    if (rule === Object) {
+    if (pattern === Object) {
       if (isObject(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
-    if (rule === Symbol) {
+    if (pattern === Symbol) {
       if (isSymbol(value)) {
         return null
       }
       else {
-        return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+        return new RtsmError('mistaken', info)
       }
     }
 
-    if (isArray(rule) && isArray(value)) {
-      let rules = rule
-      let items = value
-      let ruleCount = rules.length
-      let itemCount = items.length
-
-      // array length should equal in strict mode
-      if (this.mode === 'strict') {
-        if (ruleCount !== itemCount) {
-          return new TxpeError('dirty', { value, rule, type: this, level: 'validate', length: ruleCount })
-        }
-      }
-
-      // if arguments.length is bigger than rules.length, use enumerate to match left items
-      for (let i = 0; i < ruleCount; i ++) {
-        let value = items[i]
-        let rule = rules[i]
-
-        if (isInstanceOf(rule, Rule)) {
-          let error = rule.validate(value)
-
-          // use rule to override property when not match
-          // override value and check again
-          if (isFunction(rule.override)) {
-            rule.override(error, i, items)
-            value = items[i]
-            error = rule.validate(value)
-          }
-
-          if (error) {
-            return xError(error, { value, rule, type: this, level: 'validate', index: i })
-          }
-          else {
-            continue
-          }
-        }
-
-        // normal validate
-        let error = this.validate(value, rule)
-        if (error) {
-          return xError(error, { value, rule, type: this, level: 'validate', index: i })
-        }
-      }
-
-      // if target length is greater than rule length
-      if (ruleCount && itemCount > ruleCount) {
-        let RestType = ruleCount > 1 ? enumerate(...rules) : rules[0]
-        // validate from index=ruleCount which is following the previous checking
-        for (let i = ruleCount; i < itemCount; i ++) {
-          let value = items[i]
-          // normal validate
-          let error = this.validate(value, RestType)
-          if (error) {
-            return xError(error, { value, rule: RestType, type: this, level: 'validate', index: i })
-          }
-        }
-      }
-
-      return null
+    if (isArray(pattern)) {
+      let ListType = new List(pattern)
+      let error = ListType.catch(value)
+      return error
     }
 
-    if (isObject(rule) && isObject(value)) {
-      let rules = rule
-      let target = value
-      let ruleKeys = Object.keys(rules)
-      let targetKeys = Object.keys(target)
-
-      if (this.mode === 'strict') {
-        // properties should be absolutely same
-        for (let i = 0, len = targetKeys.length; i < len; i ++) {
-          let key = targetKeys[i]
-          // target has key beyond rules
-          if (!inArray(key, ruleKeys)) {
-            return new TxpeError('overflow', { value, rule, type: this, level: 'validate', key, keys: ruleKeys })
-          }
-        }
-      }
-
-      for (let i = 0, len = ruleKeys.length; i < len; i ++) {
-        let key = ruleKeys[i]
-        let rule = rules[key]
-        let value = target[key]
-
-        // not found some key in target
-        // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
-        if (!inArray(key, targetKeys)) {
-          // IfExists:
-          if (isInstanceOf(rule, Rule) && this.mode !== 'strict') {
-            let error = rule.validate(value)
-
-            // use rule to override property when not exists
-            // override value and check again
-            if (isFunction(rule.override)) {
-              value = rule.override(error, key, target) || target[key]
-              error = rule.validate(value)
-            }
-
-            if (!error) {
-              continue
-            }
-          }
-
-          return new TxpeError('missing', { value, rule, type: this, level: 'validate', key })
-        }
-
-        if (isInstanceOf(rule, Rule)) {
-          let error = rule.validate(value)
-
-          // use rule to override property when not match
-          // override value and check again
-          if (isFunction(rule.override)) {
-            value = rule.override(error, key, target) || target[key]
-            error = rule.validate(value)
-          }
-
-          if (error) {
-            return xError(error, { value, rule, type: this, level: 'validate', key })
-          }
-          else {
-            continue
-          }
-        }
-
-        // normal validate
-        let error = this.validate(value, rule)
-        if (error) {
-          return xError(error, { value, rule, type: this, level: 'validate', key })
-        }
-      }
-
-      return null
+    if (isObject(pattern)) {
+      let DictType = new Dict(pattern)
+      let error = DictType.catch(value)
+      return error
     }
 
-    // is the given value, rule should not be an object/instance
+    // is the given value, pattern should not be an object/instance
     // i.e. (new Type('name')).assert('name')
-    if (!isInstanceOf(rule, Object) && value === rule) {
+    if (!isInstanceOf(pattern, Object) && value === pattern) {
       return null
     }
 
     // instance of a class
     // i.e. (new Type(Person)).assert(person)
-    if (isConstructor(rule) && isInstanceOf(value, rule)) {
+    if (isConstructor(pattern) && isInstanceOf(value, pattern)) {
       return null
     }
 
     // instance of Type
-    // const BooksType = list(BookType)
-    // BooksType.assert([{ name: 'Hamlet', price: 120.34 }])
-    if (isInstanceOf(rule, Type)) {
+    // (new Type(new Type(Array))).assert([{ name: 'Hamlet', price: 120.34 }])
+    if (isInstanceOf(pattern, Type)) {
       if (this.mode === 'strict') {
-        rule = rule.strict
+        pattern = pattern.strict
       }
-      let error = rule.catch(value)
+      let error = pattern.catch(value)
       if (error) {
-        return xError(error, { value, rule, type: this, level: 'validate' })
+        return makeError(error, info)
       }
 
       return null
     }
 
-    return new TxpeError('shouldmatch', { value, rule, type: this, level: 'validate' })
+    return new RtsmError('mistaken', info)
   }
-  assert(...targets) {
-    let rules = this.rules
 
-    if (targets.length !== rules.length) {
-      throw new TxpeError('dirty', { type: this, level: 'assert', length: this.rules.length })
-    }
-
-    for (let i = 0, len = targets.length; i < len; i ++) {
-      let value = targets[i]
-      let rule = rules[i]
-      let error = this.validate(value, rule)
-      if (error) {
-        throw xError(error, { value, rule, type: this, level: 'assert' })
-      }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'assert' }
+    const error = this.validate(value, pattern)
+    if (error) {
+      throw makeError(error, info)
     }
   }
-  catch(...targets) {
+  catch(value) {
     try {
-      this.assert(...targets)
+      this.assert(value)
       return null
     }
-    catch(error) {
+    catch (error) {
       return error
     }
   }
-  test(...targets) {
-    let error = this.catch(...targets)
+  test(value) {
+    let error = this.catch(value)
     return !error
   }
 
   /**
-   * track targets with type sync
-   * @param {*} targets
+   * track value with type sync
+   * @param {*} value
    */
-  track(...targets) {
-    let error = this.catch(...targets)
-    let defer = Promise.resolve(error)
-    return {
-      with: (fn) => defer.then((error) => {
-        if (error && isFunction(fn)) {
-          fn(error, targets, this)
-        }
-        return error
-      }),
-    }
+  track(value) {
+    return new Promise((resolve, reject) => {
+      let error = this.catch(value)
+      if (error) {
+        reject(error)
+      }
+      else {
+        resolve()
+      }
+    })
   }
 
   /**
-   * track targets with type async
-   * @param {*} targets
-   * @example
-   * SomeType.trace(target).with((error, [target], type) => { ... })
+   * track value with type async
+   * @param {*} value
    */
-  trace(...targets) {
-    let defer = new Promise((resolve) => {
+  trace(value) {
+    return new Promise((resolve, reject) => {
       Promise.resolve().then(() => {
-        let error = this.catch(...targets)
-        resolve(error)
+        let error = this.catch(value)
+        if (error) {
+          reject(error)
+        }
+        else {
+          resolve()
+        }
       })
     })
-    return {
-      with: (fn) => defer.then((error) => {
-        if (error && isFunction(fn)) {
-          fn(error, targets, this)
-        }
-        return error
-      }),
-    }
   }
 
   toBeStrict(mode = true) {
@@ -387,7 +244,8 @@ export class Type {
     return this
   }
   get strict() {
-    let ins = new Type(...this.patterns)
+    const Constructor = Object.getPrototypeOf(this).constructor
+    const ins = new Constructor(...this.patterns)
     ins.toBeStrict()
 
     let keys = Object.keys(this)
@@ -405,5 +263,12 @@ export class Type {
   toString() {
     return this.name
   }
+
 }
+
+export function type(pattern) {
+  const type = new Type(pattern)
+  return type
+}
+
 export default Type

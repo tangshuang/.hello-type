@@ -1,357 +1,266 @@
 import { dict } from './dict.js'
-import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject } from './utils.js'
-import Txpe from './txpe.js'
+import { isObject, isArray, isNumber, isInstanceOf, sortBy, isNumeric, isEmpty, isFunction, clone } from './utils.js'
+import Ts from './ts.js'
+import Type from './type.js';
+import TsError from './error.js';
 
-/**
- * 数据源相关信息
- * definition是一个对象
- *
- * {
- *   // 字段名
- *   key: {
- *     value: '', // 必填，默认值
- *     type: String, // 可选，数据类型，修改值的时候，会触发校验
- *
- *      // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
- *     // 当给了validators，其他的校验配置失效（determine会保留，并且在所有的determine前执行
- *     validators: [
- *       {
- *         // 校验相关的配置
- *         validate: (value) => Boolean, // 可选，校验器，可以引入validators下的校验器，快速使用校验器
- *         determine: (value) => Boolean, // 决定是否要执行这个校验器，如果返回false，则忽略该校验器的校验规则
- *         message: '', // 可选，校验失败的时候的错误信息
- *         order: 10, // 校验顺序，越小越靠前进行校验，默认值为10
- *       },
- *     ],
- *
- *     // 从后台api拿到数据后恢复数据相关
- *     prepare: data => !!data.on_market, // 可选，配合override方法使用
- *       // 在执行override的时候，用一个数据去恢复模型数据，这个数据被当作prepare的参数data，prepare的返回值，将作为property的恢复后值使用
- *       // data就是override接收的参数
- *
- *     // 准备上传数据，格式化数据相关
- *     flat: (value) => ({ keyPath: value }), // 可选，在制作表单数据的时候，把原始值转换为新值赋值给model的keyPath。
- *       // value为map之前的值。
- *       // 在将一个字段展开为两个字段的时候会用到它。
- *       // 注意，使用了flat，如果想在结果中移除原始key，还需要使用drop。
- *       // 例如： flat: (region) => ({ 'company.region_id': region.region_id }) 会导致最后在构建表单的时候，会有一个company.region_id属性出现
- *       // flat的优先级更高，它会在drop之前运行，因此，drop对它没有影响，这也符合逻辑，flat之后，如果需要从原始数据中删除自身，需要设置drop
- *     drop: (value) => Boolean, // 可选，是否要在调用.jsondata或.formdata的时候排除当前这个字段
- *     map: (value) => newValue, // 可选，使用新值覆盖原始值输出，例如 map: region => region.region_id 使当前这个字段使用region.region_id作为最终结果输出。
- *       // 注意：它仅在drop为false的情况下生效，drop为true，map结果不会出现在结果中。
- *   },
- * }
- *
- * 需要注意：只有definition中规定的属性会被当作model最终生成formdata的字段，不在definition中规定的，但是仍然存在于model中的属性不会被加入到formdata中。
- * 当然，即使在definition中，但加了drop的也可能被排除出去。抑或，不在definition中，但flat和patch的新属性也会被加入到formdata结果中。
- *
- * 当一个属性的值为一个新的FormModel，或者为一个包含了FormModel的数组时，在生成最终的formdata的时候，会从这些FormModel中提取出真正的结果。
- */
 export class Schema {
+  /**
+   * 数据源相关信息
+   * @param {object} definition
+   * {
+   *   // 字段名
+   *   key: {
+   *     default: '', // 必填，默认值
+   *     type: String, // 可选，数据类型
+   *       // 当 type 为 schema 时，要求输出的数据结构必须和 default 一致
+   *
+   *     // 准备数据，格式化数据
+   *     flat: (value) => ({ keyPath: value }), // 可选
+   *       // 在将一个字段展开为两个字段的时候会用到它。
+   *       // 注意，使用了 flat，如果想在结果中移除原始 key，还需要使用 drop。
+   *       // 例如： flat: (region) => ({ 'company.region_id': region.region_id }) 会导致最后在格式化数据中，会有一个 company.region_id 属性出现
+   *       // flat 的优先级更高，它会在 drop 之前运行，因此，drop 对它没有影响，这也符合逻辑，flat 之后，如果需要从原始数据中删除自身，需要设置 drop
+   *     drop: (value) => Boolean, // 可选，是否要丢掉当前字段，true 表示丢到，false 表示保留
+   *     map: (value) => newValue, // 可选，使用新值覆盖原始值输出，例如 map: region => region.region_id 使当前这个字段使用 region.region_id 作为最终结果输出。
+   *       // 注意：它仅在 drop 为 false 的情况下生效，drop 为 true，map结果不会出现在结果中。
+   *   },
+   * }
+   */
   constructor(definition) {
     this.definition = definition
-    this.name = 'Schema'
-    this.state = {}
-    this.txpe = new Txpe()
   }
 
   throw(error) {
     console.error(error)
   }
 
-  get(key) {
-    return key ? parse(this.state, key) : this.state
-  }
-  set(key, value) {
-    if (!this.pattern[key]) {
-      let error = new Error(`${key} not exist in schema.`)
-      this.throw(error)
-      return this
-    }
-
-    let error = this.assert(key, value)
-    if (error) {
-      this.throw(error)
-      return this
-    }
-
-    assign(this.state, key, value)
-    return this
-  }
-
-  // 批量更新，异步动作，多次更新一个值，只会触发一次
-  update(data = {}) {
+  /**
+   * 获取当前 schema 的 type 结构
+   * @param {*} [key]
+   */
+  type(key) {
     const definition = this.definition
-    const keys = Object.keys(data)
-    keys.forEach((key) => {
-      // 不存在定义里的字段不需要
-      if (!inObject(key, definition)) {
+    if (key) {
+      if (!definition[key]) {
+        this.throw(new TsError(`${key} not exist in schema.`))
         return
       }
-      const value = data[key]
-      this.__update.push({ key, value })
-    })
 
-    // 异步更新和触发
-    return new Promise((resolve, reject) => {
-      clearTimeout(this.__isUpdating)
-      this.__isUpdating = setTimeout(() => {
-        const updating = this.__update
-        this.__update = []
+      const pattern = definition[key]
+      let type = pattern.type
 
-        // 去除已经存在的
-        const table = {}
-        updating.forEach((item, i) => {
-          table[item.key] = i
-        })
-
-        const indexes = Object.values(table)
-        const items = indexes.map(i => updating[i])
-
-        // 先进行数据检查
-        for (let i = 0, len = items.length; i < len; i ++) {
-          let item = items[i]
-          let { key, value } = item
-          let error = this.assert(key, value)
-          if (error) {
-            reject(error)
-            return
-          }
-        }
-
-        // 检查完数据再塞值
-        items.forEach(({ key, value }) => assign(this.state, key, value))
-        resolve()
-      })
-    })
-  }
-
-  // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
-  // 如果一个数据不存在于新数据中，将使用默认值
-  override(data) {
-    return new Promise((resolve, reject) => {
-      clearTimeout(this.__isOverriding)
-      this.__isOverriding = setTimeout(() => {
-        const definition = this.definition
-        const keys = Object.keys(definition)
-        const items = []
-        keys.forEach((key) => {
-          const def = definition[key]
-          const { prepare, value } = def
-          const val = prepare ? prepare(data) : value
-          items.push({ key, value: val })
-        })
-
-        const updating = {}
-        items.forEach(({ key, value }) => {
-          updating[key] = value
-        })
-
-        this.update(updating).then(resolve).catch(reject)
-      })
-    })
-  }
-
-  type() {
-    const types = {}
-    const keys = Object.keys(this.pattern)
-    keys.forEach((key) => {
-      const item = this.pattern[key]
-      var type = item.type
       if (isInstanceOf(type, Schema)) {
         type = type.type()
       }
-      types[key] = type
+      else if (isArray(type)) {
+        type = type.map(item => isInstanceOf(item, Schema) ? item.type() : item)
+        type = list(...type)
+      }
+      else if (isObject(type)) {
+        type = dict(type)
+      }
+      else if (!isInstanceOf(type, Type)) {
+        type = new Type(type)
+      }
+
+      return type
+    }
+
+    const keys = Object.keys(definition)
+    const type = {}
+    keys.forEach((key) => {
+      const t = this.type(key)
+      type[key] = t
     })
-    return dict(types)
+
+    return dict(type)
   }
 
-  assert(key, value, parentPath = '') {
+  /**
+   * 断言给的值是否符合 schema 的要求
+   * @param {*} [key]
+   * @param {*} value
+   */
+  validate(key, value, _parentPath = '') {
     if (arguments.length < 1) {
-      let error = new Error('need at least one parameter.')
+      let error = new TsError(`schema validate need at least one parameter.`)
       this.throw(error)
       return error
     }
 
-    // this.assert({ name: 'timy' })
     if (arguments.length === 1) {
       value = key
       key = undefined
       if (!isObject(value)) {
-        let error = new Error('value should be an object.')
+        let error = new TsError(`schema validate value should be an object.`)
         this.throw(error)
         return error
       }
     }
 
+    const definition = this.definition
+    const currentPath = _parentPath + (isNumber(key) || isNumeric(key) ? '[' + key + ']' : '.' + key)
+
     // key不为空
     if (!isEmpty(key)) {
-      if (!this.pattern[key]) {
-        let error = new Error(`${key} not exist in schema.`)
+      if (!definition[key]) {
+        let error = new TsError(`${currentPath} not exist in schema.`)
         this.throw(error)
         return error
       }
 
-      let currentPath = parentPath + (isNumber(key) || isNumeric(key) ? '[' + key + ']' : '.' + key)
-      let { type, validators } = this.pattern[key]
+      let { type } = definition[key]
 
       // 类型检查
-      let error = (type instanceof Schema) ? type.assert(undefined, value, currentPath) : this.txpe.catch(value).by(type)
+      let error = (type instanceof Schema) ? type.validate(undefined, value, currentPath) : Ts.catch(value).by(type)
       if (error) {
-        let error = new Error(`${currentPath} should be ${error.summary.should}.`)
+        let error = new TsError(`${currentPath} should be ${error.summary.should}.`)
         this.throw(error)
         return error
-      }
-
-      // 校验器
-      if (validators && isArray(validators)) {
-        const items = sortBy(validators, 'order')
-        for (let i = 0, len = items.length; i < len; i ++) {
-          let item = items[i]
-          let { validate, determine, message } = item
-          if (isFunction(determine) && !determine.call(this, value)) {
-            break
-          }
-
-          let bool = validate(value)
-          if (!bool) {
-            if (isFunction(message)) {
-              message = message.call(this, value, currentPath)
-            }
-            let error = new Error(message || `${currentPath} did not pass validate.`)
-            this.throw(error)
-            return error
-          }
-        }
       }
     }
     // key为空，但传了value
     else {
-      const keys = Object.keys(this.pattern)
+      const keys = Object.keys(definition)
       for (let i = 0, len = keys.length; i < len; i ++) {
         let key = keys[i]
         let comming = value[key]
 
-        let error = this.assert(key, comming)
-        if (error instanceof Error) {
-          this.throw(error)
+        let error = this.validate(key, comming)
+        if (erro) {
           return error
         }
       }
-    }
-  }
-
-  validate(key) {
-    const pattern = this.pattern
-
-    // 校验整个值
-    if (!key) {
-      const keys = Object.keys(pattern)
-      return this.validate(keys)
-    }
-
-    // 多个key组成的数组
-    if (isArray(key)) {
-      const keys = key
-      for (let i = 0, len = keys.length; i < len; i ++) {
-        const key = keys[i]
-        const error = this.validate(key)
-        if (error) {
-          return error
-        }
-      }
-    }
-
-    // 单个key
-    if (!pattern[key]) {
-      return new Error(`${key} not exist in schema.`)
-    }
-
-    const { type } = pattern[key]
-    const value = this.get(key)
-
-    const error = (type instanceof Schema) ? type.assert(value) : this.txpe.catch(value).by(type)
-    if (error) {
-      return error
     }
   }
 
   /**
-   * 获取数据，获取数据之前，一定要先校验一次，以防获取中报错
-   * @param {*} mode
-   * 1: 获取经过map之后的数据
-   * 2: 在1的基础上获取扁平化数据
-   * 3: 在2的基础上转化为FormData
-   * 0: 获取原始数据
+   * 通过传入的数据定制符合 schema 的输出数据
+   * @param {*} input
    */
-  data(mode = 0) {
-    if (mode === 1) {
-      const data = this.state
-      const definition = this.definition
+  formulate(input, _parentPath = '') {
+    const definition = this.definition
+    const keys = Object.keys(definition)
+    const output = {}
 
-      const extract = (data, definition) => {
-        const keys = Object.keys(definition)
-        const output = {}
+    keys.forEach((key) => {
+      const pattern = definition[key]
+      const { type, flat, drop, map } = pattern
+      const defaultValue = pattern.default
+      const value = input[key]
+      const currentPath = _parentPath + (isNumber(key) || isNumeric(key) ? '[' + key + ']' : '.' + key)
 
-        keys.forEach((key) => {
-          const { drop, flat, map, type } = definition[key]
-          const value = data[key]
+      let data = null
 
-          if (type instanceof Schema) {
-            const v = extract(value, type.definition)
-            assign(output, key, v)
-            return
-          }
-
-
-          if (isFunction(flat)) {
-            let mapping = flat.call(this, value)
-            let mappingKeys = Object.keys(mapping)
-            mappingKeys.forEach((key) => {
-              let value = mapping[key]
-              assign(output, key, value)
-            })
-          }
-
-          if (isFunction(drop) && drop.call(this, value)) {
-            return
-          }
-          else if (isBoolean(drop) && drop) {
-            return
-          }
-
-          if (isFunction(map)) {
-            let v = map.call(this, value)
-            assign(output, key, v)
-          }
-        })
-
-        return output
+      if (isInstanceOf(type, Schema)) {
+        data = type.formulate(value, currentPath)
+      }
+      else {
+        let error = this.validate(key, value, _parentPath)
+        if (error) {
+          this.throw(error)
+          data = clone(defaultValue)
+        }
+        else {
+          data = clone(value)
+        }
       }
 
-      const output = extract(data, definition)
-      return output
-    }
-    else if (mode === 2) {
-      const data = this.data(1)
-      const output = flatObject(data)
-      return output
-    }
-    else if (mode === 3) {
-      const data = this.data(2)
-      const formdata = new FormData()
-      const formkeys = Object.keys(data)
+      if (isFunction(flat)) {
+        let mapping = flat.call(this, data)
+        let mappingKeys = Object.keys(mapping)
+        mappingKeys.forEach((key) => {
+          let value = mapping[key]
+          assign(output, key, value)
+        })
+      }
 
-      formkeys.forEach((key) => {
-        formdata.append(key, data[key])
-      })
+      if (isFunction(drop) && drop.call(this, data)) {
+        return
+      }
+      else if (isBoolean(drop) && drop) {
+        return
+      }
 
-      return formdata
-    }
-    else {
-      return this.state
-    }
+      if (isFunction(map)) {
+        data = map.call(this, data)
+      }
+
+      output[key] = data
+    })
+
+    return output
   }
+
+  /**
+   * 在原来的基础上进行扩展。
+   * 需要注意的是，如果传入的 field 在原来中存在，会使用传入的 field 配置全量覆盖原来的。
+   * @param {*} fields
+   */
+  extends(fields) {
+    const definition = this.definition
+    const next = { ...definition, fields }
+    const schema = new Schema(next)
+    return schema
+  }
+
+  /**
+   * 从原来的基础上选出部分
+   * @param {*} fields
+   */
+  extract(fields) {
+    const definition = this.definition
+    const keys = Object.keys(definition)
+    const next = {}
+
+    const useKeys = []
+    const removeKeys = []
+    const passKeys = Object.keys(fields)
+
+    passKeys.forEach((key) => {
+      let value = fields[key]
+      if (value === true) {
+        useKeys.push(key)
+      }
+      else if (value === false) {
+        removeKeys.push(key)
+      }
+    })
+
+    const passCount = passKeys.length
+    const removeCount = removeKeys.length
+    const useCount = useKeys.length
+
+    keys.forEach((key) => {
+      const willing = fields[key]
+
+      if (willing === false) {
+        return
+      }
+
+      if (!isBoolean(willing)) {
+        // if all passed are true, treat undefined as false
+        if (useCount === passCount) {
+          return
+        }
+
+        // treat undefined as false
+        if (removeCount !== passCount) {
+          return
+        }
+
+        // if all passed are false, treat undefined as true
+      }
+
+      let pattern = definition[key]
+      next[key] = pattern
+    })
+
+    const schema = new Schema(next)
+    return schema
+  }
+
 }
 
 export default Schema

@@ -1,7 +1,7 @@
 {
-  "name": "txpe",
+  "name": "typeschema",
   "version": "0.1.0",
-  "description": "An ECMAScript data type check library",
+  "description": "An ECMAScript data type schema library.",
   "main": "index.js",
   "scripts": {
     "prepublishOnly": "npm run test && npm run build",

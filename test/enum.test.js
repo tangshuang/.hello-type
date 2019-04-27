@@ -1,6 +1,6 @@
 import Enum from '../src/enum'
 
-describe('Enum', () => {
+xdescribe('Enum', () => {
   describe('assert', () => {
     test('string', () => {
       const EnumType = Enum('red', 'blue', 'yellow')

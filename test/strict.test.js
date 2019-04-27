@@ -1,10 +1,10 @@
-import HelloType from '../src/txpe'
+import HelloType from '../src/ts'
 import Type from '../src/type'
 import { IfExists } from '../src/rule'
 import Tuple from '../src/tuple'
 import List from '../src/list'
 
-describe('strict mode', () => {
+xdescribe('strict mode', () => {
   test('new Type', () => {
     const SomeType = new Type({
       name: String,

@@ -1,7 +1,7 @@
-import HelloType from '../src/txpe'
+import HelloType from '../src/ts'
 import Type from '../src/type'
 
-describe('HelloType', () => {
+xdescribe('HelloType', () => {
   describe('helpers', () => {
     beforeAll(() => {
       jest.spyOn(console, 'error').mockImplementation(() => undefined)
