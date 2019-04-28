@@ -1,25 +1,72 @@
-import Type from './type.js'
-import { isFunction, isInstanceOf, isNumber, isString, isBoolean, inObject, isNumeric, isNull, isUndefined } from './utils.js'
-import { xError, TsError } from './error.js'
+import { isFunction, isInstanceOf, isBoolean } from './utils.js'
+import TsError, { makeError } from './error.js'
 
 export class Rule {
   /**
-   *
+   * define a rule
    * @param {*} name
-   * @param {*} validate should must return an error or null
+   * @param {*} validate return 1.true/false 2.error/null
    * @param {*} override
+   * @example
+   * // example1:
+   * const Null = new Rule(value => value === null)
+   * // example2:
+   * const ifnotmatch = (validate, override) => new Rule({ name: 'ifnotmatch', validate, override })
+   * const SomePattern = {
+   *   weight: ifnotmatch(value => typeof value === 'number', (value, key, target) => { target[key] = 0 }),
+   * }
    */
-  constructor(name, validate, override) {
-    if (isFunction(name)) {
-      override = validate
-      validate = name
-      name = null
+  constructor(options = {}) {
+    var { name, validate, override, message } = options
+    if (isFunction(options)) {
+      validate = options
     }
 
-    this.validate = validate
-    this.override = override
+    this._validate = validate
+    this._override = override
+    this._message = message
     this.name = name || 'Rule'
   }
+
+  /**
+   * validate value
+   * @param {*} value
+   * @returns error/null
+   */
+  validate(value) {
+    if (isFunction(this._validate)) {
+      const info = { value, rule: this, level: 'rule', action: 'validate' }
+      let res = this._validate.call(this, value)
+      if (isBoolean(res)) {
+        if (!res) {
+          let error = new TsError('mistaken', info)
+          return error
+        }
+      }
+      else if (isInstanceOf(res, Error)) {
+        return makeError(res, info)
+      }
+    }
+    return null
+  }
+
+  /**
+   * validate value twice
+   * @param {*} value
+   * @param {*} key
+   * @param {*} target
+   */
+  validate2(value, key, target) {
+    const info = { value, rule: this, level: 'rule', action: 'validate2' }
+    let error = this.validate(value)
+    if (error && isFunction(this._override)) {
+      this._override.call(this, value, key, target)
+      value = target[key]
+      error = this.validate(value)
+    }
+    return makeError(error, info)
+  }
+
   toString() {
     return this.name
   }

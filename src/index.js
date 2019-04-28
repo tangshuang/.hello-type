@@ -19,9 +19,8 @@ export {
   lambda,
 } from './rules.js'
 
-export { RtsmError } from './error.js'
+export { TsError } from './error.js'
 
-import Rtsm from './rtsm.js'
-
-export { Rtsm }
-export default Rtsm
+import Ts from './ts.js'
+export { Ts }
+export default Ts

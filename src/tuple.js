@@ -1,7 +1,7 @@
 import Type from './type.js'
 import Rule from './rule.js'
 import { isInstanceOf } from './utils.js'
-import { makeError, RtsmError } from './error.js'
+import TsError, { makeError } from './error.js'
 
 export class Tuple extends Type {
   constructor(pattern) {
@@ -13,43 +13,44 @@ export class Tuple extends Type {
     this.name = 'Tuple'
   }
   validate(value, pattern) {
+    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+
     if (!isArray(value)) {
-      return new RtsmError('mistaken', { value, pattern, type: this, level: 'validate' })
+      return new TsError('mistaken', info)
     }
 
     const items = value
     const patterns = pattern
-    const ruleCount = patterns.length
+    const patternCount = patterns.length
     const itemCount = items.length
-    const info = { value, pattern, type: this, level: 'validate' }
 
-    if (itemCount !== ruleCount) {
-      return new RtsmError('dirty', { ...info, length: ruleCount })
+    if (this.mode === 'strict' && itemCount !== patternCount) {
+      return new TsError('dirty', { ...info, length: patternCount })
     }
 
     for (let i = 0; i < itemCount; i ++) {
-      let item = items[i]
+      let value = items[i]
       let pattern = patterns[i]
-      let error = super.validate(item, pattern)
+
+      // rule validate2
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate2(value, i, items)
+        if (error) {
+          return makeError(error, { ...info, index: i, value, pattern })
+        }
+        else {
+          continue
+        }
+      }
+
+      // normal validate
+      let error = super.validate(value, pattern)
       if (error) {
-        return makeError(error, info)
+        return makeError(error, { ...info, value, pattern, index: i })
       }
     }
 
     return null
-  }
-  assert(value) {
-    const pattern = this.pattern
-    const info = { value, pattern, type: this, level: 'assert' }
-
-    if (!isArray(value)) {
-      throw new RtsmError('mistaken', info)
-    }
-
-    const error = this.validate(value, pattern)
-    if (error) {
-      throw makeError(error, info)
-    }
   }
 }
 

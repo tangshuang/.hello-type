@@ -1,8 +1,10 @@
-import { dict } from './dict.js'
-import { isObject, isArray, isNumber, isInstanceOf, sortBy, isNumeric, isEmpty, isFunction, clone } from './utils.js'
+import Dict from './dict.js'
+import List from './list.js'
+import { isObject, isArray, isNumber, isInstanceOf, isNumeric, isEmpty, isFunction, clone, makeKeyChain } from './utils.js'
 import Ts from './ts.js'
-import Type from './type.js';
-import TsError from './error.js';
+import Type from './type.js'
+import TsError, { makeError } from './error.js'
+import Tuple from './tuple.js'
 
 export class Schema {
   /**
@@ -37,138 +39,172 @@ export class Schema {
 
   /**
    * 获取当前 schema 的 type 结构
-   * @param {*} [key]
+   * @param {*} [keyPath]
    */
-  type(key) {
-    const definition = this.definition
-    if (key) {
-      if (!definition[key]) {
-        this.throw(new TsError(`${key} not exist in schema.`))
-        return
+  type(keyPath) {
+    const getPattern = (type) => {
+      if (isInstanceOf(type, Dict)) {
+        type = getPattern(type.pattern)
       }
-
-      const pattern = definition[key]
-      let type = pattern.type
-
-      if (isInstanceOf(type, Schema)) {
-        type = type.type()
+      else if (isInstanceOf(type, List)) {
+        type = type.pattern.map(item => getPattern(item))
       }
-      else if (isArray(type)) {
-        type = type.map(item => isInstanceOf(item, Schema) ? item.type() : item)
-        type = list(...type)
+      else if (isInstanceOf(type, Tuple)) {
+        type = type.pattern.map(item => getPattern(item))
+        type.__isTuple = true
       }
       else if (isObject(type)) {
-        type = dict(type)
+        type = map(type, item => getPattern(item))
       }
-      else if (!isInstanceOf(type, Type)) {
-        type = new Type(type)
+      else if (isArray(type)) {
+        type = type.map(item => getPattern(item))
       }
-
       return type
     }
 
+    const definition = this.definition
     const keys = Object.keys(definition)
-    const type = {}
-    keys.forEach((key) => {
-      const t = this.type(key)
-      type[key] = t
-    })
+    var pattern = {}
 
-    return dict(type)
+    if (this.__patternCache) {
+      pattern = this.__patternCache
+    }
+    else {
+      keys.forEach((key) => {
+        const { type } = definition[key]
+        let o = null
+        if (isInstanceOf(type, Schema)) {
+          let dict = type.type()
+          o = getPattern(dict)
+        }
+        else {
+          o = getPattern(type)
+        }
+        pattern[key] = o
+      })
+
+      // 在短时间内复用缓存
+      this.__patternCache = pattern
+      clearTimeout(this.__patternCacheClear)
+      this.__patternCacheClear = setTimeout(() => {
+        delete this.__patternCache
+      })
+    }
+
+    if (keyPath) {
+      let chain = makeKeyChain(keyPath)
+      if (!chain.length) {
+        return new Dict(pattern)
+      }
+
+      let target = pattern
+      for (let i = 0, len = chain.length; i < len; i ++) {
+        let key = chain[i]
+        if ((!isObject(target) && !isArray(target)) || target[key] === undefined) {
+          return undefined
+        }
+        target = target[key]
+      }
+
+      if (isObject(target)) {
+        return new Dict(target)
+      }
+      else if (isArray(target)) {
+        if (target.__isTuple) {
+          return new Tuple(target)
+        }
+        else {
+          return new List(target)
+        }
+      }
+    }
+
+    return new Dict(pattern)
   }
 
   /**
    * 断言给的值是否符合 schema 的要求
-   * @param {*} [key]
-   * @param {*} value
+   * @todo 由于Schema是不会发生变化的，因此可以使用纯函数缓存功能
+   * @param {*} data
    */
-  validate(key, value, _parentPath = '') {
-    if (arguments.length < 1) {
-      let error = new TsError(`schema validate need at least one parameter.`)
-      this.throw(error)
+  validate(data) {
+    if (!isObject(data)) {
+      let error = new TsError(`schema validate data should be an object.`)
       return error
     }
 
-    if (arguments.length === 1) {
-      value = key
-      key = undefined
-      if (!isObject(value)) {
-        let error = new TsError(`schema validate value should be an object.`)
-        this.throw(error)
-        return error
-      }
-    }
-
     const definition = this.definition
-    const currentPath = _parentPath + (isNumber(key) || isNumeric(key) ? '[' + key + ']' : '.' + key)
+    const keys = Object.keys(definition)
 
-    // key不为空
-    if (!isEmpty(key)) {
-      if (!definition[key]) {
-        let error = new TsError(`${currentPath} not exist in schema.`)
-        this.throw(error)
-        return error
-      }
-
-      let { type } = definition[key]
-
+    const validate = (key, value) => {
+      const { type } = definition[key]
+      const info = { key, value, pattern: type, schema: this, level: 'schema', action: 'validate' }
       // 类型检查
-      let error = (type instanceof Schema) ? type.validate(undefined, value, currentPath) : Ts.catch(value).by(type)
+      let error = (type instanceof Schema) ? type.validate(value) : Ts.catch(value).by(type)
       if (error) {
-        let error = new TsError(`${currentPath} should be ${error.summary.should}.`)
-        this.throw(error)
-        return error
+        return makeError(error, info)
       }
     }
-    // key为空，但传了value
-    else {
-      const keys = Object.keys(definition)
-      for (let i = 0, len = keys.length; i < len; i ++) {
-        let key = keys[i]
-        let comming = value[key]
 
-        let error = this.validate(key, comming)
-        if (erro) {
-          return error
-        }
+    for (let i = 0, len = keys.length; i < len; i ++) {
+      let key = keys[i]
+      let value = data[key]
+
+      let error = validate(key, value)
+      if (error) {
+        return error
       }
     }
   }
 
   /**
    * 通过传入的数据定制符合 schema 的输出数据
-   * @param {*} input
+   * @todo 由于Schema是不会发生变化的，因此可以使用纯函数缓存功能
+   * @param {*} data
    */
-  formulate(input, _parentPath = '') {
+  formulate(data) {
+    if (!isObject(data)) {
+      data = {}
+    }
+
     const definition = this.definition
     const keys = Object.keys(definition)
     const output = {}
+
+    const validate = (key, value) => {
+      const { type } = definition[key]
+      const info = { key, value, pattern: type, schema: this, level: 'schema', action: 'validate' }
+      // 类型检查
+      let error = (type instanceof Schema) ? type.validate(value) : Ts.catch(value).by(type)
+      if (error) {
+        return makeError(error, info)
+      }
+    }
 
     keys.forEach((key) => {
       const pattern = definition[key]
       const { type, flat, drop, map } = pattern
       const defaultValue = pattern.default
-      const value = input[key]
-      const currentPath = _parentPath + (isNumber(key) || isNumeric(key) ? '[' + key + ']' : '.' + key)
+      const value = data[key]
 
-      let data = null
+      let comming = null
 
       if (isInstanceOf(type, Schema)) {
-        data = type.formulate(value, currentPath)
+        comming = type.formulate(value)
       }
       else {
-        let error = this.validate(key, value, _parentPath)
+        let error = validate(key, value)
         if (error) {
           this.throw(error)
-          data = clone(defaultValue)
+          comming = clone(defaultValue)
         }
         else {
-          data = clone(value)
+          comming = clone(value)
         }
       }
 
       if (isFunction(flat)) {
-        let mapping = flat.call(this, data)
+        let mapping = flat.call(this, comming)
         let mappingKeys = Object.keys(mapping)
         mappingKeys.forEach((key) => {
           let value = mapping[key]
@@ -176,7 +212,7 @@ export class Schema {
         })
       }
 
-      if (isFunction(drop) && drop.call(this, data)) {
+      if (isFunction(drop) && drop.call(this, comming)) {
         return
       }
       else if (isBoolean(drop) && drop) {
@@ -184,10 +220,10 @@ export class Schema {
       }
 
       if (isFunction(map)) {
-        data = map.call(this, data)
+        comming = map.call(this, comming)
       }
 
-      output[key] = data
+      output[key] = comming
     })
 
     return output

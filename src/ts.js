@@ -1,8 +1,8 @@
 import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils.js'
 import Type from './type.js'
-import RtsmError, { makeError } from './error.js'
+import TsError, { makeError } from './error.js'
 
-export class Rtsm {
+export class Ts {
   constructor() {
     this._listeners = []
     this._silent = false
@@ -200,7 +200,7 @@ export class Rtsm {
     }
 
     if (!isObject(target)) {
-      let error = new RtsmError('define should recieve a object.', { target, type, level: 'define.by' })
+      let error = new TsError('define should recieve a object.', { target, type, level: 'define.by' })
       this.throw(error)
     }
 
@@ -208,7 +208,7 @@ export class Rtsm {
       by: (type) => {
         let rule = getRule(type)
         if (!isObject(rule)) {
-          let error = new RtsmError('object should be defined by a dict.', { target, type, rule, level: 'define.by' })
+          let error = new TsError('object should be defined by a dict.', { target, type, rule, level: 'define.by' })
           this.throw(error)
         }
 
@@ -232,7 +232,7 @@ export class Rtsm {
               }
               // if original prop value is not an object but should be an object called by rule
               else {
-                let error = new RtsmError('object property should be by a object required by {should}.', {
+                let error = new TsError('object property should be by a object required by {should}.', {
                   target,
                   type,
                   origin,
@@ -331,13 +331,13 @@ export class Rtsm {
 
 }
 
-export const ts = new Rtsm()
-Rtsm.expect = ts.expect.bind(ts)
-Rtsm.catch = ts.catch.bind(ts)
-Rtsm.trace = ts.trace.bind(ts)
-Rtsm.track = ts.track.bind(ts)
-Rtsm.is = ts.is.bind(ts)
-Rtsm.decorate = ts.decorate.bind(ts)
-Rtsm.define = ts.define.bind(ts)
+export const ts = new Ts()
+Ts.expect = ts.expect.bind(ts)
+Ts.catch = ts.catch.bind(ts)
+Ts.trace = ts.trace.bind(ts)
+Ts.track = ts.track.bind(ts)
+Ts.is = ts.is.bind(ts)
+Ts.decorate = ts.decorate.bind(ts)
+Ts.define = ts.define.bind(ts)
 
-export default Rtsm
+export default Ts

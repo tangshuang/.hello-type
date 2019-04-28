@@ -102,7 +102,7 @@ export function map(obj, fn) {
   let keys = Object.keys(obj)
   keys.forEach((key) => {
     let value = obj[key]
-    result[key] = isFunction(fn) ? fn(value, key) || value : value
+    result[key] = isFunction(fn) ? fn(value, key, obj) || value : value
   })
   return result
 }

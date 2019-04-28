@@ -1,6 +1,6 @@
 import Type from './type.js'
 import { isArray } from './utils.js'
-import RtsmError, { makeError } from './error.js'
+import TsError, { makeError } from './error.js'
 import Enum from './enum.js';
 
 export class List extends Type {
@@ -12,9 +12,12 @@ export class List extends Type {
     super(pattern)
     this.name = 'List'
   }
+
   validate(value, pattern) {
+    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+
     if (!isArray(value)) {
-      return new RtsmError('mistaken', { value, pattern, type: this, level: 'validate' })
+      return new TsError('mistaken', info)
     }
 
     // can be empty array
@@ -22,42 +25,40 @@ export class List extends Type {
       return null
     }
 
-    let rules = pattern
+    let patterns = pattern
     let items = value
-    let ruleCount = rules.length
+    let patternCount = patterns.length
     let itemCount = items.length
 
     // array length should equal in strict mode
-    if (this.mode === 'strict') {
-      if (ruleCount !== itemCount) {
-        return new RtsmError('dirty', { value, pattern, type: this, level: 'validate', length: ruleCount })
-      }
+    if (this.mode === 'strict' && patternCount !== itemCount) {
+      return new TsError('dirty', { ...info, length: patternCount })
     }
 
-    const pattern = ruleCount > 1 ? new Enum(rules) : rule[0]
+    pattern = patternCount > 1 ? new Enum(patterns) : patterns[0]
 
     for (let i = 0; i < itemCount; i ++) {
-      let item = items[i]
-      let error = super.validate(item, pattern)
+      let value = items[i]
+
+      // rule validate2
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate2(value, i, items)
+        if (error) {
+          return makeError(error, { ...info, index: i, value, pattern })
+        }
+        else {
+          continue
+        }
+      }
+
+      // normal validate
+      let error = super.validate(value, pattern)
       if (errort) {
-        return makeError(error, { value: item, pattern, type: this, level: 'validate', index: i })
+        return makeError(error, { ...info, value, pattern, index: i })
       }
     }
 
     return null
-  }
-  assert(value) {
-    const pattern = this.pattern
-    const info = { value, pattern, type: this, level: 'assert' }
-
-    if (!isArray(value)) {
-      throw new RtsmError('mistaken', info)
-    }
-
-    const error = this.validate(value, pattern)
-    if (error) {
-      throw makeError(error, info)
-    }
   }
 }
 

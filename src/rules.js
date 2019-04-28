@@ -1,7 +1,8 @@
 import Type from './type.js'
-import { isFunction, isInstanceOf, isNumber, isString, isBoolean, inObject, isNumeric, isNull, isUndefined } from './utils.js'
-import { xError, TsError } from './error.js'
+import { isFunction, isInstanceOf, isNumber, isBoolean, inObject, isNumeric, isNull, isUndefined, isArray, isObject } from './utils.js'
+import TsError, { makeError } from './error.js'
 import Rule from './rule.js'
+import Tuple from './tuple.js'
 
 // create a simple rule
 export function makeRule(name, determine, message = 'mistaken') {
@@ -11,115 +12,126 @@ export function makeRule(name, determine, message = 'mistaken') {
     name = null
   }
 
-  return new Rule(name, function(value) {
-    const msg = isFunction(message) ? message(value) : message
-    if ((isFunction(determine) && !determine.call(this, value)) || (isBoolean(determine) && !determine)) {
-      return new TsError(msg, { value, rule: this, level: 'rule' })
-    }
-  })
+  const options = {
+    name,
+    validate: function(value) {
+      const msg = isFunction(message) ? message(value) : message
+      const info = { value, rule: this, level: 'rule', action: 'validate' }
+      if (isFunction(determine) && !determine.call(this, value)) {
+        return new TsError(msg, info)
+      }
+      else if (isBoolean(determine) && !determine) {
+        return new TsError(msg, info)
+      }
+      else {
+        return null
+      }
+    },
+  }
+
+  return new Rule(options)
 }
+
+// create some basic rules
+export const Null = makeRule('Null', isNull)
+export const Undefined = makeRule('Undefined', isUndefined)
+export const Any = makeRule('Any', true)
+export const Numeric = makeRule('Numeric', isNumeric)
+export const Int = makeRule('Int', value => isNumber(value) && Number.isInteger(value))
+export const Float = makeRule('Float', value => isNumber(value) && !Number.isInteger(value))
+
 
 // create a rule generator (a function) which return a rule
 // fn should must return a rule
-function makeRuleGenerator(name, fn) {
-  return function(...args) {
-    let rule = fn(...args)
-    rule.arguments = args
+function makeRuleGenerator(name, make) {
+  return function(...factors) {
+    const rule = make(...factors)
+    rule.factors = factors
     rule.name = name
     return rule
   }
 }
 
-export const Null = makeRule('Null', isNull)
-export const Undefined = makeRule('Undefined', isUndefined)
-export const Any = makeRule('Any', true)
-export const Numeric = makeRule('Numeric', isNumeric)
-export const Int = makeRule('Int', value => isNumber(value) && parseInt(value) === value)
-export const Float = makeRule('Float', value => isNumber(value) && float % 1 !== 0)
+/**
+ * Verify a rule by using custom error message
+ * @param {Rule|Type|Function} pattern
+ * @param {String|Function} message
+ */
+export const validate = makeRuleGenerator('validate', function(pattern, message) {
+  if (isFunction(pattern)) {
+    return makeRule(pattern, message)
+  }
+
+  if (isInstanceOf(pattern, Rule)) {
+    return makeRule(value => pattern.validate(value), message)
+  }
+
+  if (isInstanceOf(pattern, Type)) {
+    return makeRule(value => pattern.test(value), message)
+  }
+
+  let type = new Type(pattern)
+  return makeRule(value => type.test(value), message)
+})
 
 /**
  * asynchronous rule
- * @param {Function} fn which can be an async function and should return a rule
+ * @param {Function} fn which can be an async function and should return a pattern
  */
 export const asynchronous = makeRuleGenerator('asynchronous', function(fn) {
   const rule = new Rule(function(value) {
     if (this.__await__) {
-      let rule = this.__await__
-      if (isInstanceOf(rule, Rule)) {
-        let error = rule.validate(value)
-        return xError(error, { value, rule, level: 'rule' })
+      let pattern = this.__await__
+      let info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate(value)
+        return makeError(error, info)
       }
-      else if (isInstanceOf(rule, Type)) {
-        let error = rule.catch(value)
-        return xError(error, { value, rule, level: 'rule' })
+
+      if (isInstanceOf(pattern, Type)) {
+        let error = pattern.catch(value)
+        return makeError(error, info)
       }
-      else {
-        let type = new Type(rule)
-        let error = type.catch(value)
-        return xError(error, { value, rule, level: 'rule' })
-      }
+
+      let type = new Type(rule)
+      let error = type.catch(value)
+      return makeError(error, info)
     }
+
     return true
   })
-  rule.__async__ = Promise.resolve().then(() => fn()).then((type) => {
-    rule.__await__ = type
-    return type
+  Promise.resolve().then(() => fn()).then((pattern) => {
+    rule.__await__ = pattern
   })
   return rule
 })
 
 /**
- * Verify a rule by using custom error message
- * @param {Rule|Type|Function} rule
- * @param {String|Function} message
+ * the passed value should match all passed patterns
+ * @param {...Pattern} patterns
  */
-export const validate = makeRuleGenerator('validate', function(rule, message) {
-  if (isFunction(rule)) {
-    return makeRule(rule, message)
-  }
-
-  if (isInstanceOf(rule, Rule)) {
-    return makeRule((value) => rule.validate(value), message)
-  }
-
-  if (isInstanceOf(rule, Type)) {
-    return makeRule((value) => rule.test(value), message)
-  }
-
-  let type = new Type(rule)
-  return validate(type, message)
-})
-
-/**
- * the passed value should match all passed rules
- * @param {...any} rules
- * @example
- * const SomeType = Dict({
- *   value: shouldmatch(
- *     validate(Number, 'it should be a number'),
- *     validate(value => value === parseInt(value, 10), 'it should be an int number')
- *   )
- * })
- */
-export const shouldmatch = makeRuleGenerator('shouldmatch', function(...rules) {
+export const shouldmatch = makeRuleGenerator('shouldmatch', function(...patterns) {
   return new Rule(function(value) {
-    const validate = (value, rule) => {
-      if (isInstanceOf(rule, Rule)) {
-        let error = rule.validate(value)
-        return xError(error, { value, rule: this, level: 'rule' })
+    const validate = (value, pattern) => {
+      let info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate(value)
+        return makeError(error, info)
       }
 
-      if (isInstanceOf(rule, Type)) {
-        let error = rule.catch(value)
-        return xError(error, { value, rule: this, level: 'rule' })
+      if (isInstanceOf(pattern, Type)) {
+        let error = pattern.catch(value)
+        return makeError(error, info)
       }
 
-      let type = new Type(rule)
-      return validate(value, type)
+      let type = new Type(pattern)
+      let error = type.catch(value)
+      return makeError(error, info)
     }
-    for (let i = 0, len = rules.length; i < len; i ++) {
-      let rule = rules[i]
-      let error = validate(value, rule)
+    for (let i = 0, len = patterns.length; i < len; i ++) {
+      let pattern = patterns[i]
+      let error = validate(value, pattern)
       if (error) {
         return error
       }
@@ -128,32 +140,36 @@ export const shouldmatch = makeRuleGenerator('shouldmatch', function(...rules) {
 })
 
 /**
- * the passed value should not match rules
- * @param {...any} rules
+ * the passed value should not match patterns
+ * @param {...Pattern} patterns
  */
-export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(...rules) {
+export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(...patterns) {
   return new Rule(function(value) {
-    const validate = (value, rule) => {
-      if (isInstanceOf(rule, Rule)) {
-        let error = rule.validate(value)
+    const validate = (value, pattern) => {
+      let info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate(value)
         if (!error) {
-          return new TsError('unexcepted', { value, rule: this, level: 'rule' })
+          return new TsError('unexcepted', info)
         }
       }
 
-      if (isInstanceOf(rule, Type)) {
-        let error = rule.catch(value)
+      if (isInstanceOf(pattern, Type)) {
+        let error = pattern.catch(value)
         if (!error) {
-          return new TsError('unexcepted', { value, rule: this, level: 'rule' })
+          return new TsError('unexcepted', info)
         }
       }
 
-      let type = new Type(rule)
-      return validate(value, type)
+      let type = new Type(pattern)
+      let error = type.catch(value)
+      if (!error) {
+        return new TsError('unexcepted', info)
+      }
     }
-    for (let i = 0, len = rules.length; i < len; i ++) {
-      let rule = rules[i]
-      let error = validate(value, rule)
+    for (let i = 0, len = patterns.length; i < len; i ++) {
+      let pattern = patterns[i]
+      let error = validate(value, pattern)
       if (error) {
         return error
       }
@@ -164,273 +180,283 @@ export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(...ru
 /**
  * If the value exists, use rule to validate.
  * If not exists, ignore this rule.
- * @param {*} rule
+ * @param {Pattern} pattern
  */
-export const ifexist = makeRuleGenerator('ifexist', function(rule) {
+export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
   let isReady = false
   let isExist = false
   let data = []
 
-  const prepare = function(error, prop, target) {
+  const prepare = (value, key, target) => {
     isReady = true
-    if (inObject(prop, target)) {
+    if (inObject(key, target)) {
       isExist = true
     }
-    data = [prop, target]
+    data = [key, target]
   }
 
-  if (isInstanceOf(rule, Rule)) {
-    return new Rule(function(value) {
-      if (!isReady) {
-        return new TsError('ifexist not ready', { value, rule: this })
-      }
-      if (!isExist) {
-        return null
-      }
-
-      let error = rule.validate(value)
-
-      // use rule to override property when not match
-      // override value and check again
-      // so that you can use `ifexist(ifnotmatch(String, ''))`
-      if (error && isFunction(rule.override)) {
-        let [prop, target] = data
-        rule.override(error, prop, target)
-        value = target[prop]
-        error = rule.validate(value)
-      }
-
-      return xError(error, { value, rule: this, level: 'rule' })
-    }, prepare)
-  }
-
-  if (isInstanceOf(rule, Type)) {
-    return new Rule(function(value) {
-      if (!isReady) {
-        return new TsError('ifexist not ready.', { value, rule: this })
-      }
-      if (!isExist) {
-        return null
-      }
-
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, level: 'rule' })
-    }, prepare)
-  }
-
-  let type = new Type(rule)
-  return ifexist(type)
-})
-
-/**
- * If the value not match rule, use defaultValue as value.
- * Notice, this will modify original data, which may cause error, so be careful.
- * @param {*} rule
- * @param {function} callback a function to return new value with origin old value
- */
-export const ifnotmatch = makeRuleGenerator('ifnotmatch', function(rule, callback) {
-  if (isInstanceOf(rule, Rule)) {
-    return new Rule(function(value) {
-      let error = rule.validate(value)
-      return xError(error, { value, rule: this, level: 'rule' })
-    }, function(error, prop, target) {
-      if (error) {
-        target[prop] = isFunction(callback) ? callback(target[prop]) : callback
-      }
-    })
-  }
-
-  if (isInstanceOf(rule, Type)) {
-    return new Rule(function(value) {
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, level: 'rule' })
-    }, function(error, prop, target) {
-      if (error) {
-        target[prop] = isFunction(callback) ? callback(target[prop]) : callback
-      }
-    })
-  }
-
-  let type = new Type(rule)
-  return ifnotmatch(type, callback)
-})
-
-/**
- * determine which rule to use.
- * @param {function} factory a function to receive parent node of current prop, and return a rule
- * @example
- * const SomeType = Dict({
- *   name: String,
- *   isMale: Boolean,
- *   // data type check based on person.isMale
- *   touch: determine(function(value, key, person) {
- *     if (person.isMale) {
- *       return String
- *     }
- *     else {
- *       return Null
- *     }
- *   }),
- * })
- */
-export const determine = makeRuleGenerator('determine', function(determine) {
-  let isReady = false
-  let rule
-
-  return new Rule(function(value) {
+  const make = (callback) => function(value) {
     if (!isReady) {
-      return new TsError('determine not ready.', { value, rule: this })
+      return new TsError('ifexist not ready')
     }
-
-    if (isInstanceOf(rule, Rule)) {
-      let error = rule.validate(value)
-
-      // use rule to override property when not match
-      // override value and check again
-      // so that you can use `determine((value, key, data) => {
-      //   if (data.isMale) return ifnotmatch(String, '')
-      //   else return null
-      // })`
-      if (error && isFunction(rule.override)) {
-        let [prop, target] = data
-        rule.override(error, prop, target)
-        value = target[prop]
-        error = rule.validate(value)
-      }
-
-      return xError(error, { value, rule: this, level: 'rule' })
-    }
-
-    if (isInstanceOf(rule, Type)) {
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, level: 'rule' })
-    }
-
-    let type = new Type(rule)
-    let error = type.catch(value)
-    return xError(error, { value, rule: this, level: 'rule' })
-  }, function(error, prop, target) {
-    rule = determine(target[prop], prop, target)
-    isReady = true
-  })
-})
-
-/**
- * Advance version of ifexist, determine whether a prop can not exist with a determine function,
- * if the prop is existing, use the passed type to check.
- * @param {function} determine the function to return true or false,
- * if true, it means the prop should must exists and will use the second parameter to check data type,
- * if false, it means the prop can not exist
- * @param {*} rule when the determine function return true, use this to check data type
- * @example
- * const SomeType = Dict({
- *   name: String,
- *   isMale: Boolean,
- *   // data type check based on person.isMale, if person.isMale is true, touch should be String, or touch can not exist
- *   touch: shouldexist((value, key, person) => person.isMale, String),
- * })
- */
-export const shouldexist = makeRuleGenerator('shouldexist', function(determine, rule) {
-  let isReady = false
-  let shouldExist = true
-  let isExist = false
-
-  return new Rule(function(value) {
-    if (!isReady) {
-      return new TsError('shouldexist not ready.', { value, rule: this })
-    }
-
-    // can not exists and it not exists, do nothing
-    if (!shouldExist && !isExist) {
+    if (!isExist) {
       return null
     }
 
-    if (isInstanceOf(rule, Rule)) {
-      let error = rule.validate(value)
+    const [key, target] = data
+    const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
 
-      // use rule to override property when not match
-      // override value and check again
-      // so that you can use `shouldexist(() => true, ifnotmatch(String, ''))`
-      if (error && isFunction(rule.override)) {
-        let [prop, target] = data
-        rule.override(error, prop, target)
-        value = target[prop]
-        error = rule.validate(value)
+    if (target && isArray(target)) {
+      info.index = key
+    }
+    else if (target && isObject(target)) {
+      info.key = key
+    }
+
+    let error = callback.call(this, value)
+    return makeError(error, info)
+  }
+
+  if (isInstanceOf(pattern, Rule)) {
+    return new Rule({
+      validate: make(function(value) {
+        let [key, target] = data
+        let error = pattern.validate2(value, key, target)
+        return error
+      }),
+      override: prepare,
+    })
+  }
+
+  if (isInstanceOf(pattern, Type)) {
+    return new Rule({
+      validate: make(function(value) {
+        let error = pattern.catch(value)
+        return error
+      }),
+      override: prepare,
+    })
+  }
+
+  let type = new Type(pattern)
+  return new Rule({
+    validate: make(function(value) {
+      let error = type.catch(value)
+      return error
+    }),
+    override: prepare,
+  })
+})
+
+/**
+ * If the value not match pattern, use defaultValue as value.
+ * Notice, this will modify original data, which may cause error, so be careful.
+ * @param {Pattern} pattern
+ * @param {Function|Any} callback a function to return new value with origin old value
+ */
+export const ifnotmatch = makeRuleGenerator('ifnotmatch', function(pattern, callback) {
+  const override = function(value, prop, target) {
+    target[prop] = isFunction(callback) ? callback(value) : callback
+  }
+
+  if (isInstanceOf(pattern, Rule)) {
+    return new Rule({
+      validate: function(value) {
+        const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+        let error = pattern.validate(value)
+        return makeError(error, info)
+      },
+      override,
+    })
+  }
+
+  if (isInstanceOf(pattern, Type)) {
+    return new Rule({
+      validate: function(value) {
+        const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+        let error = pattern.catch(value)
+        return makeError(error, info)
+      },
+      override,
+    })
+  }
+
+  let type = new Type(pattern)
+  return new Rule({
+    validate: function(value) {
+      const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+      let error = type.catch(value)
+      return makeError(error, info)
+    },
+    override,
+  })
+})
+
+/**
+ * determine which pattern to use.
+ * @param {Function} determine a function to receive parent node of current prop, and return a pattern
+ */
+export const determine = makeRuleGenerator('determine', function(determine) {
+  let isReady = false
+  let pattern
+  let data = []
+
+  return new Rule({
+    validate: function(value) {
+      if (!isReady) {
+        return new TsError('determine not ready.')
       }
 
-      return xError(error, { value, rule: this, level: 'rule' })
-    }
+      const [key, target] = data
+      const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
 
-    if (isInstanceOf(rule, Type)) {
-      let error = rule.catch(value)
-      return xError(error, { value, rule: this, level: 'rule' })
-    }
+      if (target && isArray(target)) {
+        info.index = key
+      }
+      else if (target && isObject(target)) {
+        info.key = key
+      }
 
-    let type = new Type(rule)
-    let error = type.catch(value)
-    return xError(error, { value, rule: this, level: 'rule' })
-  }, function(error, prop, target) {
-    shouldExist = determine(target[prop], prop, target)
-    isReady = true
-    isExist = inObject(prop, target)
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate2(value, key, target)
+        return makeError(error, info)
+      }
+
+      if (isInstanceOf(pattern, Type)) {
+        let error = pattern.catch(value)
+        return makeError(error, info)
+      }
+
+      let type = new Type(pattern)
+      let error = type.catch(value)
+      return makeError(error, info)
+    },
+    override: function(value, key, target) {
+      pattern = determine(value, key, target)
+      isReady = true
+      data = [key, target]
+    },
   })
 })
 
 /**
  * Advance version of ifexist, determine whether a prop can not exist with a determine function,
  * if the prop is existing, use the passed type to check.
- * @param {function} determine the function to return true or false,
+ * @param {Function} determine the function to return true or false,
  * if true, it means the prop should must exists and will use the second parameter to check data type,
  * if false, it means the prop can not exist
- * @param {*} rule when the determine function return true, use this to check data type
- * @example
- * const SomeType = Dict({
-  *   name: String,
-  *   isMale: Boolean,
-  *   // data type check based on person.isMale, if person.isMale is true, touch should be String, or touch can not exist
-  *   touch: shouldnotexist((value, key, person) => person.isMale, String),
-  * })
+ * @param {Pattern} pattern when the determine function return true, use this to check data type
+ */
+export const shouldexist = makeRuleGenerator('shouldexist', function(determine, pattern) {
+  let isReady = false
+  let shouldExist = true
+  let isExist = false
+  let data = []
+
+  return new Rule({
+    validate: function(value) {
+      if (!isReady) {
+        return new TsError('shouldexist not ready.')
+      }
+
+      const [key, target] = data
+      const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
+
+      if (target && isArray(target)) {
+        info.index = key
+      }
+      else if (target && isObject(target)) {
+        info.key = key
+      }
+
+      // can not exist and it does not exist, do nothing
+      if (!shouldExist && !isExist) {
+        return null
+      }
+
+      if (isInstanceOf(pattern, Rule)) {
+        let error = pattern.validate2(value, key, target)
+        return makeError(error, info)
+      }
+
+      if (isInstanceOf(pattern, Type)) {
+        let error = pattern.catch(value)
+        return makeError(error, info)
+      }
+
+      let type = new Type(pattern)
+      let error = type.catch(value)
+      return makeError(error, info)
+    },
+    override: function(value, key, target) {
+      shouldExist = determine(value, key, target)
+      isReady = true
+      isExist = inObject(key, target)
+      data = [key, target]
+    },
+  })
+})
+
+/**
+ * Advance version of ifexist, determine whether a prop can not exist with a determine function,
+ * if the prop is existing, use the passed type to check.
+ * @param {Function} determine the function to return true or false,
+ * if true, it means the prop should must exists and will use the second parameter to check data type,
+ * if false, it means the prop can not exist
+ * @param {Function} determine when the determine function return true, use this to check data type
   */
- export const shouldnotexist = makeRuleGenerator('shouldnotexist', function(determine) {
-   let isReady = false
-   let shouldNotExist = false
-   let isExist = false
-   let data = []
+export const shouldnotexist = makeRuleGenerator('shouldnotexist', function(determine) {
+  let isReady = false
+  let shouldNotExist = false
+  let isExist = false
+  let data = []
 
-   return new Rule(function(value) {
-     if (!isReady) {
-       return new TsError('shouldnotexist not ready.', { value, rule: this })
-     }
+  return new Rule({
+    validate: function(value) {
+      if (!isReady) {
+        return new TsError('shouldnotexist not ready.')
+      }
 
-     // can not exists and it not exists, do nothing
-     if (shouldNotExist && !isExist) {
-       return null
-     }
+      // should not exist and it does not exist, do nothing
+      if (shouldNotExist && !isExist) {
+        return null
+      }
 
-     const [key] = data
-     return new TsError('overflow', { value, rule: this, level: 'rule', key })
-   }, function(error, prop, target) {
-    shouldNotExist = determine(target[prop], prop, target)
-    isReady = true
-    isExist = inObject(prop, target)
-    data = [prop, target]
-   })
- })
+      const [key, target] = data
+      const info = { value, rule: this, level: 'rule', action: 'validate' }
+
+      if (target && isArray(target)) {
+        info.index = key
+      }
+      else if (target && isObject(target)) {
+        info.key = key
+      }
+
+      return new TsError('overflow', info)
+    },
+    override: function(value, prop, target) {
+      shouldNotExist = determine(value, prop, target)
+      isReady = true
+      isExist = inObject(prop, target)
+      data = [prop, target]
+    },
+  })
+})
 
 /**
  * Whether the value is an instance of given class
- * @param {*} rule should be a class constructor
+ * @param {Constructor} Cons should be a class constructor
  */
-export const implement = makeRuleGenerator('implement', function(rule) {
-  return makeRule((value) => isInstanceOf(value, rule, true))
+export const implement = makeRuleGenerator('implement', function(Cons) {
+  return makeRule(value => isInstanceOf(value, Cons, true))
 })
 
 /**
  * Whether the value is eqaul to the given value
- * @param {*} rule
+ * @param {Any} value
  */
-export const equal = makeRuleGenerator('equal', function(rule) {
-  return makeRule((value) => value === rule)
+export const equal = makeRuleGenerator('equal', function(value) {
+  return makeRule(v => v === value)
 })
 
 /**
@@ -439,27 +465,35 @@ export const equal = makeRuleGenerator('equal', function(rule) {
  * @param {Any} OutputType
  */
 export const lambda = makeRuleGenerator('lambda', function(InputType, OutputType) {
-  if (!isInstanceOf(InputType, Type)) {
-    InputType = new Type(InputType)
+  if (!isInstanceOf(InputType, Tuple)) {
+    throw new TsError('lambda InputType should be a Tuple')
   }
   if (!isInstanceOf(OutputType, Type)) {
     OutputType = new Type(OutputType)
   }
 
-  return new Rule(function(value) {
-    if (!isFunction(value)) {
-      return new TsError('mistaken', { value, rule: this, level: 'rule' })
-    }
-  }, function(error, prop, target) {
-    if (!error) {
-      let fn = target[prop].bind(target)
-      let lambda = function(...args) {
-        InputType.assert(...args)
-        let result = fn(...args)
+  let isReady = false
+
+  return new Rule({
+    validate: function(value) {
+      if (!isReady) {
+        return new TsError('lambda is not ready.')
+      }
+
+      if (!isFunction(value)) {
+        const info = { value, pattern: Function, rule: this, level: 'rule', action: 'validate' }
+        return new TsError('mistaken', info)
+      }
+    },
+    override: function(value, key, target) {
+      const lambda = function(...args) {
+        InputType.assert(args)
+        let result = value.apply(this, args)
         OutputType.assert(result)
         return result
       }
-      target[prop] = lambda
-    }
+      target[key] = lambda // Notice, change the original reference
+      isReady = true
+    },
   })
 })

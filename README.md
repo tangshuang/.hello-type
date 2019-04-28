@@ -1,43 +1,43 @@
-RTSM
+TypeSchema
 ==========
 
 An ECMAScript data arrangement system.
 
 【[中文文档](https://www.tangshuang.net/5625.html)】
 
-RTSM is a js runtime data arrangement system, which contains 4 parts: Rule, Type, Schema and Model.
-You can use RTSM to:
+TypeSchema is a js runtime data arrangement system, which contains 4 parts: Rule, Type, Schema and Model.
+You can use TypeSchema to:
 
 - delimit data with type
 - validate data
 - formulate data by type
 
-RTSM is always used to check data type or sturcture when interact with backend api in frontend, however, you can use it anywhere even in nodejs.
+TypeSchema is always used to check data type or sturcture when interact with backend api in frontend, however, you can use it anywhere even in nodejs.
 
 ## Install
 
 ```
-npm i rtsm
+npm i typeschema
 ```
 
 ## Usage
 
 ```js
-import Rtsm from 'rtsm'
+import TypeSchema from 'typeschema'
 ```
 
 or
 
 ```js
-const { Rtsm } = require('rtsm')
+const { TypeSchema } = require('typeschema')
 ```
 
 or
 
 ```html
-<script src="/node_modules/rtsm/dist/index.js"></script>
+<script src="/node_modules/typeschema/dist/index.js"></script>
 <script>
-const { Rtsm } = window['rtsm']
+const { TypeSchema } = window['typeschema']
 </script>
 ```
 
@@ -45,7 +45,7 @@ const { Rtsm } = window['rtsm']
 
 A `Rule` is a Behavior Definition of an automic data.
 For example, `var a = 10` and we know `a` is a number.
-But how do you know `a` is a number? And how do you know a variable is a what behavior definition?
+But how do you know `a` is a number which will be stored/computed as number type by V8? And how do you know a variable is a what behavior definition?
 
 We have native prototypes/definition:
 
@@ -92,7 +92,7 @@ After you learn the usage of `Rule`, you can define your own rule to create new 
 
 ```js
 // example
-import { Rule } from 'rtsm'
+import { Rule } from 'typeschema'
 export const NumberString = new Rule('NumberString', value => typeof value === 'string' && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value))
 ```
 
@@ -114,17 +114,31 @@ And we have define some data structure:
 - new Tuple([ ... ])
 - new Enum([ ... ])
 
+```
++-------------+----------+----------+--
+| TypeSchema  |    JS    |  Python  |
++=============+==========+==========+==
+|    Dict     |  Object  |   dict   |
++-------------+----------+----------+-------------------
+|    List     |  Array   |   list   |  mutable array
++-------------+----------+----------+--------------------
+|    Enum     |   Set    |   set    |
++-------------+----------+----------+-------------------
+|    Tuple    |          |   tuple  |  immutable determined array
++-------------+----------+----------+------------------------------
+```
+
 The output of these constructors are all types which can be used in our system.
 And these 4 types are extended from `Type`.
 Later I will tell you how to create type by using these constructors.
 
 And to use `Type` conveniently, we provide functions to generate types:
 
-- type(...)
+- type(pattern)
 - dict({ ... })
 - list([ ... ])
-- tuple(...)
-- enumerate(...)
+- tuple([ ... ])
+- enumerate([ ... ])
 
 **Pattern**
 
@@ -145,20 +159,37 @@ And different type constructor need different pattern form.
 
 ## Schema
 
-A Schema is to describe fields' behaviour logic.
-In javascript, we use object to reflect data set which contains fields, so in RTSM you should use object to define Schema.
+A Schema is to describe data structure logic.
+In javascript, we use object to reflect data set which contains fields, so in TypeSchema you should use object to define Schema.
 
+A schema do not care the real data, it create a abstract data structure to validate and formulate data.
+By using formulated data, your business code will never have type or structure problem.
 
+```
++-------------+        +------------+
+|  api data   |   ->   |   schema   |   ->   non-problem data
++-------------+        +------------+
+```
 
+Here schema is like a constraint to prevent data error in business code.
 
+## Model
 
-### Type Instance
+A model is a data container which provide features about data operation.
+We always use a model in our business code to use data. Js native data is very weak, we provide a model that you can watch data change and based on schema, so that you can make your business logic more clear.
+
+- watch data change
+- computed property
+- validate
+- extract formdata
+
+## Type Instance
 
 In TypeSchema, the basic class constructor is `Type`, which is extended to `Dict` `List` `Enum` and `Tuple`.
 You can create an instance:
 
 ```js
-import { Type } from 'rtsm'
+import { Type } from 'typeschema'
 const SomeType = new Type(String)
 // so that you can use methods' feature with SomeType
 ```
@@ -423,7 +454,7 @@ Notice: CustomRule is just a instance of Rule, it is not a type, do not have `as
 There is a special rule called `Any`, it means your given value can be any type:
 
 ```js
-import { Dict, Any } from 'rtsm'
+import { Dict, Any } from 'typeschema'
 
 const MyType = Dict({
   top: Any,
@@ -448,7 +479,7 @@ If there is no value, or the value is undefined, this rule can be ignored.
 - @return instance of Type/Rule
 
 ```js
-import { Dict, IfExists } from 'rtsm'
+import { Dict, IfExists } from 'typeschema'
 
 const PersonType = Dict({
   name: String,
@@ -655,7 +686,7 @@ const AsyncRule = Async(async () => {
 The `Ts` is a set of methods to use type assertions more unified.
 
 ```js
-import { Ts } from 'rtsm'
+import { Ts } from 'typeschema'
 ```
 
 ### expect.to.match
@@ -729,7 +760,7 @@ example:
 const showError = (err) => Toast.error(err.message)
 window.addEventListener('error', (e) => {
   let { error } = e
-  if (error.owner === 'rtsm') {
+  if (error.owner === 'typeschema') {
     e.preventDefault() // when throw Error, there will no error massage in console
   }
 })
@@ -809,7 +840,7 @@ obj.books[0].name = null // without any effects
 Advance TypeError which has `addtrace` method.
 
 ```js
-import Ts from 'rtsm'
+import Ts from 'typeschema'
 const { Error } = Ts
 ```
 

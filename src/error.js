@@ -1,7 +1,7 @@
 import { inObject, stringify, isInstanceOf, inArray, isArray, isObject, isFunction, isNaN } from './utils.js'
 
 function makeErrorMessage(key, params) {
-  let message = RtsmError.messages[key] || key
+  let message = TsError.messages[key] || key
   let text = message.replace(/\{(.*?)\}/g, (match, key) => inObject(key, params) ? params[key] : match)
   return text
 }
@@ -49,7 +49,7 @@ export function makeError(error, params) {
   return error
 }
 
-export class RtsmError extends TypeError {
+export class TsError extends TypeError {
   constructor(key, params = {}) {
     super(key)
     Object.defineProperties(this, {
@@ -60,37 +60,40 @@ export class RtsmError extends TypeError {
         get() {
           const getReceive = (value, masking = false) => {
             let totype = typeof(value)
-            if (inArray(totype, ['number', 'boolean', 'undefined']) || value === null || isNaN(value)) {
+            if (inArray(totype, ['boolean', 'undefined']) || value === null || isNaN(value)) {
               return value
             }
+            else if (totype === 'number') {
+              let output = masking ? `Number` : value
+              return output
+            }
             else if (totype === 'string') {
-              let output = masking ? value.length > 16 ? value.substr(0, 16) + '...' : value : value
+              let output = masking ? `String` : value
               return stringify(output)
             }
             else if (isFunction(value)) {
               return `Function:${value.name}()`
             }
             else if (isArray(value)) {
-              let name = value.__name__ || 'Array'
+              let name = 'Array'
               if (masking) {
                 return `${name}(${value.length})`
               }
               else {
-                return `${name}(${value.map(item => getReceive(item, true)).join(',')})`
+                return `[${value.map(item => getReceive(item, masking)).join(',')}]`
               }
             }
             else if (isObject(value)) {
-              let name = value.__name__ || 'Object'
               let keys = Object.keys(value)
               if (masking) {
-                return `${name}({${keys.join(',')}})`
+                return `{${keys.join(',')}}`
               }
               else {
                 let values = []
                 keys.forEach((key) => {
-                  values.push(`${key}:` + getReceive(value[key], true))
+                  values.push(`${key}:` + getReceive(value[key], masking))
                 })
-                return `${name}({${values.join(',')}})`
+                return `{${values.join(',')}}`
               }
             }
             else if (typeof value === 'object') { // for class instances
@@ -101,20 +104,22 @@ export class RtsmError extends TypeError {
             }
             else {
               let output = value.toString()
-              let res = masking ? output.length > 16 ? output.substr(0, 16) + '...' : output : output
+              let res = masking ? '*********' : output
               return res
             }
           }
-          const getShould = (rule, type) => {
-            if (!rule && !type) {
+          const getShould = (info) => {
+            if (!info.level) {
               return 'unknown'
             }
 
-            let source = rule || type
-            let name = getReceive(source)
+            const level = info.level
+            const source = info[level]
+            const name = getReceive(source)
+
             let should = name
 
-            if (name === 'List' || name === 'Tuple') {
+            if (inArray(name, ['List', 'Tuple', 'Enum'])) {
               let pattern = source.pattern.map(item => getShould(item))
               should = `${name}(${pattern.join(',')})`
             }
@@ -123,18 +128,14 @@ export class RtsmError extends TypeError {
               let keys = Object.keys(pattern)
               should = `Dict({${keys.join(',')}})`
             }
-            else if (inArray(name, ['Enum', 'Range'])) {
-              let pattern = source.pattern.map(item => getShould(item))
-              should = `${name}(${pattern.join(',')})`
-            }
             else if (name === 'Type') {
               let pattern = source.pattern
               should = getShould(pattern)
             }
-            else if (inArray(name, ['asynchronous', 'validate', 'match', 'ifexist', 'ifnotmatch', 'shouldexist', 'shouldnotexist', 'implement', 'equal', 'lambda'])) {
-              let rule = source.arguments[0]
-              let ruleName = getShould(rule)
-              should = `${name}(${ruleName})`
+            else if (level === 'rule' && source.factors) {
+              let factors = source.factors
+              let names = factors.map(factor => isFunction(factor) ? 'Function' : getShould(factor))
+              should = `${name}(${names.join(',')})`
             }
 
             return should
@@ -149,7 +150,7 @@ export class RtsmError extends TypeError {
             let prev = traces[i - 1]
             let keyPath = item.keyPath
             let sep = ''
-            let nextResearch = getShould(item.rule || item.type)
+            let nextResearch = getShould(item)
 
             if (prev && prev.keyPath !== keyPath) { // keyPath changed
               sep = '/'
@@ -176,8 +177,8 @@ export class RtsmError extends TypeError {
 
           let summary = {
             value: info.value,
-            receive: getReceive(info.value, true), // received node value
-            should: getShould(info.rule, info.type), // node rule
+            receive: getReceive(info.value, this.masking), // received node value
+            should: getShould(info), // node rule
             research,
           }
           let res = Object.assign({}, info, summary)
@@ -210,14 +211,18 @@ export class RtsmError extends TypeError {
             key = text
           }
           return makeErrorMessage(text, this.summary)
-        }
+        },
+      },
+      masking: {
+        value: false,
+        writable: true,
       },
     })
     makeError(this, params)
   }
 }
 
-RtsmError.messages = {
+TsError.messages = {
   mistaken: '{keyPath} should match {should}, but receive {receive}.',
   unexcepted: '{keyPath} should not match {should}, but receive {receive}.',
   dirty: '{keyPath} does not match {should}, length should be {length}.',
@@ -225,4 +230,4 @@ RtsmError.messages = {
   missing: '{keyPath} is missing.',
 }
 
-export default RtsmError
+export default TsError

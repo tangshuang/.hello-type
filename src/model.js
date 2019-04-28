@@ -1,6 +1,7 @@
 import { dict } from './dict.js'
 import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject } from './utils.js'
 import Ts from './ts.js'
+import TsError from './error.js';
 
 /**
  * 数据源相关信息
@@ -49,22 +50,38 @@ import Ts from './ts.js'
  */
 
 export class Model {
-  constructor(schema) {
-    this.schema = schema
+  constructor(data = {}) {
+    // 定义schema，进来的数据必须符合schema的要求，并且schema的输出字段将会被作为Model的字段，且schema的输出结果应该符合define的结构要求
+    const schema = this.schema()
+    if (!isObject(schema)) {
+      throw new Error('Model.schema should return an object.')
+    }
+    this.__schema = new Schema(schema)
+
     this.state = {}
+    this.__ready = this.reset(data)
+  }
+
+  schema() {
+    throw new Error('Model.schema method should be override.')
+  }
+
+  throw(error) {
+    console.error(error)
   }
 
   get(key) {
     return key ? parse(this.state, key) : this.state
   }
   set(key, value) {
-    if (!this.pattern[key]) {
-      let error = new Error(`${key} not exist in schema.`)
-      this.throw(error)
-      return this
+    const schema = this.__schema
+    const type = schema.type(key)
+
+    if (!type) {
+      this.throw(new TsError(`${key} is not in Model.schema.`))
     }
 
-    let error = this.assert(key, value)
+    let error = type.catch(value)
     if (error) {
       this.throw(error)
       return this

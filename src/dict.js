@@ -1,6 +1,6 @@
 import Type from './type.js'
 import { isObject, isBoolean, isInstanceOf } from './utils.js'
-import RtsmError, { makeError } from './error.js'
+import TsError, { makeError } from './error.js'
 
 export class Dict extends Type {
   constructor(pattern) {
@@ -11,27 +11,30 @@ export class Dict extends Type {
     super(pattern)
     this.name = 'Dict'
   }
+
   validate(value, pattern) {
+    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+
     if (!isObject(value)) {
-      return new RtsmError('mistaken', { value, pattern, type: this, level: 'validate' })
+      return new TsError('mistaken', info)
     }
 
-    const patternKeys = Object.keys(pattern)
-    const targetKeys = Object.keys(value)
+    const patterns = pattern
+    const target = value
+    const patternKeys = Object.keys(patterns)
+    const targetKeys = Object.keys(target)
 
+    // in strict mode, keys should absolutely equal
     if (this.mode === 'strict') {
       // properties should be absolutely same
       for (let i = 0, len = targetKeys.length; i < len; i ++) {
         let key = targetKeys[i]
         // target has key beyond rules
         if (!inArray(key, patternKeys)) {
-          return new RtsmError('overflow', { value, pattern, type: this, level: 'validate', key, keys: patternKeys })
+          return new TsError('overflow', { ...info, key })
         }
       }
     }
-
-    const patterns = pattern
-    const target = value
 
     for (let i = 0, len = patternKeys.length; i < len; i ++) {
       let key = patternKeys[i]
@@ -42,37 +45,19 @@ export class Dict extends Type {
       // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
       if (!inArray(key, targetKeys)) {
         if (isInstanceOf(pattern, Rule) && this.mode !== 'strict') {
-          let error = pattern.validate(value)
-
-          // use pattern to override property when not exists
-          // override value and check again
-          if (isFunction(pattern.override)) {
-            value = pattern.override(error, key, target)
-            value = target[key]
-            error = pattern.validate(value)
-          }
-
+          let error = pattern.validate2(value, key, target)
           if (!error) {
             continue
           }
         }
-
-        return new RtsmError('missing', { value, pattern, type: this, level: 'validate', key })
+        return new TsError('missing', { ...info, key })
       }
 
+      // rule validate2
       if (isInstanceOf(pattern, Rule)) {
-        let error = pattern.validate(value)
-
-        // use pattern to override property when not match
-        // override value and check again
-        if (isFunction(pattern.override)) {
-          value = pattern.override(error, key, target)
-          value = target[key]
-          error = pattern.validate(value)
-        }
-
+        let error = pattern.validate2(value, key, target)
         if (error) {
-          return makeError(error, { value, pattern, type: this, level: 'validate', key })
+          return makeError(error, { ...info, key, value, pattern })
         }
         else {
           continue
@@ -82,24 +67,11 @@ export class Dict extends Type {
       // normal validate
       let error = super.validate(value, pattern)
       if (error) {
-        return makeError(error, { value, pattern, type: this, level: 'validate', key })
+        return makeError(error, { ...info, key, value, pattern })
       }
     }
 
     return null
-  }
-  assert(value) {
-    const pattern = this.pattern
-    const info = { value, pattern, type: this, level: 'assert' }
-
-    if (!isObject(value)) {
-      throw new RtsmError('mistaken', info)
-    }
-
-    const error = this.validate(value, pattern)
-    if (error) {
-      throw makeError(error, info)
-    }
   }
 
   extends(pattern) {

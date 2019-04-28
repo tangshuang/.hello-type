@@ -1,5 +1,5 @@
 import Rule from './rule.js'
-import RtsmError, { makeError } from './error.js'
+import TsError, { makeError } from './error.js'
 import { isArray, isBoolean, isNumber, isObject, isNaN, isString, isFunction, isSymbol, isConstructor, isInstanceOf } from './utils.js'
 
 import Dict from './dict.js'
@@ -23,23 +23,12 @@ export class Type {
    * @param {*} pattern
    */
   validate(value, pattern) {
-    const info = { value, pattern, type: this, level: 'validate' }
+    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
     // custom pattern
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(pattern, Rule)) {
-      const res = pattern.validate(value)
-      // if validate return an error
-      if (isInstanceOf(res, Error)) {
-        return makeError(res, info)
-      }
-      // if validate return false
-      else if (isBoolean(res) && !res) {
-        return new RtsmError('mistaken', info)
-      }
-      // if validate return true
-      else {
-        return null
-      }
+      let error = pattern.validate(value)
+      return makeError(error, info)
     }
 
     // NaN
@@ -49,7 +38,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -60,7 +49,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -71,7 +60,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -82,7 +71,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -90,13 +79,13 @@ export class Type {
     // i.e. (new Type(/a/)).assert('name')
     if (isInstanceOf(pattern, RegExp)) {
       if (!isString(value)) {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
       if (pattern.test(value)) {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -107,7 +96,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -118,7 +107,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -129,7 +118,7 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
@@ -138,26 +127,20 @@ export class Type {
         return null
       }
       else {
-        return new RtsmError('mistaken', info)
+        return new TsError('mistaken', info)
       }
     }
 
     if (isArray(pattern)) {
       let ListType = new List(pattern)
       let error = ListType.catch(value)
-      return error
+      return makeError(error, info)
     }
 
     if (isObject(pattern)) {
       let DictType = new Dict(pattern)
       let error = DictType.catch(value)
-      return error
-    }
-
-    // is the given value, pattern should not be an object/instance
-    // i.e. (new Type('name')).assert('name')
-    if (!isInstanceOf(pattern, Object) && value === pattern) {
-      return null
+      return makeError(error, info)
     }
 
     // instance of a class
@@ -173,19 +156,21 @@ export class Type {
         pattern = pattern.strict
       }
       let error = pattern.catch(value)
-      if (error) {
-        return makeError(error, info)
-      }
+      return makeError(error, info)
+    }
 
+    // is the given value, pattern should not be an object/instance
+    // i.e. (new Type('name')).assert('name')
+    if (value === pattern) {
       return null
     }
 
-    return new RtsmError('mistaken', info)
+    return new TsError('mistaken', info)
   }
 
   assert(value) {
     const pattern = this.pattern
-    const info = { value, pattern, type: this, level: 'assert' }
+    const info = { value, pattern, type: this, level: 'type', action: 'assert' }
     const error = this.validate(value, pattern)
     if (error) {
       throw makeError(error, info)
