@@ -11,22 +11,13 @@ export class Schema {
    * 数据源相关信息
    * @param {object} definition
    * {
-   *   // 字段名
+   *   // 字段名，值为一个配置
    *   key: {
    *     default: '', // 必填，默认值
-   *     type: String, // 可选，数据类型
-   *       // 当 type 为 schema 时，要求输出的数据结构必须和 default 一致
-   *
-   *     // 准备数据，格式化数据
-   *     flat: (value) => ({ keyPath: value }), // 可选
-   *       // 在将一个字段展开为两个字段的时候会用到它。
-   *       // 注意，使用了 flat，如果想在结果中移除原始 key，还需要使用 drop。
-   *       // 例如： flat: (region) => ({ 'company.region_id': region.region_id }) 会导致最后在格式化数据中，会有一个 company.region_id 属性出现
-   *       // flat 的优先级更高，它会在 drop 之前运行，因此，drop 对它没有影响，这也符合逻辑，flat 之后，如果需要从原始数据中删除自身，需要设置 drop
-   *     drop: (value) => Boolean, // 可选，是否要丢掉当前字段，true 表示丢到，false 表示保留
-   *     map: (value) => newValue, // 可选，使用新值覆盖原始值输出，例如 map: region => region.region_id 使当前这个字段使用 region.region_id 作为最终结果输出。
-   *       // 注意：它仅在 drop 为 false 的情况下生效，drop 为 true，map结果不会出现在结果中。
+   *     type: String, // 必填，数据类型 Pattern
    *   },
+   *   // 使用一个 schema 实例作为值，schema 本身是有默认值的
+   *   prop: SomeSchema,
    * }
    */
   constructor(definition) {
@@ -38,8 +29,8 @@ export class Schema {
   }
 
   /**
-   * 获取当前 schema 的 type 结构
-   * @param {*} [keyPath]
+   * 获取当前 schema 的 type
+   * @param {*} [keyPath] 获取对应节点上的 type
    */
   type(keyPath) {
     const getPattern = (type) => {
@@ -48,6 +39,7 @@ export class Schema {
       }
       else if (isInstanceOf(type, List)) {
         type = type.pattern.map(item => getPattern(item))
+        type.__isList = true
       }
       else if (isInstanceOf(type, Tuple)) {
         type = type.pattern.map(item => getPattern(item))
@@ -71,16 +63,17 @@ export class Schema {
     }
     else {
       keys.forEach((key) => {
-        const { type } = definition[key]
-        let o = null
-        if (isInstanceOf(type, Schema)) {
-          let dict = type.type()
-          o = getPattern(dict)
+        const def = definition[key]
+        let res = null
+        if (isInstanceOf(def, Schema)) {
+          let dict = def.type()
+          res = getPattern(dict)
         }
         else {
-          o = getPattern(type)
+          let { type } = def
+          res = getPattern(type)
         }
-        pattern[key] = o
+        pattern[key] = res
       })
 
       // 在短时间内复用缓存
@@ -117,6 +110,12 @@ export class Schema {
           return new List(target)
         }
       }
+      else if (isInstanceOf(target, Type)) {
+        return target
+      }
+      else {
+        return new Type(target)
+      }
     }
 
     return new Dict(pattern)
@@ -133,28 +132,8 @@ export class Schema {
       return error
     }
 
-    const definition = this.definition
-    const keys = Object.keys(definition)
-
-    const validate = (key, value) => {
-      const { type } = definition[key]
-      const info = { key, value, pattern: type, schema: this, level: 'schema', action: 'validate' }
-      // 类型检查
-      let error = (type instanceof Schema) ? type.validate(value) : Ts.catch(value).by(type)
-      if (error) {
-        return makeError(error, info)
-      }
-    }
-
-    for (let i = 0, len = keys.length; i < len; i ++) {
-      let key = keys[i]
-      let value = data[key]
-
-      let error = validate(key, value)
-      if (error) {
-        return error
-      }
-    }
+    const type = this.type()
+    return type.catch(data)
   }
 
   /**
@@ -182,7 +161,7 @@ export class Schema {
     }
 
     keys.forEach((key) => {
-      const pattern = definition[key]
+      const def = definition[key]
       const { type, flat, drop, map } = pattern
       const defaultValue = pattern.default
       const value = data[key]

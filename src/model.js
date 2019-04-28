@@ -59,7 +59,7 @@ export class Model {
     this.__schema = new Schema(schema)
 
     this.state = {}
-    this.__ready = this.reset(data)
+    this.reset(data)
   }
 
   schema() {
@@ -93,8 +93,10 @@ export class Model {
 
   // 批量更新，异步动作，多次更新一个值，只会触发一次
   update(data = {}) {
+    const schema = this.__schema
     const definition = this.definition
     const keys = Object.keys(data)
+
     keys.forEach((key) => {
       // 不存在定义里的字段不需要
       if (!inObject(key, definition)) {
@@ -124,7 +126,8 @@ export class Model {
         for (let i = 0, len = items.length; i < len; i ++) {
           let item = items[i]
           let { key, value } = item
-          let error = this.assert(key, value)
+          let type = schema.type(key)
+          let error = type.catch(value)
           if (error) {
             reject(error)
             return
@@ -141,27 +144,8 @@ export class Model {
   // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   reset(data) {
-    return new Promise((resolve, reject) => {
-      clearTimeout(this.__isReseting)
-      this.__isReseting = setTimeout(() => {
-        const definition = this.definition
-        const keys = Object.keys(definition)
-        const items = []
-        keys.forEach((key) => {
-          const def = definition[key]
-          const { prepare, value } = def
-          const val = prepare ? prepare(data) : value
-          items.push({ key, value: val })
-        })
-
-        const updating = {}
-        items.forEach(({ key, value }) => {
-          updating[key] = value
-        })
-
-        this.update(updating).then(resolve).catch(reject)
-      })
-    })
+    let next = this.__schema.formulate(data)
+    this.state = next
   }
 
   /**
