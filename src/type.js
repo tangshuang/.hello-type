@@ -24,7 +24,7 @@ export class Type {
    */
   validate(value, pattern) {
     const info = { value, pattern, type: this, level: 'type', action: 'validate' }
-    // custom pattern
+    // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)
     if (isInstanceOf(pattern, Rule)) {
       let error = pattern.validate(value)

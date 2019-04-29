@@ -74,19 +74,19 @@ export class Dict extends Type {
     return null
   }
 
-  extend(pattern) {
+  extend(fields) {
     const current = this.pattern
-    const next = Object.assign({}, current, pattern)
+    const next = Object.assign({}, current, fields)
     const type = new Dict(next)
     return type
   }
-  extract(pattern) {
+  extract(fields) {
     const current = this.pattern
-    const keys = Object.keys(pattern)
+    const keys = Object.keys(fields)
     const next = {}
 
     keys.forEach((key) => {
-      if (pattern[key] === true) {
+      if (fields[key] === true) {
         next[key] = current[key]
       }
     })
@@ -94,17 +94,17 @@ export class Dict extends Type {
     const type = new Dict(next)
     return type
   }
-  mix(pattern) {
+  mix(fields) {
     const current = this.pattern
-    const keys = Object.keys(pattern)
+    const keys = Object.keys(fields)
     const next = {}
 
     keys.forEach((key) => {
-      if (pattern[key] === true) {
+      if (fields[key] === true) {
         next[key] = current[key]
       }
-      else if (isObject(pattern[key])) {
-        next[key] = pattern[key]
+      else if (isObject(fields[key])) {
+        next[key] = fields[key]
       }
     })
 

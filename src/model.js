@@ -1,7 +1,7 @@
 import { dict } from './dict.js'
 import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject } from './utils.js'
 import Ts from './ts.js'
-import TsError from './error.js';
+import TsError, { makeError } from './error.js';
 
 /**
  * 数据源相关信息
@@ -144,7 +144,13 @@ export class Model {
   // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   reset(data) {
-    let next = this.__schema.formulate(data)
+    let error = this.__schema.validate(data)
+    if (error) {
+      error = makeError(error, { value: data, model: this, level: 'model', action: 'reset' })
+      this.throw(error)
+    }
+
+    let next = this.__schema.ensure(data)
     this.state = next
   }
 
