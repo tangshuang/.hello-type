@@ -74,59 +74,42 @@ export class Dict extends Type {
     return null
   }
 
-  extends(pattern) {
-    const originalPattern = this.pattern
-    const newPattern = Object.assign({}, originalPattern, pattern)
-    const newType = new Dict(newPattern)
-    return newType
+  extend(pattern) {
+    const current = this.pattern
+    const next = Object.assign({}, current, pattern)
+    const type = new Dict(next)
+    return type
   }
   extract(pattern) {
-    const originalPattern = this.pattern
-    const originalKeys = Object.keys(originalPattern)
-    const newPattern = {}
+    const current = this.pattern
+    const keys = Object.keys(pattern)
+    const next = {}
 
-    const useKeys = []
-    const removeKeys = []
-    const passKeys = Object.keys(pattern)
-    passKeys.forEach((key) => {
-      let value = pattern[key]
-      if (value === true) {
-        useKeys.push(key)
-      }
-      else if (value === false) {
-        removeKeys.push(key)
+    keys.forEach((key) => {
+      if (pattern[key] === true) {
+        next[key] = current[key]
       }
     })
-    const passCount = passKeys.length
-    const removeCount = removeKeys.length
-    const useCount = useKeys.length
-    originalKeys.forEach((key) => {
-      const whether = pattern[key]
 
-      if (whether === false) {
-        return
+    const type = new Dict(next)
+    return type
+  }
+  mix(pattern) {
+    const current = this.pattern
+    const keys = Object.keys(pattern)
+    const next = {}
+
+    keys.forEach((key) => {
+      if (pattern[key] === true) {
+        next[key] = current[key]
       }
-
-      if (!isBoolean(whether)) {
-        // if all passed are true, treat undefined as false
-        if (useCount === passCount) {
-          return
-        }
-
-        // treat undefined as false
-        if (removeCount !== passCount) {
-          return
-        }
-
-        // if all passed are false, treat undefined as true
+      else if (isObject(pattern[key])) {
+        next[key] = pattern[key]
       }
-
-      let value = originalPattern[key]
-      newPattern[key] = value
     })
 
-    const newType = new Dict(newPattern)
-    return newType
+    const type = new Dict(next)
+    return type
   }
 }
 

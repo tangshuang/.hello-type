@@ -5,6 +5,7 @@ import Ts from './ts.js'
 import Type from './type.js'
 import TsError, { makeError } from './error.js'
 import Tuple from './tuple.js'
+import Rule from './rule.js';
 
 export class Schema {
   /**
@@ -22,103 +23,26 @@ export class Schema {
    */
   constructor(definition) {
     this.definition = definition
+
+    const makeType = (definition) => {
+      const keys = Object.keys(definition)
+      const pattern = {}
+      keys.forEach((key) => {
+        const def = definition[key]
+        if (isInstanceOf(def, Schema)) {
+          pattern[key] = makeType(def.definition)
+        }
+        else {
+          pattern[key] = def.type
+        }
+      })
+      return new Dict(pattern)
+    }
+    this.type = makeType(definition)
   }
 
   throw(error) {
     console.error(error)
-  }
-
-  /**
-   * 获取当前 schema 的 type
-   * @param {*} [keyPath] 获取对应节点上的 type
-   */
-  type(keyPath) {
-    const getPattern = (type) => {
-      if (isInstanceOf(type, Dict)) {
-        type = getPattern(type.pattern)
-      }
-      else if (isInstanceOf(type, List)) {
-        type = type.pattern.map(item => getPattern(item))
-        type.__isList = true
-      }
-      else if (isInstanceOf(type, Tuple)) {
-        type = type.pattern.map(item => getPattern(item))
-        type.__isTuple = true
-      }
-      else if (isObject(type)) {
-        type = map(type, item => getPattern(item))
-      }
-      else if (isArray(type)) {
-        type = type.map(item => getPattern(item))
-      }
-      return type
-    }
-
-    const definition = this.definition
-    const keys = Object.keys(definition)
-    var pattern = {}
-
-    if (this.__patternCache) {
-      pattern = this.__patternCache
-    }
-    else {
-      keys.forEach((key) => {
-        const def = definition[key]
-        let res = null
-        if (isInstanceOf(def, Schema)) {
-          let dict = def.type()
-          res = getPattern(dict)
-        }
-        else {
-          let { type } = def
-          res = getPattern(type)
-        }
-        pattern[key] = res
-      })
-
-      // 在短时间内复用缓存
-      this.__patternCache = pattern
-      clearTimeout(this.__patternCacheClear)
-      this.__patternCacheClear = setTimeout(() => {
-        delete this.__patternCache
-      })
-    }
-
-    if (keyPath) {
-      let chain = makeKeyChain(keyPath)
-      if (!chain.length) {
-        return new Dict(pattern)
-      }
-
-      let target = pattern
-      for (let i = 0, len = chain.length; i < len; i ++) {
-        let key = chain[i]
-        if ((!isObject(target) && !isArray(target)) || target[key] === undefined) {
-          return undefined
-        }
-        target = target[key]
-      }
-
-      if (isObject(target)) {
-        return new Dict(target)
-      }
-      else if (isArray(target)) {
-        if (target.__isTuple) {
-          return new Tuple(target)
-        }
-        else {
-          return new List(target)
-        }
-      }
-      else if (isInstanceOf(target, Type)) {
-        return target
-      }
-      else {
-        return new Type(target)
-      }
-    }
-
-    return new Dict(pattern)
   }
 
   /**
@@ -132,8 +56,7 @@ export class Schema {
       return error
     }
 
-    const type = this.type()
-    return type.catch(data)
+    return this.type.catch(data)
   }
 
   /**
@@ -150,56 +73,28 @@ export class Schema {
     const keys = Object.keys(definition)
     const output = {}
 
-    const validate = (key, value) => {
-      const { type } = definition[key]
-      const info = { key, value, pattern: type, schema: this, level: 'schema', action: 'validate' }
-      // 类型检查
-      let error = (type instanceof Schema) ? type.validate(value) : Ts.catch(value).by(type)
-      if (error) {
-        return makeError(error, info)
-      }
-    }
-
     keys.forEach((key) => {
       const def = definition[key]
-      const { type, flat, drop, map } = pattern
-      const defaultValue = pattern.default
+      const defaultValue = def.default
       const value = data[key]
 
       let comming = null
 
-      if (isInstanceOf(type, Schema)) {
-        comming = type.formulate(value)
+      if (isInstanceOf(def, Schema)) {
+        comming = def.formulate(value)
       }
       else {
-        let error = validate(key, value)
+        const { type } = def
+        const info = { key, value, pattern: type, schema: this, level: 'schema', action: 'validate' }
+        let error = isInstanceOf(type, Type) ? type.catch(value) : isInstanceOf(type, Rule) ? type.validate2(value, key, target) : Tx.catch(value).by(type)
         if (error) {
+          error = makeError(error, info)
           this.throw(error)
           comming = clone(defaultValue)
         }
         else {
           comming = clone(value)
         }
-      }
-
-      if (isFunction(flat)) {
-        let mapping = flat.call(this, comming)
-        let mappingKeys = Object.keys(mapping)
-        mappingKeys.forEach((key) => {
-          let value = mapping[key]
-          assign(output, key, value)
-        })
-      }
-
-      if (isFunction(drop) && drop.call(this, comming)) {
-        return
-      }
-      else if (isBoolean(drop) && drop) {
-        return
-      }
-
-      if (isFunction(map)) {
-        comming = map.call(this, comming)
       }
 
       output[key] = comming
@@ -213,7 +108,7 @@ export class Schema {
    * 需要注意的是，如果传入的 field 在原来中存在，会使用传入的 field 配置全量覆盖原来的。
    * @param {*} fields
    */
-  extends(fields) {
+  extend(fields) {
     const definition = this.definition
     const next = { ...definition, fields }
     const schema = new Schema(next)
@@ -226,50 +121,32 @@ export class Schema {
    */
   extract(fields) {
     const definition = this.definition
-    const keys = Object.keys(definition)
+    const keys = Object.keys(fields)
     const next = {}
 
-    const useKeys = []
-    const removeKeys = []
-    const passKeys = Object.keys(fields)
-
-    passKeys.forEach((key) => {
-      let value = fields[key]
-      if (value === true) {
-        useKeys.push(key)
-      }
-      else if (value === false) {
-        removeKeys.push(key)
+    keys.forEach((key) => {
+      if (fields[key] === true) {
+        let pattern = definition[key]
+        next[key] = pattern
       }
     })
 
-    const passCount = passKeys.length
-    const removeCount = removeKeys.length
-    const useCount = useKeys.length
+    const schema = new Schema(next)
+    return schema
+  }
+
+  mix(fields) {
+    const definition = this.definition
+    const keys = Object.keys(fields)
+    const next = {}
 
     keys.forEach((key) => {
-      const willing = fields[key]
-
-      if (willing === false) {
-        return
+      if (fields[key] === true) {
+        next[key] = definition[key]
       }
-
-      if (!isBoolean(willing)) {
-        // if all passed are true, treat undefined as false
-        if (useCount === passCount) {
-          return
-        }
-
-        // treat undefined as false
-        if (removeCount !== passCount) {
-          return
-        }
-
-        // if all passed are false, treat undefined as true
+      else if (isObject(fields[key])) {
+        next[key] = fields[key]
       }
-
-      let pattern = definition[key]
-      next[key] = pattern
     })
 
     const schema = new Schema(next)
