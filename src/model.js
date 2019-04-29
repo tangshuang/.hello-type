@@ -2,6 +2,8 @@ import { dict } from './dict.js'
 import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject, isEqual } from './utils.js'
 import Ts from './ts.js'
 import TsError, { makeError } from './error.js';
+import List from './list.js';
+import Rule from './rule.js';
 
 /**
  * 数据源相关信息
@@ -26,7 +28,7 @@ import TsError, { makeError } from './error.js';
  *     ],
  *
  *     // 从后台api拿到数据后恢复数据相关
- *     fill: data => !!data.on_market, // 可选
+ *     prepare: data => !!data.on_market, // 可选
  *       // 用一个数据去恢复模型数据，这个数据被当作prepare的参数data，prepare的返回值，将作为property的恢复后值使用
  *       // data就是override接收的参数
  *
@@ -107,7 +109,7 @@ export class Model {
     return this
   }
 
-  apply() {
+  digest() {
     const listeners = Object.values(this.listeners)
     if (!listeners.length) {
       return this
@@ -143,10 +145,10 @@ export class Model {
         })
       })
 
-      if (count > 15) {
-        return
-      }
       count ++
+      if (count > 15) {
+        throw new Error(`digest over 15 times.`)
+      }
 
       if (dirty) {
         digest()
@@ -154,11 +156,18 @@ export class Model {
     }
 
     digest()
+
+    return this
   }
 
   // 批量更新，异步动作，多次更新一个值，只会触发一次
   update(data = {}) {
-    const schema = this.__schema
+    // 通过调用 this.update() 强制刷新数据
+    if (isEmpty(data) || data === true) {
+      this.digest()
+      return Promise.resolve(this.state)
+    }
+
     const definition = this.definition
     const keys = Object.keys(data)
 
@@ -191,17 +200,49 @@ export class Model {
         for (let i = 0, len = items.length; i < len; i ++) {
           let item = items[i]
           let { key, value } = item
-          let type = schema.type(key)
-          let error = type.catch(value)
-          if (error) {
+          let def = definition[key]
+          let info = { key, value, pattern: def, model: this, level: 'model', action: 'update' }
+
+          if (isInstanceOf(def, Schema)) {
+            let type = def.type
+            let error = type.catch(value)
+            if (error) {
+              error = makeError(error, info)
+              reject(error)
+              return
+            }
+          }
+          else if (isArray(def) && isInstanceOf(def[0], Schema)) {
+            let [schema] = def
+            let type = schema.type
+            let SchemaType = new List([type])
+            let error = SchemaType.catch(value)
+            if (error) {
+              error = makeError(error, info)
+              reject(error)
+              return
+            }
+          }
+          else if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def)) {
+            let { type } = def
+            let error = isInstanceOf(type, Type) ? type.catch(value) : isInstanceOf(type, Rule) ? type.validate2(value, key, target) : Tx.catch(value).by(type)
+            if (error) {
+              error = makeError(error, info)
+              reject(error)
+              return
+            }
+          }
+          else {
+            let error = new TsError(`schema.definition.${key} type error.`)
             reject(error)
             return
           }
         }
 
         // 检查完数据再塞值
-        items.forEach(({ key, value }) => assign(this.state, key, value))
-        resolve()
+        items.forEach(({ key, value }) => this.set(key, value))
+        this.digest()
+        resolve(this.state)
       })
     })
   }
@@ -209,10 +250,36 @@ export class Model {
   // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   reset(data) {
-    let next = this.schema.ensure(data)
+    const definition = this.definition
+    const keys = Object.keys(definition)
+    const coming = {}
+
+    keys.forEach((key) => {
+      const def = definition[key]
+      if (isObject(def) && inObject('default', def) && inObject('type', def) && inObject('prepare', def)) {
+        const { prepare } = def
+        if (isFunction(prepare)) {
+          coming[key] = prepare.call(this, data)
+          return
+        }
+      }
+      coming[key] = data[key]
+    })
+
+    let next = this.schema.ensure(coming)
     this.state = next
-    this.schema.catch((error) => {
-      console.error(error)
+    this.schema.catch((errors) => {
+      this.__catch = errors
+    })
+  }
+
+  catch(fn) {
+    setTimeout(() => {
+      const noise = this.__catch
+      if (noise && noise.length) {
+        fn(noise)
+      }
+      this.__catch = []
     })
   }
 
@@ -234,35 +301,43 @@ export class Model {
         const output = {}
 
         keys.forEach((key) => {
-          const { drop, flat, map, type } = definition[key]
-          const value = data[key]
+          const def = definition[key]
+          var value = data[key]
 
-          if (type instanceof Schema) {
-            const v = extract(value, type.definition)
-            assign(output, key, v)
+          if (isInstanceOf(def, Schema)) {
+            value = isObject(value) ? extract(value, def.definition) : def.ensure({})
+            assign(output, key, value)
             return
           }
-
-
-          if (isFunction(flat)) {
-            let mapping = flat.call(this, value)
-            let mappingKeys = Object.keys(mapping)
-            mappingKeys.forEach((key) => {
-              let value = mapping[key]
-              assign(output, key, value)
-            })
-          }
-
-          if (isFunction(drop) && drop.call(this, value)) {
+          else if (isArray(def) && isInstanceOf(def[0], Schema)) {
+            let [schema] = def
+            value = isArray(value) ? value.map(item => extract(item, schema.definition)) : []
+            assign(output, key, value)
             return
           }
-          else if (isBoolean(drop) && drop) {
-            return
-          }
+          else if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def)) {
+            const { flat, drop, map } = def
 
-          if (isFunction(map)) {
-            let v = map.call(this, value)
-            assign(output, key, v)
+            if (isFunction(flat)) {
+              let mapping = flat.call(this, value)
+              let mappingKeys = Object.keys(mapping)
+              mappingKeys.forEach((key) => {
+                let value = mapping[key]
+                assign(output, key, value)
+              })
+            }
+
+            if (isFunction(drop) && drop.call(this, value)) {
+              return
+            }
+            else if (isBoolean(drop) && drop) {
+              return
+            }
+
+            if (isFunction(map)) {
+              let v = map.call(this, value)
+              assign(output, key, v)
+            }
           }
         })
 
@@ -293,38 +368,13 @@ export class Model {
     }
   }
 
-  validate(key) {
-    const pattern = this.pattern
-
-    // 校验整个值
-    if (!key) {
-      const keys = Object.keys(pattern)
-      return this.validate(keys)
-    }
-
-    // 多个key组成的数组
-    if (isArray(key)) {
-      const keys = key
-      for (let i = 0, len = keys.length; i < len; i ++) {
-        const key = keys[i]
-        const error = this.validate(key)
-        if (error) {
-          return error
-        }
-      }
-    }
-
-    // 单个key
-    if (!pattern[key]) {
-      return new Error(`${key} not exist in schema.`)
-    }
-
-    const { type } = pattern[key]
-    const value = this.get(key)
-
-    const error = (type instanceof Schema) ? type.assert(value) : this.ts.catch(value).by(type)
+  validate() {
+    const schema = this.schema
+    const data = this.state
+    const error = schema.validate(data)
     if (error) {
-      return error
+      const info = { value: data, pattern: schema, model: this, level: 'model', action: 'validate' }
+      return makeError(error, info)
     }
   }
 }

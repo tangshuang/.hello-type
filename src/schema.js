@@ -48,7 +48,6 @@ export class Schema {
     this.definition = definition
     this.type = makeTypeDef(definition)
     this.name = 'Schema'
-    this.noise = []
   }
 
   /**
@@ -85,10 +84,10 @@ export class Schema {
     const output = {}
 
     // 清空上一次留下来的噪声
-    this.noise = []
+    this.__catch = []
     // 一分钟之后清空 noise 释放内存。因此，要 catch 必须在一分钟之内，最好是 ensure 一结束
     setTimeout(() => {
-      this.noise = []
+      this.__catch = []
     }, 60*1000)
 
     keys.forEach((key) => {
@@ -107,7 +106,7 @@ export class Schema {
             let info = { key, value, pattern: def.type, schema: this, level: 'schema', action: 'ensure' }
             noise.forEach((error) => {
               error = makeError(error, info)
-              this.noise.push(error)
+              this.__catch.push(error)
             })
           }
         })
@@ -126,7 +125,7 @@ export class Schema {
                 noise.forEach((error) => {
                   error = makeError(error, info2)
                   error = makeError(error, info)
-                  this.noise.push(error)
+                  this.__catch.push(error)
                 })
               }
             })
@@ -137,7 +136,7 @@ export class Schema {
           comming = []
           setTimeout(() => {
             let error = new TsError(`{keyPath} should be an array for schema.`, info)
-            this.noise.push(error)
+            this.__catch.push(error)
           })
         }
       }
@@ -150,7 +149,7 @@ export class Schema {
             if (error) {
               let info = { key, value, pattern: type, schema: this, level: 'schema', action: 'ensure' }
               error = makeError(error, info)
-              this.noise.push(error)
+              this.__catch.push(error)
             }
           })
         }
@@ -171,11 +170,11 @@ export class Schema {
    */
   catch(fn) {
     setTimeout(() => {
-      const noise = this.noise
-      if (noise.length) {
-        noise.forEach(error => fn(error))
+      const noise = this.__catch
+      if (noise && noise.length) {
+        fn(noise)
       }
-      this.noise = []
+      this.__catch = []
     })
   }
 
