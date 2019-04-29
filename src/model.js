@@ -1,5 +1,5 @@
 import { dict } from './dict.js'
-import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject } from './utils.js'
+import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject, isEqual } from './utils.js'
 import Ts from './ts.js'
 import TsError, { makeError } from './error.js';
 
@@ -13,7 +13,7 @@ import TsError, { makeError } from './error.js';
  *     default: '', // 必填，默认值（parse 的时候使用）
  *     type: String, // 可选，数据类型，assert 的时候使用
  *
- *      // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
+ *     // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
  *     // 当给了validators，其他的校验配置失效（determine会保留，并且在所有的determine前执行
  *     validators: [
  *       {
@@ -52,43 +52,108 @@ import TsError, { makeError } from './error.js';
 export class Model {
   constructor(data = {}) {
     // 定义schema，进来的数据必须符合schema的要求，并且schema的输出字段将会被作为Model的字段，且schema的输出结果应该符合define的结构要求
-    const schema = this.schema()
-    if (!isObject(schema)) {
-      throw new Error('Model.schema should return an object.')
+    const definition = this.define()
+
+    if (!isObject(definition)) {
+      throw new Error('model.define should return an object.')
     }
-    this.__schema = new Schema(schema)
+
+    this.definition = definition
+    this.schema = new Schema(definition)
 
     this.state = {}
     this.reset(data)
+    this.listeners = {}
   }
 
-  schema() {
+  define() {
     throw new Error('Model.schema method should be override.')
   }
 
-  throw(error) {
-    console.error(error)
+  get(keyPath) {
+    return parse(this.state, keyPath)
   }
 
-  get(key) {
-    return key ? parse(this.state, key) : this.state
+  set(keyPath, value) {
+    assign(this.state, keyPath, value)
+    return this
   }
-  set(key, value) {
-    const schema = this.__schema
-    const type = schema.type(key)
 
-    if (!type) {
-      this.throw(new TsError(`${key} is not in Model.schema.`))
+  watch(keyPath, fn, deep = false) {
+    const value = this.get(keyPath)
+    const listener = this.listeners[keyPath]
+    if (!listener) {
+      this.listeners[keyPath] = {
+        keyPath,
+        value: null,
+        callbacks: [],
+      }
+      listener = this.listeners[keyPath]
     }
 
-    let error = type.catch(value)
-    if (error) {
-      this.throw(error)
+    listener.value = clone(value)
+    listener.callbacks.push({ fn, deep })
+    return this
+  }
+
+  unwatch(keyPath, fn) {
+    const listener = this.listeners[keyPath]
+    const { callbacks } = listener
+    callbacks.forEach((item, i) => {
+      if (item.fn === fn || fn === undefined) {
+        callbacks.splice(i, 1)
+      }
+    })
+    return this
+  }
+
+  apply() {
+    const listeners = Object.values(this.listeners)
+    if (!listeners.length) {
       return this
     }
 
-    assign(this.state, key, value)
-    return this
+    var dirty = false
+    var count = 0
+
+    const digest = () => {
+      dirty = false
+
+      listeners.forEach((item) => {
+        const { keyPath, value, callbacks } = item
+        const current = this.get(keyPath)
+
+        // set current value before callbacks run, so that you can get current value in callback function by using `this.get(keyPath)`
+        item.value = current
+        this.set(keyPath, current)
+
+        if (!callbacks.length) {
+          return
+        }
+
+        callbacks.forEach(({ fn, deep }) => {
+          if (deep && !isEqual(current, value)) {
+            fn.call(this, current, value)
+            dirty = true
+          }
+          else if (!deep && current !== value) {
+            fn.call(this, current, value)
+            dirty = true
+          }
+        })
+      })
+
+      if (count > 15) {
+        return
+      }
+      count ++
+
+      if (dirty) {
+        digest()
+      }
+    }
+
+    digest()
   }
 
   // 批量更新，异步动作，多次更新一个值，只会触发一次
@@ -144,14 +209,11 @@ export class Model {
   // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   reset(data) {
-    let error = this.__schema.validate(data)
-    if (error) {
-      error = makeError(error, { value: data, model: this, level: 'model', action: 'reset' })
-      this.throw(error)
-    }
-
-    let next = this.__schema.ensure(data)
+    let next = this.schema.ensure(data)
     this.state = next
+    this.schema.catch((error) => {
+      console.error(error)
+    })
   }
 
   /**

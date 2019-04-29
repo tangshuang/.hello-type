@@ -324,3 +324,40 @@ export function flatObject(obj, determine) {
   }
   return flat(obj)
 }
+
+export function isEqual(val1, val2) {
+  const equal = (obj1, obj2) => {
+    let keys1 = Object.keys(obj1)
+    let keys2 = Object.keys(obj2)
+    let keys = unionArray(keys1, keys2)
+
+    for (let i = 0, len = keys.length; i < len; i ++) {
+      let key = keys[i]
+
+      if (!inArray(key, keys1)) {
+        return false
+      }
+      if (!inArray(key, keys2)) {
+        return false
+      }
+
+      let value1 = obj1[key]
+      let value2 = obj2[key]
+      if (!isEqual(value1, value2)) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  if (isObject(val1) && isObject(val2)) {
+    return equal(val1, val2)
+  }
+  else if (isArray(val1) && isArray(val2)) {
+    return equal(val1, val2)
+  }
+  else {
+    return val1 === val2
+  }
+}

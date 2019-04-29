@@ -1,26 +1,25 @@
 import Dict from './dict.js'
 import List from './list.js'
-import { isObject, isArray, isNumber, isInstanceOf, isNumeric, isEmpty, isFunction, clone, makeKeyChain } from './utils.js'
+import { isObject, isArray, isInstanceOf, clone, inObject } from './utils.js'
 import Type from './type.js'
 import TsError, { makeError } from './error.js'
 import Rule from './rule.js'
 
-
-const makeType = (definition, _key_ = '') => {
+const makeTypeDef = (definition, _key_ = '') => {
   const keys = Object.keys(definition)
   const pattern = {}
   keys.forEach((key) => {
     const def = definition[key]
     const path = _key_ + '.' + key
     if (isInstanceOf(def, Schema)) {
-      pattern[key] = makeType(def.definition, path)
+      pattern[key] = makeTypeDef(def.definition, path)
     }
-    else if (isArray(def)) {
+    else if (isArray(def) && isInstanceOf(def[0], Schema)) {
       const [schema] = def
-      const type = makeType(schema.definition, path + '[]')
+      const type = makeTypeDef(schema.definition, path + '[]')
       pattern[key] = new List([type])
     }
-    else if (isObject(def)) {
+    else if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def)) {
       pattern[key] = def.type
     }
     else {
@@ -47,7 +46,7 @@ export class Schema {
    */
   constructor(definition) {
     this.definition = definition
-    this.type = makeType(definition)
+    this.type = makeTypeDef(definition)
     this.name = 'Schema'
     this.noise = []
   }
@@ -65,7 +64,10 @@ export class Schema {
     }
 
     let error = this.type.catch(data)
-    error = makeError(error, info)
+    if (error) {
+      error = makeError(error, info)
+      return error
+    }
   }
 
   /**
@@ -110,7 +112,7 @@ export class Schema {
           }
         })
       }
-      else if (isArray(def)) {
+      else if (isArray(def) && isInstanceOf(def[0], Schema)) {
         const [schema] = def
         const info = { key, value, pattern: Array, schema: this, level: 'schema', action: 'ensure' }
         if (isArray(value)) {
@@ -139,7 +141,7 @@ export class Schema {
           })
         }
       }
-      else if (isObject(def)) {
+      else if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def)) {
         const { type } = def
         let error = isInstanceOf(type, Type) ? type.catch(value) : isInstanceOf(type, Rule) ? type.validate2(value, key, target) : Tx.catch(value).by(type)
         if (error) {
@@ -164,7 +166,7 @@ export class Schema {
   }
 
   /**
-   * 用于异步捕获 ensure 过程中判断的错误
+   * 用于异步捕获 ensure 过程中判断的错误，在调用 ensure 之后使用
    * @param {*} fn
    */
   catch(fn) {
