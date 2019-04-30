@@ -13,6 +13,14 @@ import Rule from './rule.js'
  *     default: '', // 必填，默认值（parse 的时候使用）
  *     type: String, // 可选，数据类型，assert 的时候使用
  *
+ *     // 计算属性
+ *     // 每次digest之后同步
+ *     compute: function() {
+ *       const a = this.get('a')
+ *       const b = this.get('b')
+ *       return a + '' + b
+ *     },
+ *
  *     // 或者将多个校验器放在一个数组里面，这样可以根据不同的校验规则提示不同的错误信息，
  *     // 当给了validators，其他的校验配置失效（determine会保留，并且在所有的determine前执行
  *     validators: [
@@ -155,13 +163,28 @@ export class Model {
 
     digest()
 
+    // compute
+    const definition = this.definition
+    const keys = Object.keys(definition)
+
+    keys.forEach((key) => {
+      const def = definition[key]
+      if (isObject(def) && inObject('default', def) && inObject('type', def) && inObject('compute', def)) {
+        const { compute } = def
+        if (isFunction(compute)) {
+          const value = compute.call(this)
+          assign(this.state, key, value)
+        }
+      }
+    })
+
     return this
   }
 
   // 批量更新，异步动作，多次更新一个值，只会触发一次
   update(data = {}) {
     // 通过调用 this.update() 强制刷新数据
-    if (isEmpty(data) || data === true) {
+    if (!isObject()) {
       this.digest()
       return Promise.resolve(this.state)
     }
@@ -266,6 +289,8 @@ export class Model {
 
     let next = this.schema.ensure(coming)
     this.state = next
+    this.digest()
+
     this.schema.catch((errors) => {
       this.__catch = errors
     })
