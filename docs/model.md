@@ -113,6 +113,12 @@ some.update(next).then(data => console.log(data))
 
 If you pass an empty object or any other value which is not object, it will not update data but just sync computed properties and watchers.
 
+If errors occur, you can catch them in `catch`
+
+```js
+some.update(next).catch(error => console.log(error))
+```
+
 **watch**
 
 Register a watcher to watch proerty change, very like angular1.x's watch.
