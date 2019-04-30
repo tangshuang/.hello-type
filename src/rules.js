@@ -255,8 +255,8 @@ export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
  * @param {Function|Any} callback a function to return new value with origin old value
  */
 export const ifnotmatch = makeRuleGenerator('ifnotmatch', function(pattern, callback) {
-  const override = function(value, prop, target) {
-    target[prop] = isFunction(callback) ? callback(value) : callback
+  const override = function(value, key, target) {
+    target[key] = isFunction(callback) ? callback(value, key, target) : callback
   }
 
   if (isInstanceOf(pattern, Rule)) {

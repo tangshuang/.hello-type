@@ -103,7 +103,7 @@ export class Dict extends Type {
       if (fields[key] === true) {
         next[key] = current[key]
       }
-      else if (isObject(fields[key])) {
+      else if (isObject(fields[key]) || isInstanceOf(fields[key], Type)) {
         next[key] = fields[key]
       }
     })

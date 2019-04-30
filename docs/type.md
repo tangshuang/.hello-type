@@ -1,9 +1,12 @@
 # Type
 
-### Type Instance
+`Type` `Dict` `List` and `Tuple` are constructors called by new.
+
+## Usage
 
 In TypeSchema, the basic class constructor is `Type`, which is extended to `Dict` `List` `Enum` and `Tuple`.
-You can create an instance:
+
+You can create a Type instance:
 
 ```js
 import { Type } from 'typeschema'
@@ -121,7 +124,7 @@ const MyType = dict({
 })
 ```
 
-### Dict/List/Enum/Tuple
+## Dict/List/Enum/Tuple
 
 These 4 types of data structure is extended from `Type`. So they have the same methods with `Type`.
 
@@ -137,7 +140,7 @@ These 4 types of data structure is extended from `Type`. So they have the same m
 |    Tuple    |          |   tuple  |  immutable array
 +-------------+----------+----------+-------------------
 
-**Dict**
+### Dict
 
 ```js
 const DictType = Dict({
@@ -182,7 +185,65 @@ const SomeDictType = dict({
 
 As known, `list()` `tuple()` and `enumerate()` are available.
 
-**List**
+Dict has 3 more methods:
+
+**extend**
+
+To create a new dict based on current.
+
+```js
+const SomeType = new Dict({
+  name: String,
+})
+const Some2Type = SomeType.extend({
+  age: Number,
+})
+```
+
+It is the same as:
+
+```js
+const Some2Type = new Dict({
+  name: String,
+  age: Number,
+})
+```
+
+**extract**
+
+To create a new dict which is based on extracting from current dict.
+
+```js
+const SomeType = new Dict({
+  name: String,
+  age: Number,
+})
+const Some2Type = SomeType.extract({
+  name: true,
+})
+// Some2Type only uses name property
+```
+
+**mix**
+
+To create a new dict based on current dict.
+
+```js
+const SomeType = new Dict({
+  home: { name: String },
+  neighbor: { name: String },
+})
+const Some2Type = SomeType.mix({
+  home: true,
+  town: { name: String },
+})
+// Some2Type will have `home` and `twon`
+```
+
+Notice: mix only works for those properties whose value is object.
+
+
+### List
 
 A list is an array in which each item has some structure.
 
@@ -208,7 +269,7 @@ _What's the difference between List and Array?_
 
 An Array match any structure for its item. However, a List match certain structure for each item. And a List has order and type limited.
 
-**Tuple**
+### Tuple
 
 A tuple is a group of items with certain order, the length of tuple can not be changed.
 
@@ -227,7 +288,7 @@ But a Tuple should have stable length.
 List items should match given types in order, and the overflowed ones should match one of the given types.
 Tuple items should match the data type on each index.
 
-**Enum**
+### Enum
 
 An Enum is a set of values from which the given value should pick.
 
@@ -243,3 +304,31 @@ SomeType.test('black') // true
 SomeType.test(2) // true
 SomeType.test([]) // false
 ```
+
+## Extending Type
+
+How to create a new type? Just extend from Type and override `validate` method:
+
+```js
+class RangeType extends Type {
+  validate(value, pattern) {
+    if (!Array.isArray(pattern)) {
+      return new Error('pattern should be an array.')
+    }
+    if (typeof value !== 'number' || isNaN(value)) {
+      return new Error('value should be a number.')
+    }
+
+    const [min, max] = pattern
+    if (value < min || value > max) {
+      return new Error(`value should be in range [${min}, ${max}]`)
+    }
+  }
+}
+
+const SomeType = new RangeType([10, 20])
+SomeType.test(11) // true
+SomeType.test(221) // false
+```
+
+`validate` method should return an error or null.
