@@ -1,9 +1,7 @@
-import { dict } from './dict.js'
-import { isObject, isArray, isNumber, inObject, isInstanceOf, sortBy, assign, parse, isNumeric, isEmpty, isFunction, isBoolean, flatObject, isEqual } from './utils.js'
-import Ts from './ts.js'
-import TsError, { makeError } from './error.js';
-import List from './list.js';
-import Rule from './rule.js';
+import { isObject, isArray, inObject, isInstanceOf, assign, parse, isEmpty, isFunction, isBoolean, flatObject, isEqual } from './utils.js'
+import TsError, { makeError } from './error.js'
+import List from './list.js'
+import Rule from './rule.js'
 
 /**
  * 数据源相关信息
@@ -63,8 +61,7 @@ export class Model {
     this.definition = definition
     this.schema = new Schema(definition)
 
-    this.state = {}
-    this.reset(data)
+    this.state = this.schema.ensure(data)
     this.listeners = {}
   }
 

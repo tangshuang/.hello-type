@@ -1,16 +1,18 @@
 TypeSchema
 ==========
 
-An ECMAScript data arrangement system.
+An ECMAScript data schema system which based on data type validation.
 
 【[中文文档](https://www.tangshuang.net/5625.html)】
 
-TypeSchema is a js runtime data arrangement system, which contains 4 parts: Rule, Type, Schema and Model.
+TypeSchema is a js runtime data schema system, which contains 4 parts: Rule, Type, Schema and Model.
 You can use TypeSchema to:
 
-- delimit data with type
-- validate data
+- define your own data type
+- validate data structure
 - formulate data by type
+- watch data change
+- transform data between backend and frontend
 
 TypeSchema is always used to check data type or sturcture when interact with backend api in frontend, however, you can use it anywhere even in nodejs.
 
