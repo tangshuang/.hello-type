@@ -4,7 +4,7 @@ TypeSchema
 An ECMAScript data schema system which based on data type validation.
 
 - [API DOC](./docs)
-- [????](https://www.tangshuang.net/5625.html)
+- [中文文档](https://www.tangshuang.net/5625.html)
 
 TypeSchema is a js runtime data schema system, which contains 4 parts: Rule, Type, Schema and Model.
 You can use TypeSchema to:
