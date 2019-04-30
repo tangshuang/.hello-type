@@ -185,7 +185,7 @@ export class Model {
   // 批量更新，异步动作，多次更新一个值，只会触发一次
   update(data = {}) {
     // 通过调用 this.update() 强制刷新数据
-    if (!isObject()) {
+    if (!isObject(data) || isEmpty(data)) {
       this.digest()
       return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -303,6 +303,8 @@ export class Model {
     this.schema.catch((errors) => {
       this.__catch = errors
     })
+
+    return next
   }
 
   catch(fn) {
@@ -356,7 +358,7 @@ export class Model {
           var value = data[key]
 
           if (isInstanceOf(def, Schema)) {
-            value = isObject(value) ? extract(value, def.definition) : def.ensure({})
+            value = isObject(value) ? extract(value, def.definition) : def.ensure()
             assign(output, key, value)
             return
           }
@@ -367,7 +369,13 @@ export class Model {
             return
           }
           else if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def)) {
-            const { flat, drop, map } = def
+            const { flat, drop, map, type } = def
+
+            // type is inherited from Model, it means type is a Model too
+            // we will use the true data of this model to output
+            if (isInstanceOf(type.prototype, Model)) {
+              value = isInstanceOf(value, Model) ? value.data() : (new type()).schema.ensure()
+            }
 
             if (isFunction(flat)) {
               let mapping = flat.call(this, value)
