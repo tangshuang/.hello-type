@@ -75,6 +75,7 @@ export class Model {
 
   set(keyPath, value) {
     assign(this.state, keyPath, value)
+    this.digest()
     return this
   }
 
@@ -124,7 +125,7 @@ export class Model {
 
         // set current value before callbacks run, so that you can get current value in callback function by using `this.get(keyPath)`
         item.value = current
-        this.set(keyPath, current)
+        assign(this.state, keyPath, current)
 
         if (!callbacks.length) {
           return
@@ -237,14 +238,14 @@ export class Model {
         }
 
         // 检查完数据再塞值
-        items.forEach(({ key, value }) => this.set(key, value))
+        items.forEach(({ key, value }) => assign(this.state, key, value))
         this.digest()
         resolve(this.state)
       })
     })
   }
 
-  // 用新数据覆盖原始数据，使用schema的prepare函数获得需要覆盖的数据
+  // 用新数据覆盖原始数据，使用 schema 的 prepare 函数获得需要覆盖的数据
   // 如果一个数据不存在于新数据中，将使用默认值
   reset(data) {
     const definition = this.definition
@@ -285,11 +286,30 @@ export class Model {
    * @param {*} mode
    * 1: 获取经过map之后的数据
    * 2: 在1的基础上获取扁平化数据
-   * 3: 在2的基础上转化为FormData
+   * 3: 在2的基础上转化为 FormData
    * 0: 获取原始数据
    */
   data(mode = 0) {
-    if (mode === 1) {
+    // FormData
+    if (mode >= 3) {
+      const data = this.data(2)
+      const formdata = new FormData()
+      const formkeys = Object.keys(data)
+
+      formkeys.forEach((key) => {
+        formdata.append(key, data[key])
+      })
+
+      return formdata
+    }
+    // flat key extracted data
+    else if (mode >= 2) {
+      const data = this.data(1)
+      const output = flatObject(data)
+      return output
+    }
+    // extracted data
+    else if (mode >= 1) {
       const data = this.state
       const definition = this.definition
 
@@ -344,22 +364,7 @@ export class Model {
       const output = extract(data, definition)
       return output
     }
-    else if (mode === 2) {
-      const data = this.data(1)
-      const output = flatObject(data)
-      return output
-    }
-    else if (mode === 3) {
-      const data = this.data(2)
-      const formdata = new FormData()
-      const formkeys = Object.keys(data)
-
-      formkeys.forEach((key) => {
-        formdata.append(key, data[key])
-      })
-
-      return formdata
-    }
+    // original data
     else {
       return this.state
     }
