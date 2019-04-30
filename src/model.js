@@ -10,11 +10,11 @@ import Rule from './rule.js'
  * {
  *   // 字段名
  *   key: {
- *     default: '', // 必填，默认值（parse 的时候使用）
  *     type: String, // 可选，数据类型，assert 的时候使用
- *
+ *       // 注意：default 和 compute 的结果必须符合 type 的要求，这一点必须靠开发者自己遵守，TypeSchema 内部没有进行控制
+ *     default: '', // 必填，默认值（parse 的时候使用）
  *     // 计算属性
- *     // 每次digest之后同步
+ *     // 每次digest时同步
  *     compute: function() {
  *       const a = this.get('a')
  *       const b = this.get('b')
@@ -29,7 +29,6 @@ import Rule from './rule.js'
  *         validate: (value) => Boolean, // 可选，校验器，可以引入validators下的校验器，快速使用校验器
  *         determine: (value) => Boolean, // 决定是否要执行这个校验器，如果返回false，则忽略该校验器的校验规则
  *         message: '', // 可选，校验失败的时候的错误信息
- *         order: 10, // 校验顺序，越小越靠前进行校验，默认值为10
  *       },
  *     ],
  *
@@ -116,10 +115,26 @@ export class Model {
   }
 
   digest() {
+    if (this.__digesting) {
+      return this
+    }
+
     const listeners = Object.values(this.listeners)
     if (!listeners.length) {
       return this
     }
+
+    // computed properties
+    const definition = this.definition
+    const keys = Object.keys(definition)
+    const computers = []
+    keys.forEach((key) => {
+      const def = definition[key]
+      if (isObject(def) && inObject('default', def) && inObject('type', def) && isFunction(def.compute)) {
+        const { compute } = def
+        computers.push({ key, compute })
+      }
+    })
 
     var dirty = false
     var count = 0
@@ -127,25 +142,31 @@ export class Model {
     const digest = () => {
       dirty = false
 
+      // computing should come before callbacks, because current value of listeners may changed by computers
+      computers.forEach(({ key, compute }) => {
+        const value = compute.call(this)
+        assign(this.state, key, value)
+      })
+
       listeners.forEach((item) => {
         const { keyPath, value, callbacks } = item
         const current = this.get(keyPath)
+        const previous = value
 
         // set current value before callbacks run, so that you can get current value in callback function by using `this.get(keyPath)`
         item.value = current
-        assign(this.state, keyPath, current)
 
         if (!callbacks.length) {
           return
         }
 
         callbacks.forEach(({ fn, deep }) => {
-          if (deep && !isEqual(current, value)) {
-            fn.call(this, current, value)
+          if (deep && !isEqual(current, previous)) {
+            fn.call(this, current, previous)
             dirty = true
           }
-          else if (!deep && current !== value) {
-            fn.call(this, current, value)
+          else if (!deep && current !== previous) {
+            fn.call(this, current, previous)
             dirty = true
           }
         })
@@ -161,22 +182,9 @@ export class Model {
       }
     }
 
+    this.__digesting = true
     digest()
-
-    // compute
-    const definition = this.definition
-    const keys = Object.keys(definition)
-
-    keys.forEach((key) => {
-      const def = definition[key]
-      if (isObject(def) && inObject('default', def) && inObject('type', def) && inObject('compute', def)) {
-        const { compute } = def
-        if (isFunction(compute)) {
-          const value = compute.call(this)
-          assign(this.state, key, value)
-        }
-      }
-    })
+    this.__digesting = false
 
     return this
   }
@@ -186,7 +194,17 @@ export class Model {
     // 通过调用 this.update() 强制刷新数据
     if (!isObject()) {
       this.digest()
-      return Promise.resolve(this.state)
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          let error = this.schema.validate(this.state)
+          if (error) {
+            reject(error)
+          }
+          else {
+            resolve(this.state)
+          }
+        })
+      })
     }
 
     const definition = this.definition
@@ -277,12 +295,10 @@ export class Model {
 
     keys.forEach((key) => {
       const def = definition[key]
-      if (isObject(def) && inObject('default', def) && inObject('type', def) && inObject('prepare', def)) {
+      if (isObject(def) && inObject('default', def) && inObject('type', def) && isFunction(def.prepare)) {
         const { prepare } = def
-        if (isFunction(prepare)) {
-          coming[key] = prepare.call(this, data)
-          return
-        }
+        coming[key] = prepare.call(this, data)
+        return
       }
       coming[key] = data[key]
     })
@@ -402,6 +418,45 @@ export class Model {
     if (error) {
       const info = { value: data, pattern: schema, model: this, level: 'model', action: 'validate' }
       return makeError(error, info)
+    }
+
+    const definition = this.definition
+    const keys = Object.keys(definition)
+    for (let i = 0, len = keys.length; i < len; i ++) {
+      const key = keys[i]
+      const def = definition[key]
+      const value = data[key]
+      if (def && typeof def === 'object' && inObject('default', def) && inObject('type', def) && isArray(def.validators)) {
+        const { validators } = def
+        for (let i = 0, len = validators.length; i < len; i ++) {
+          const item = validators[i]
+
+          if (!isObject(item)) {
+            continue
+          }
+
+          const { determine, validate, message } = item
+
+          let shouldValidate = false
+          if (isFunction(determine) && determine.call(this, value)) {
+            shouldValidate = true
+          }
+          else if (isBoolean(determine) && determine) {
+            shouldValidate = true
+          }
+          if (!shouldValidate) {
+            continue
+          }
+
+          let res = validate.call(this, value)
+          let info = { value, key, pattern: new Rule(validate.bind(this)), model: this, level: 'model', action: 'validate' }
+          let msg = isFunction(message) ? message.call(this, value) : message
+          let error = isInstanceOf(res, Error) ? makeError(res, info) : !res ? new TsError(msg, info) : null
+          if (error) {
+            return error
+          }
+        }
+      }
     }
   }
 }
