@@ -82,7 +82,6 @@ export class Model {
 
   set(keyPath, value) {
     assign(this.state, keyPath, value)
-    this.digest()
     return this
   }
 
@@ -115,10 +114,6 @@ export class Model {
   }
 
   digest() {
-    if (this.__digesting) {
-      return this
-    }
-
     const listeners = Object.values(this.listeners)
     if (!listeners.length) {
       return this
@@ -182,9 +177,7 @@ export class Model {
       }
     }
 
-    this.__digesting = true
     digest()
-    this.__digesting = false
 
     return this
   }
