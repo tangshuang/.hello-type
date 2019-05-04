@@ -107,53 +107,6 @@ export function map(obj, fn) {
   return result
 }
 
-export function decorate(factory, method) {
-  return function(target, prop, descriptor) {
-    // decorate class constructor function
-    if (target && !prop) {
-      return class extends target {
-        constructor(...args) {
-          if (isFunction(factory) && method !== 'input' && method !== 'output') {
-            factory(...args)
-          }
-          super(...args)
-        }
-      }
-    }
-    // decorate class member
-    else if (prop) {
-      // change the property
-      descriptor.set = (value) => {
-        if (isFunction(factory) && method !== 'input' && method !== 'output') {
-          factory(value)
-        }
-        descriptor.value = value
-      }
-
-      // method
-      let property = descriptor.value
-      if (typeof property === 'function') {
-        let wrapper = function(...args) {
-          if (isFunction(factory) && method === 'input') {
-            factory(...args)
-          }
-          let result = property.call(this, ...args)
-          if (isFunction(factory) && method === 'output') {
-            factory(result)
-          }
-          return result
-        }
-        descriptor.value = wrapper
-      }
-
-      return descriptor
-    }
-    else {
-      return descriptor
-    }
-  }
-}
-
 export function clone(obj, fn) {
   let parents = []
   let clone = function(origin, path = '', obj) {

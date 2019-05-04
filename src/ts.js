@@ -1,4 +1,4 @@
-import { decorate, isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils.js'
+import { isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils.js'
 import Type from './type.js'
 import TsError, { makeError } from './error.js'
 
@@ -24,21 +24,18 @@ export class Ts {
   }
   dispatch(error) {
     this._listeners.forEach((fn) => {
-      Promise.resolve().then(() => fn(error))
+      Promise.resolve().then(() => fn.call(this, error))
     })
     return this
   }
 
   silent(value) {
-    this._silent = value
+    this._silent = !!value
   }
   throw(error) {
     this.dispatch(error)
-
-    if (this._silent) {
-      console.error(error)
-    }
-    else {
+    
+    if (!this._silent) {
       throw error
     }
   }
@@ -47,7 +44,7 @@ export class Ts {
    * @example
    * ts.expect(10).to.match(Number)
    */
-  expect(...targets) {
+  expect(value) {
     return {
       to: {
         match: (type) => {
@@ -56,7 +53,7 @@ export class Ts {
           }
 
           try {
-            type.assert(...targets)
+            type.assert(value)
             return true
           }
           catch (e) {
@@ -65,7 +62,7 @@ export class Ts {
           }
         },
         be: (type) => {
-          return this.expect(...targets).to.match(type)
+          return this.expect(value).to.match(type)
         },
       },
     }
@@ -75,14 +72,14 @@ export class Ts {
    * @example
    * let error = ts.catch(10).by(Number)
    */
-  catch(...targets) {
+  catch(value) {
     return {
       by: (type) => {
         if (!isInstanceOf(type, Type)) {
           type = new Type(type)
         }
 
-        let error = type.catch(...targets)
+        let error = type.catch(value)
         if (error) {
           this.dispatch(error)
         }
@@ -93,54 +90,32 @@ export class Ts {
 
   /**
    * @example
-   * ts.trace('10').by(Number).with(error => console.log(error.stack))
+   * ts.trace('10').by(Number)
    */
-  trace(...targets) {
+  trace(value) {
     return {
       by: (type) => {
         if (!isInstanceOf(type, Type)) {
           type = new Type(type)
         }
 
-        let defer = type.trace(...targets).with((error) => {
-          this.dispatch(error)
-          return error
-        })
-        return {
-          with: (fn) => defer.then((error) => {
-            if (error && isFunction(fn)) {
-              fn(error, targets, type)
-            }
-            return error
-          }),
-        }
+        return type.trace(value).catch(error => this.throw(error))
       },
     }
   }
 
   /**
    * @example
-   * ts.track('10').by(Number).with(error => console.log(error.stack))
+   * ts.track('10').by(Number)
    */
-  track(...targets) {
+  track(value) {
     return {
       by: (type) => {
         if (!isInstanceOf(type, Type)) {
           type = new Type(type)
         }
 
-        let defer = type.track(...targets).with((error) => {
-          this.dispatch(error)
-          return error
-        })
-        return {
-          with: (fn) => defer.then((error) => {
-            if (error && isFunction(fn)) {
-              fn(error, targets, type)
-            }
-            return error
-          }),
-        }
+        return type.track(value).catch(error => this.throw(error))
       },
     }
   }
@@ -151,182 +126,85 @@ export class Ts {
    * let bool = ts.is(Number).typeof(10)
    * let bool = ts.is(10).of(Number)
    */
-  is(...args) {
+  is(arg) {
     return {
-      typeof: (...targets) => {
-        let type = args[0]
+      typeof: (value) => {
+        let type = arg
         if (!isInstanceOf(type, Type)) {
           type = new Type(type)
         }
-
-        let error = type.catch(...targets)
+        
+        let error = type.catch(value)
         if (error) {
           this.dispatch(error)
-          return false
         }
-        else {
-          return true
-        }
+        return !error
       },
-      of: (type) => this.is(type).typeof(...args),
+      of: (type) => this.is(type).typeof(arg),
     }
   }
 
   /**
    * @param {string|undefined} which input|output
    * @example
-   * @ts.decorate('input').with((target) => SomeType.assertf(target))
+   * @ts.decorate('input').with((value) => SomeType.assert(value))
    */
-  decorate(which) {
-    return {
-      with: (factor) => decorate(function(...args) {
-        if (isFunction(factor)) {
-          factor(...args)
-        }
-        else if (isInstanceOf(factor, Type)) {
-          this.expect(...args).to.match(factor)
-        }
-      }, which),
-    }
-  }
-
-  define(target) {
-    function getRuleType(rule) {
-      return isInstanceOf(rule, Type) ? rule : new Type(rule)
-    }
-    function getRule(rule) {
-      let type = getRuleType(rule)
-      return type.rules[0]
-    }
-
-    if (!isObject(target)) {
-      let error = new TsError('define should recieve a object.', { target, type, level: 'define.by' })
-      this.throw(error)
-    }
-
-    return {
-      by: (type) => {
-        let rule = getRule(type)
-        if (!isObject(rule)) {
-          let error = new TsError('object should be defined by a dict.', { target, type, rule, level: 'define.by' })
-          this.throw(error)
-        }
-
-        function xclone(origin, rule) {
-          let result = {}
-          let rules = getRule(rule)
-          let ruleKeys = Object.keys(rules)
-          let propKeys = Object.keys(origin)
-
-          ruleKeys.forEach((key) => {
-            let propValue = origin[key]
-            let propRule = getRule(rules[key])
-
-            if (isObject(propRule)) {
-              if (isObject(propValue)) {
-                result[key] = xclone(propValue, propRule)
-              }
-              // if prop rule is an object, and the prop is undefined, I will set it to rule structure
-              else if (propValue === undefined) {
-                result[key] = xclone({}, propRule)
-              }
-              // if original prop value is not an object but should be an object called by rule
-              else {
-                let error = new TsError('object property should be by a object required by {should}.', {
-                  target,
-                  type,
-                  origin,
-                  rule,
-                  prop: key,
-                  value: propValue,
-                  propRule,
-                  level: 'define.by',
-                })
-                this.throw(error)
-
-                result[key] = propValue
+  decorate(method) {
+    var $this = this
+    var decorator = {
+      by: instance => {
+        $this = instance
+        return decorator
+      },
+      with: (type) => return function(target, prop, descriptor) {
+        // decorate class constructor function
+        if (target && !prop) {
+          if (method !== 'input' && method !== 'output') {
+            return class extends target {
+              constructor(...args) {
+                $this.expect(args).to.be(type)
+                super(...args)
               }
             }
-            else {
-              if (propValue === undefined) {
-                result[key] = undefined
-              }
-              else if (Array.isArray(propValue)) {
-                result[key] = [].concat(propValue)
-              }
-              else {
-                result[key] = propValue
-              }
-            }
-          })
-
-          propKeys.forEach((key) => {
-            if (!inObject(key, result)) {
-              result[key] = origin[key]
-            }
-          })
-
-          return result
+          }
+          else {
+            return target
+          } 
         }
-
-        function xproxy(origin, rule) {
-          let parents = []
-          let generate = function(origin, rule) {
-            parents.push(origin)
-
-            let keys = Object.keys(origin)
-            keys.forEach((key) => {
-              let propRule = getRule(rule[key])
-              let propValue = origin[key]
-
-              if (isObject(propValue) && isObject(propRule)) {
-                if (inArray(propValue, parents)) {
-                  origin[key] = propValue
-                }
-                else {
-                  origin[key] = xproxy(propValue, propRule)
-                }
+        // decorate class member
+        else if (prop) {
+          // change the property
+          if (method !== 'input' && method !== 'output') {
+            descriptor.set = (value) => {
+              $this.expect(value).to.be(type)
+              descriptor.value = value
+            }
+          }
+          
+          // method
+          if (typeof property === 'function' && (method === 'input' || method === 'output')) {
+            let property = descriptor.value
+            let wrapper = function(...args) {
+              if (method === 'input') {
+                $this.expect(args).to.be(type)
               }
-            })
-
-            return new Proxy(origin, {
-              set(obj, key, value) {
-                // if given type to check, use it
-                let propRule = rule[key]
-                if (propRule) {
-                  let PropType = getRuleType(propRule)
-                  let error = this.catch(value).by(PropType)
-                  if (error) {
-                    let e = makeError(error, { origin, rule, key, value, propRule, type, target, level: 'define.by' })
-                    this.throw(e)
-                  }
-
-                  // if value is object, should make proxy too
-                  let proprule = PropType.rules[0]
-                  if (isObject(value) && isObject(proprule)) {
-                    value = xclone(value, proprule)
-                    value = clone(value)
-                    value = xproxy(value, proprule)
-                  }
-                }
-
-                obj[key] = value
-                return true
-              },
-            })
+              let result = property.call(this, ...args)
+              if (method === 'output') {
+                $this.expect(result).to.be(type)
+              }
+              return result
+            }
+            descriptor.value = wrapper
           }
 
-          let proxy = generate(origin, rule)
-          parents = null
-          return proxy
+          return descriptor
         }
-
-        let xcloned = xclone(target, rule)
-        let cloned = clone(xcloned)
-        let proxy = xproxy(cloned, rule)
-        return proxy
-      },
+        else {
+          return descriptor
+        }
+      }
     }
+    return decorator
   }
 
 }
@@ -338,6 +216,5 @@ Ts.trace = ts.trace.bind(ts)
 Ts.track = ts.track.bind(ts)
 Ts.is = ts.is.bind(ts)
 Ts.decorate = ts.decorate.bind(ts)
-Ts.define = ts.define.bind(ts)
 
 export default Ts
