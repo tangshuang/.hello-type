@@ -3,7 +3,7 @@ module.exports = {
   entry: __dirname + '/src/index.js',
   output: {
     path: __dirname + '/dist',
-    filename: 'umd.js',
+    filename: 'bundle.js',
     library: 'typeschema',
     libraryTarget: 'umd',
     globalObject: 'typeof window !== undefined ? window : typeof global !== undefined ? global : typeof self !== undefined ? self : this',

@@ -1,5 +1,5 @@
 {
-  "name": "schema-type",
+  "name": "typeschema",
   "version": "0.1.0",
   "description": "An ECMAScript data type schema library.",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangshuang/schema-type.git"
+    "url": "git+https://github.com/tangshuang/typeschema.git"
   },
   "keywords": [
     "type"
@@ -18,18 +18,18 @@
   "author": "tangshuang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tangshuang/schema-type/issues"
+    "url": "https://github.com/tangshuang/typeschema/issues"
   },
-  "homepage": "https://github.com/tangshuang/schema-type#readme",
+  "homepage": "https://github.com/tangshuang/typeschema#readme",
   "devDependencies": {
     "@babel/core": "^7.4.4",
     "@babel/preset-env": "^7.4.4",
+    "babel-core": "^7.0.0-bridge.0",
     "babel-loader": "^8.0.5",
     "gulp": "^4.0.1",
     "gulp-babel": "^8.0.0",
     "jest": "^23.5.0",
     "webpack": "^4.30.0",
     "webpack-cli": "^3.3.2"
-  },
-  "dependencies": {}
+  }
 }
