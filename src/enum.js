@@ -1,10 +1,11 @@
 import Type from './type.js'
 import TsError from './error.js'
+import { isArray } from './utils.js'
 
 export class Enum extends Type {
   constructor(pattern) {
     if (!isArray(pattern)) {
-      throw new Error('Enum pattern should be an array.')
+      throw new TsError('Enum pattern should be an array.')
     }
 
     super(pattern)

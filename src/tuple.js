@@ -6,7 +6,7 @@ import TsError, { makeError } from './error.js'
 export class Tuple extends Type {
   constructor(pattern) {
     if (!isArray(pattern)) {
-      throw new Error('Tuple pattern should be an array.')
+      throw new TsError('Tuple pattern should be an array.')
     }
 
     super(pattern)

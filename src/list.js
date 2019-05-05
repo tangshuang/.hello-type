@@ -1,12 +1,16 @@
 import Type from './type.js'
-import { isArray } from './utils.js'
+import { isArray, isEmpty } from './utils.js'
 import TsError, { makeError } from './error.js'
-import Enum from './enum.js';
+import { Any } from './rules.js'
 
 export class List extends Type {
   constructor(pattern) {
     if (!isArray(pattern)) {
-      throw new Error('List pattern should be an array.')
+      throw new TsError('List pattern should be an array.')
+    }
+
+    if (isEmpty(pattern)) {
+      pattern = Array
     }
 
     super(pattern)

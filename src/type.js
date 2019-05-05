@@ -151,11 +151,6 @@ export class Type {
       let patternCount = patterns.length
       let itemCount = items.length
 
-      // array length should equal in strict mode
-      if (this.mode === 'strict' && patternCount !== itemCount) {
-        return new TsError('dirty', { ...info, length: patternCount })
-      }
-
       const enumerate = (patterns, value, index, items) => {
         for (let i = 0, len = patterns.length; i < len; i ++) {
           let pattern = patterns[i]
@@ -222,7 +217,7 @@ export class Type {
         // not found some key in target
         // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
         if (!inArray(key, targetKeys)) {
-          if (isInstanceOf(pattern, Rule) && this.mode !== 'strict') {
+          if (isInstanceOf(pattern, Rule)) {
             let error = pattern.validate2(value, key, target)
             if (!error) {
               continue

@@ -5,7 +5,7 @@ import TsError from './error.js'
 export class Dict extends Type {
   constructor(pattern) {
     if (!isObject(pattern)) {
-      throw new Error('Dict pattern should be an object.')
+      throw new TsError('Dict pattern should be an object.')
     }
 
     super(pattern)

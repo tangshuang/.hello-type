@@ -62,7 +62,7 @@ export class Model {
     const definition = this.define()
 
     if (!isObject(definition)) {
-      throw new Error('model.define should return an object.')
+      throw new TsError('model.define should return an object.')
     }
 
     this.definition = definition
@@ -73,7 +73,7 @@ export class Model {
   }
 
   define() {
-    throw new Error('model.define method should be override.')
+    throw new TsError('model.define method should be override.')
   }
 
   get(keyPath) {
@@ -169,7 +169,7 @@ export class Model {
 
       count ++
       if (count > 15) {
-        throw new Error(`digest over 15 times.`)
+        throw new TsError(`digest over 15 times.`)
       }
 
       if (dirty) {

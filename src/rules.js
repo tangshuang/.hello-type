@@ -7,12 +7,12 @@ import Tuple from './tuple.js'
 // create a simple rule
 export function makeRule(name, determine, message = 'mistaken') {
   if (isFunction(name)) {
-    message = determine
     determine = name
-    name = null
+    message = 'mistaken'
+    name = 'Rule'
   }
 
-  const options = {
+  return new Rule({
     name,
     validate: function(value) {
       const msg = isFunction(message) ? message(value) : message
@@ -27,9 +27,7 @@ export function makeRule(name, determine, message = 'mistaken') {
         return null
       }
     },
-  }
-
-  return new Rule(options)
+  })
 }
 
 // create some basic rules

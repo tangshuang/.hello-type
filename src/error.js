@@ -120,7 +120,7 @@ export class TsError extends TypeError {
             let should = name
 
             if (inArray(name, ['List', 'Tuple', 'Enum'])) {
-              let pattern = source.pattern.map(item => getShould(item))
+              let pattern = source.pattern.map(item => getReceive(item))
               should = `${name}(${pattern.join(',')})`
             }
             else if (name === 'Dict') {
@@ -130,11 +130,11 @@ export class TsError extends TypeError {
             }
             else if (name === 'Type') {
               let pattern = source.pattern
-              should = getShould(pattern)
+              should = getReceive(pattern)
             }
             else if (level === 'rule' && source.factors) {
               let factors = source.factors
-              let names = factors.map(factor => isFunction(factor) ? 'Function' : getShould(factor))
+              let names = factors.map(factor => isFunction(factor) ? 'Function' : getReceive(factor))
               should = `${name}(${names.join(',')})`
             }
 

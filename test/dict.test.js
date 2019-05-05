@@ -1,9 +1,9 @@
 import Dict from '../src/dict'
 
-xdescribe('Dict', () => {
+describe('Dict', () => {
   describe('assert', () => {
-    test('one level object', () => {
-      const DictType = Dict({
+    test('one level', () => {
+      const DictType = new Dict({
         name: String,
         age: Number,
       })
@@ -21,13 +21,13 @@ xdescribe('Dict', () => {
       }).toThrowError()
     })
     test('empty object', () => {
-      const DictType = Dict({})
+      const DictType = new Dict({})
       expect(() => { DictType.assert({}) }).not.toThrowError()
       expect(() => { DictType.assert({ name: 'tomy' }) }).not.toThrowError()
       expect(() => { DictType.Strict.assert({ name: 'tomy' }) }).toThrowError()
     })
     test('nested object', () => {
-      const DictType = Dict({
+      const DictType = new Dict({
         name: String,
         age: Number,
         parents: {
@@ -56,10 +56,10 @@ xdescribe('Dict', () => {
       }).toThrowError()
     })
     test('nested Dict', () => {
-      const DictType = Dict({
+      const DictType = new Dict({
         name: String,
         age: Number,
-        parents: Dict({
+        parents: new Dict({
           father: Object,
           mother: Object,
         }),
@@ -87,7 +87,7 @@ xdescribe('Dict', () => {
   })
   describe('test', () => {
     test('nested object', () => {
-      const DictType = Dict({
+      const DictType = new Dict({
         name: String,
         age: Number,
         parents: {
@@ -114,7 +114,7 @@ xdescribe('Dict', () => {
   })
   describe('catch', () => {
     test('nested object', () => {
-      const DictType = Dict({
+      const DictType = new Dict({
         name: String,
         age: Number,
         parents: {
@@ -141,7 +141,7 @@ xdescribe('Dict', () => {
   })
   describe('trace', () => {
     test('nested object', (done) => {
-      const DictType = Dict({
+      const DictType = new Dict({
         name: String,
         age: Number,
         parents: {
@@ -155,7 +155,7 @@ xdescribe('Dict', () => {
         parents: {
           father: {},
         },
-      }).with((error) => {
+      }).catch((error) => {
         expect(error).toBeInstanceOf(Error)
         done()
       })
