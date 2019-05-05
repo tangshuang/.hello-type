@@ -119,10 +119,10 @@ The passed value should match all passed patterns.
 It always used with `validate`.
 
 ```js
-const SomeRule = shouldmatch(
+const SomeRule = shouldmatch([
   validate(String, 'It should be a string.'),
   validate(Numeric, 'It should be a number.'),
-)
+])
 ```
 
 **shouldnotmatch**
@@ -132,10 +132,7 @@ The passed value should not match all passed patterns.
 - @param {...Pattern} patterns
 
 ```js
-const SomeRule = shouldmatch(
-  validate(String, 'It should not be a string.'),
-  validate(Number, 'It should not be a number.'),
-)
+const SomeRule = shouldnotmatch([String, Number])
 ```
 
 **ifexist**

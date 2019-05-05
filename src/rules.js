@@ -1,5 +1,5 @@
 import Type from './type.js'
-import { isFunction, isInstanceOf, isNumber, isBoolean, inObject, isNumeric, isNull, isUndefined, isArray, isObject } from './utils.js'
+import { isFunction, isInstanceOf, isNumber, isBoolean, inObject, isNumeric, isNull, isUndefined, isArray, isObject, isEqual } from './utils.js'
 import TsError, { makeError } from './error.js'
 import Rule from './rule.js'
 import Tuple from './tuple.js'
@@ -7,8 +7,8 @@ import Tuple from './tuple.js'
 // create a simple rule
 export function makeRule(name, determine, message = 'mistaken') {
   if (isFunction(name)) {
+    message = determine
     determine = name
-    message = 'mistaken'
     name = 'Rule'
   }
 
@@ -61,15 +61,15 @@ export const validate = makeRuleGenerator('validate', function(pattern, message)
   }
 
   if (isInstanceOf(pattern, Rule)) {
-    return makeRule(value => pattern.validate(value), message)
+    return makeRule(value => !pattern.validate(value), message)
   }
 
   if (isInstanceOf(pattern, Type)) {
-    return makeRule(value => pattern.test(value), message)
+    return makeRule(value => !pattern.validate(value), message)
   }
 
   let type = new Type(pattern)
-  return makeRule(value => type.test(value), message)
+  return makeRule(value => !type.validate(value), message)
 })
 
 /**
@@ -109,7 +109,11 @@ export const asynchronous = makeRuleGenerator('asynchronous', function(fn) {
  * the passed value should match all passed patterns
  * @param {...Pattern} patterns
  */
-export const shouldmatch = makeRuleGenerator('shouldmatch', function(...patterns) {
+export const shouldmatch = makeRuleGenerator('shouldmatch', function(patterns) {
+  if (!isArray(patterns)) {
+    patterns = [patterns]
+  }
+
   return new Rule(function(value) {
     const validate = (value, pattern) => {
       let info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
@@ -141,7 +145,11 @@ export const shouldmatch = makeRuleGenerator('shouldmatch', function(...patterns
  * the passed value should not match patterns
  * @param {...Pattern} patterns
  */
-export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(...patterns) {
+export const shouldnotmatch = makeRuleGenerator('shouldnotmatch', function(patterns) {
+  if (!isArray(patterns)) {
+    patterns = [patterns]
+  }
+
   return new Rule(function(value) {
     const validate = (value, pattern) => {
       let info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
@@ -192,10 +200,15 @@ export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
     }
     data = [key, target]
   }
+  const complete = () => {
+    isReady = false
+    isExist = false
+    data = []
+  }
 
   const make = (callback) => function(value) {
     if (!isReady) {
-      return new TsError('ifexist not ready')
+      return new TsError('ifexist can not be used in this situation.')
     }
     if (!isExist) {
       return null
@@ -222,7 +235,8 @@ export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
         let error = pattern.validate2(value, key, target)
         return error
       }),
-      override: prepare,
+      prepare,
+      complete,
     })
   }
 
@@ -232,7 +246,8 @@ export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
         let error = pattern.catch(value)
         return error
       }),
-      override: prepare,
+      prepare,
+      complete,
     })
   }
 
@@ -242,7 +257,8 @@ export const ifexist = makeRuleGenerator('ifexist', function(pattern) {
       let error = type.catch(value)
       return error
     }),
-    override: prepare,
+    prepare,
+    complete,
   })
 })
 
@@ -296,13 +312,13 @@ export const ifnotmatch = makeRuleGenerator('ifnotmatch', function(pattern, call
  */
 export const determine = makeRuleGenerator('determine', function(determine) {
   let isReady = false
-  let pattern
+  let pattern = null
   let data = []
 
   return new Rule({
     validate: function(value) {
       if (!isReady) {
-        return new TsError('determine not ready.')
+        return new TsError('determine can not be used in this situation.')
       }
 
       const [key, target] = data
@@ -329,10 +345,15 @@ export const determine = makeRuleGenerator('determine', function(determine) {
       let error = type.catch(value)
       return makeError(error, info)
     },
-    override: function(value, key, target) {
+    prepare: function(value, key, target) {
       pattern = determine(value, key, target)
       isReady = true
       data = [key, target]
+    },
+    complete: function() {
+      isReady = false
+      pattern = null
+      data = []
     },
   })
 })
@@ -354,18 +375,11 @@ export const shouldexist = makeRuleGenerator('shouldexist', function(determine, 
   return new Rule({
     validate: function(value) {
       if (!isReady) {
-        return new TsError('shouldexist not ready.')
+        return new TsError('shouldexist can not be used in this situation.')
       }
 
       const [key, target] = data
       const info = { value, pattern, rule: this, level: 'rule', action: 'validate' }
-
-      if (target && isArray(target)) {
-        info.index = key
-      }
-      else if (target && isObject(target)) {
-        info.key = key
-      }
 
       // can not exist and it does not exist, do nothing
       if (!shouldExist && !isExist) {
@@ -386,11 +400,17 @@ export const shouldexist = makeRuleGenerator('shouldexist', function(determine, 
       let error = type.catch(value)
       return makeError(error, info)
     },
-    override: function(value, key, target) {
+    prepare: function(value, key, target) {
       shouldExist = determine(value, key, target)
       isReady = true
       isExist = inObject(key, target)
       data = [key, target]
+    },
+    complete: function() {
+      shouldExist = true
+      isReady = false
+      isExist = false
+      data = []
     },
   })
 })
@@ -407,36 +427,35 @@ export const shouldnotexist = makeRuleGenerator('shouldnotexist', function(deter
   let isReady = false
   let shouldNotExist = false
   let isExist = false
-  let data = []
 
   return new Rule({
     validate: function(value) {
       if (!isReady) {
-        return new TsError('shouldnotexist not ready.')
+        return new TsError('shouldnotexist can not be used in this situation.')
       }
 
-      // should not exist and it does not exist, do nothing
+      // should not exist and is not existing
       if (shouldNotExist && !isExist) {
         return null
       }
 
-      const [key, target] = data
+      // can exist and is existing
+      if (!shouldNotExist && isExist) {
+        return null
+      }
+
       const info = { value, rule: this, level: 'rule', action: 'validate' }
-
-      if (target && isArray(target)) {
-        info.index = key
-      }
-      else if (target && isObject(target)) {
-        info.key = key
-      }
-
       return new TsError('overflow', info)
     },
-    override: function(value, prop, target) {
+    prepare: function(value, prop, target) {
       shouldNotExist = determine(value, prop, target)
       isReady = true
       isExist = inObject(prop, target)
-      data = [prop, target]
+    },
+    complete: function() {
+      isReady = false
+      shouldNotExist = false
+      isExist = false
     },
   })
 })
@@ -454,7 +473,7 @@ export const implement = makeRuleGenerator('implement', function(Cons) {
  * @param {Any} value
  */
 export const equal = makeRuleGenerator('equal', function(value) {
-  return makeRule(v => v === value)
+  return makeRule(v => isEqual(v, value))
 })
 
 /**
@@ -475,7 +494,7 @@ export const lambda = makeRuleGenerator('lambda', function(InputType, OutputType
   return new Rule({
     validate: function(value) {
       if (!isReady) {
-        return new TsError('lambda is not ready.')
+        return new TsError('lambda is can not be used in this situation.')
       }
 
       if (!isFunction(value)) {
@@ -483,7 +502,7 @@ export const lambda = makeRuleGenerator('lambda', function(InputType, OutputType
         return new TsError('mistaken', info)
       }
     },
-    override: function(value, key, target) {
+    prepare: function(value, key, target) {
       const lambda = function(...args) {
         InputType.assert(args)
         let result = value.apply(this, args)
@@ -492,6 +511,9 @@ export const lambda = makeRuleGenerator('lambda', function(InputType, OutputType
       }
       target[key] = lambda // Notice, change the original reference
       isReady = true
+    },
+    complete: function() {
+      isReady = false
     },
   })
 })

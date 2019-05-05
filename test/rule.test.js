@@ -1,9 +1,8 @@
 import Type from '../src/type.js'
-import Rule, { Any, Null, Undefined, Numeric, Int, Float } from '../src/rule.js'
-import Tuple from '../src/tuple.js'
+import Rule from '../src/rule.js'
 
 describe('Rule', () => {
-  test('create a rule match object', () => {
+  test('pass a determine function', () => {
     const ObjectRule = new Rule(function(value) {
       if (typeof value !== 'object') {
         return new Error(value + ' is not an object')
@@ -15,41 +14,46 @@ describe('Rule', () => {
     expect(() => { ObjectType.assert([]) }).not.toThrowError()
     expect(() => { ObjectType.assert('') }).toThrowError()
   })
-  test('Null', () => {
-    const NullType = new Type(Null)
-    expect(() => { NullType.assert({}) }).toThrowError()
-    expect(() => { NullType.assert(null) }).not.toThrowError()
-  })
-  test('Undefined', () => {
-    const UndefinedType = new Type(Undefined)
-    expect(() => { UndefinedType.assert({}) }).toThrowError()
-    expect(() => { UndefinedType.assert(undefined) }).not.toThrowError()
-  })
-  test('Any', () => {
-    const AnyType = new Type(Any)
-    expect(() => { AnyType.assert({}) }).not.toThrowError()
-    expect(() => { AnyType.assert('') }).not.toThrowError()
-    expect(() => { AnyType.assert(1) }).not.toThrowError()
-  })
-  test('Numeric', () => {
-    const SomeType = new Type({
-      number: Numeric,
-      numeral: Numeric,
+  test('pass validate option', () => {
+    const SomeRule = new Rule({
+      validate(value) {
+        if (typeof value !== 'object') {
+          return new Error(value + ' is not an object')
+        }
+      },
     })
-    const some = {
-      number: 1234,
-      numeral: '-23132.23423'
+    const SomeType = new Type(SomeRule)
+    expect(() => { SomeType.assert({}) }).not.toThrowError()
+    expect(() => { SomeType.assert(null) }).not.toThrowError()
+    expect(() => { SomeType.assert([]) }).not.toThrowError()
+    expect(() => { SomeType.assert('') }).toThrowError()
+  })
+  test('pass override option', () => {
+    const SomeRule = new Rule({
+      validate(value) {
+        if (typeof value !== 'object') {
+          return new Error(value + ' is not an object')
+        }
+      },
+      override(value, key, target) {
+        target[key] = {}
+      },
+    })
+    const SomeType = new Type({
+      key: SomeRule
+    })
+    expect(() => {
+      SomeType.assert({
+        key: null
+      })
+    }).not.toThrowError()
+
+    const obj = {
+      key: ''
     }
-    expect(() => SomeType.assert(some)).not.toThrowError()
-  })
-  test('Int', () => {
-    const SomeType = new Type(Int)
-    expect(SomeType.test(12)).toBeTruthy()
-    expect(SomeType.test(12.3)).toBeFalsy()
-  })
-  test('Float', () => {
-    const SomeType = new Type(Float)
-    expect(SomeType.test(12.4)).toBeTruthy()
-    expect(SomeType.test(12)).toBeFalsy()
+    expect(() => {
+      SomeType.assert(obj)
+    }).not.toThrowError()
+    expect(obj.key).toEqual({})
   })
 })

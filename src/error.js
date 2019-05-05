@@ -58,7 +58,7 @@ export class TsError extends TypeError {
       },
       summary: {
         get() {
-          const getReceive = (value, masking = false) => {
+          const getValueSummary = (value, masking = false) => {
             let totype = typeof(value)
             if (inArray(totype, ['boolean', 'undefined']) || value === null || isNaN(value)) {
               return value
@@ -80,7 +80,7 @@ export class TsError extends TypeError {
                 return `${name}(${value.length})`
               }
               else {
-                return `[${value.map(item => getReceive(item, masking)).join(',')}]`
+                return `[${value.map(item => getValueSummary(item, masking)).join(',')}]`
               }
             }
             else if (isObject(value)) {
@@ -91,7 +91,7 @@ export class TsError extends TypeError {
               else {
                 let values = []
                 keys.forEach((key) => {
-                  values.push(`${key}:` + getReceive(value[key], masking))
+                  values.push(`${key}:` + getValueSummary(value[key], masking))
                 })
                 return `{${values.join(',')}}`
               }
@@ -108,19 +108,19 @@ export class TsError extends TypeError {
               return res
             }
           }
-          const getShould = (info) => {
+          const getTraceSummary = (info) => {
             if (!info.level) {
               return 'unknown'
             }
 
             const level = info.level
             const source = info[level]
-            const name = getReceive(source)
+            const name = getValueSummary(source)
 
             let should = name
 
             if (inArray(name, ['List', 'Tuple', 'Enum'])) {
-              let pattern = source.pattern.map(item => getReceive(item))
+              let pattern = source.pattern.map(item => getValueSummary(item))
               should = `${name}(${pattern.join(',')})`
             }
             else if (name === 'Dict') {
@@ -130,12 +130,10 @@ export class TsError extends TypeError {
             }
             else if (name === 'Type') {
               let pattern = source.pattern
-              should = getReceive(pattern)
+              should = getValueSummary(pattern)
             }
-            else if (level === 'rule' && source.factors) {
-              let factors = source.factors
-              let names = factors.map(factor => isFunction(factor) ? 'Function' : getReceive(factor))
-              should = `${name}(${names.join(',')})`
+            else if (level === 'rule') {
+              should = name
             }
 
             return should
@@ -150,7 +148,7 @@ export class TsError extends TypeError {
             let prev = traces[i - 1]
             let keyPath = item.keyPath
             let sep = ''
-            let nextResearch = getShould(item)
+            let nextResearch = getTraceSummary(item)
 
             if (prev && prev.keyPath !== keyPath) { // keyPath changed
               sep = '/'
@@ -177,8 +175,8 @@ export class TsError extends TypeError {
 
           let summary = {
             value: info.value,
-            receive: getReceive(info.value, this.masking), // received node value
-            should: getShould(info), // node rule
+            receive: getValueSummary(info.value, this.masking), // received node value
+            should: getTraceSummary(info), // node rule
             research,
           }
           let res = Object.assign({}, info, summary)

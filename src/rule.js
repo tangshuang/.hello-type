@@ -17,11 +17,13 @@ export class Rule {
    * }
    */
   constructor(options = {}) {
-    var { name, validate, override, message } = options
+    var { name, validate, override, message, prepare, complete } = options
     if (isFunction(options)) {
       validate = options
     }
 
+    this._prepare = prepare
+    this._complete = complete
     this._validate = validate
     this._override = override
     this._message = message
@@ -58,11 +60,17 @@ export class Rule {
    */
   validate2(value, key, target) {
     const info = { value, rule: this, level: 'rule', action: 'validate2' }
+    if (isFunction(this._prepare)) {
+      this._prepare.call(this, value, key, target)
+    }
     let error = this.validate(value)
     if (error && isFunction(this._override)) {
       this._override.call(this, value, key, target)
       value = target[key]
       error = this.validate(value)
+    }
+    if (isFunction(this._complete)) {
+      this._complete.call(this, value, key, target)
     }
     return makeError(error, info)
   }

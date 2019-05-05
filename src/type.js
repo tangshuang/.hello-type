@@ -32,6 +32,10 @@ export class Type {
    * @param {*} pattern
    */
   validate(value, pattern) {
+    if (arguments.length === 1) {
+      pattern = this.pattern
+    }
+
     const info = { value, pattern, type: this, level: 'type', action: 'validate' }
     // custom rule
     // i.e. (new Type(new Rule(value => typeof value === 'object'))).assert(null)

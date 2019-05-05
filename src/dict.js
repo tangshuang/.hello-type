@@ -1,6 +1,6 @@
 import Type from './type.js'
 import { isObject, isInstanceOf } from './utils.js'
-import TsError from './error.js'
+import TsError, { makeError } from './error.js'
 
 export class Dict extends Type {
   constructor(pattern) {

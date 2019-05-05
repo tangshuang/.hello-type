@@ -81,8 +81,19 @@ export function isConstructor(f) {
   return true
 }
 
-export function isInstanceOf(ins, cons, strict) {
-  return strict ? ins.constructor === cons : ins instanceof cons
+export function isInstanceOf(ins, Interface, strict) {
+  return ins instanceof Interface && (strict ? ins.constructor === Interface : true)
+}
+
+/**
+ * 求数组的并集
+ * @param {*} a
+ * @param {*} b
+ * @example
+ * unionArray([1, 2], [1, 3]) => [1, 2, 3]
+ */
+export function unionArray(a, b) {
+  return a.concat(b.filter(v => !inArray(v, a)))
 }
 
 export function isEqual(val1, val2) {
