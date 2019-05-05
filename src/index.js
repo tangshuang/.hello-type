@@ -21,6 +21,6 @@ export {
 
 export { TsError } from './error.js'
 
-import Ts from './ts.js'
-export { Ts }
-export default Ts
+import TySheMo from './tyshemo.js'
+export { TySheMo }
+export default TySheMo

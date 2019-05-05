@@ -1,13 +1,13 @@
-TypeSchema
+TySheMo
 ==========
 
-An ECMAScript data schema system which based on data type validation.
+An ECMAScript data type/schema system which based on data type validation.
 
 - [API DOC](./docs)
 - [中文文档](https://www.tangshuang.net/5625.html)
 
-TypeSchema is a js runtime data schema system, which contains 4 parts: Rule, Type, Schema and Model.
-You can use TypeSchema to:
+TySheMo is a js runtime data type/schema system, which contains 4 parts: Rule, Type, Schema and Model.
+You can use TySheMo to:
 
 - define your own data type
 - validate data structure
@@ -18,34 +18,34 @@ You can use TypeSchema to:
 ## Install
 
 ```
-npm i typeschema
+npm i tyshemo
 ```
 
 ## Usage
 
 ```js
-import Ts from 'typeschema'
+import TySheMo from 'tyshemo'
 ```
 
 or
 
 ```js
-const { Ts } = require('typeschema')
+const { TySheMo } = require('tyshemo')
 ```
 
 or
 
 ```html
-<script src="/node_modules/typeschema/dist/index.js"></script>
+<script src="/node_modules/tyshemo/dist/bundle.js"></script>
 <script>
-const { Ts } = window['typeschema']
+const { TySheMo } = window['tyshemo']
 </script>
 ```
 
 If you want to use some sub modules, you can use files in dist dir.
 
 ```js
-import Rule from 'typeschema/dist/rule'
+import Rule from 'tyshemo/dist/rule'
 ```
 
 ## Concepts
@@ -103,7 +103,7 @@ After you learn the usage of `Rule`, you can define your own rule to create new 
 
 ```js
 // example
-import { Rule } from 'typeschema'
+import { Rule } from 'tyshemo'
 export const NumberString = new Rule('NumberString', value => typeof value === 'string' && /^\-?[0-9]+(\.{0,1}[0-9]+){0,1}$/.test(value))
 ```
 
@@ -128,7 +128,7 @@ And we have define some data structure:
 
 ```
 +-------------+----------+----------+--
-| TypeSchema  |    JS    |  Python  |
+| TySheMo  |    JS    |  Python  |
 +=============+==========+==========+==
 |    Dict     |  Object  |   dict   |
 +-------------+----------+----------+-------------------
@@ -174,7 +174,7 @@ And different type constructor need different pattern form.
 ### Schema
 
 A Schema is to describe data structure interaction logic.
-In javascript, we use object to reflect data set which contains fields, so in TypeSchema you should use object to define Schema.
+In javascript, we use object to reflect data set which contains fields, so in TySheMo you should use object to define Schema.
 
 A schema do not care the real data, it create a abstract data structure to validate and formulate data.
 By using formulated data, your business code will never have type or structure problem.

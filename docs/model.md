@@ -5,7 +5,7 @@ You should extend `Model` class, and override `define` method.
 ## Usage
 
 ```js
-import { Model, Enum } from 'typeschema'
+import { Model, Enum } from 'tyshemo'
 
 export class CarModel extends Model {
   // you should override the define method, and return the definition of this model

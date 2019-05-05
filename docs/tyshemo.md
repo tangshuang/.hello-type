@@ -1,24 +1,24 @@
-# Ts
+# TySheMo
 
-A helper for devloper to use TypeSchema more simple and quickly.
+A helper for devloper to use TySheMo more simple and quickly.
 
 ## Usage
 
 ```js
-import Ts from 'typeschema'
+import TySheMo from 'tyshemo'
 
-Ts.expect(10).to.be(Number)
-let error = Ts.catch(10).by(Number)
-if (Ts.is(10).of(Number)) {
+TySheMo.expect(10).to.be(Number)
+let error = TySheMo.catch(10).by(Number)
+if (TySheMo.is(10).of(Number)) {
   // ...
 }
 
-const ts = new Ts()
+const ts = new TySheMo()
 ts.bind(error => console.log(error))
 ts.expect(10).to.be(String)
 ```
 
-`Ts` is a class constructor, and it has some methods to operate quickly.
+`TySheMo` is a class constructor, and it has some methods to operate quickly.
 
 ## API
 
@@ -59,7 +59,7 @@ ts.track(10).by(Number).catch(error => connsole.log(error))
 
 **bind/unbind**
 
-When you use `Ts` helper to assert value, you can catch error in a seprated mode.
+When you use `TySheMo` helper to assert value, you can catch error in a seprated mode.
 You can collect all error by using `bind`.
 You should pass a function into `bind` and receive error with its parameter.
 
@@ -85,7 +85,7 @@ ts.silent(true) // set to be silent mode
 **decorate.by.with**
 
 ```js
-const SomeTsInstance = new Ts()
+const SomeTsInstance = new TySheMo()
 SomeTsInstance.silent(false)
 
 class A {

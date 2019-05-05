@@ -1,5 +1,5 @@
 {
-  "name": "typeschema",
+  "name": "tyshemo",
   "version": "0.1.0",
   "description": "An ECMAScript data type schema library.",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangshuang/typeschema.git"
+    "url": "git+https://github.com/tangshuang/tyshemo.git"
   },
   "keywords": [
     "type"
@@ -18,9 +18,9 @@
   "author": "tangshuang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tangshuang/typeschema/issues"
+    "url": "https://github.com/tangshuang/tyshemo/issues"
   },
-  "homepage": "https://github.com/tangshuang/typeschema#readme",
+  "homepage": "https://github.com/tangshuang/tyshemo#readme",
   "devDependencies": {
     "@babel/core": "^7.4.4",
     "@babel/preset-env": "^7.4.4",

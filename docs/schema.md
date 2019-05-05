@@ -5,7 +5,7 @@
 ## Usage
 
 ```js
-import { Schema } from 'typeschema'
+import { Schema } from 'tyshemo'
 const SomeSchema = new Schema({
   prop1: {
     type: String,

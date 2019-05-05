@@ -7,7 +7,7 @@
 To create a rule, you should use `Rule`.
 
 ```js
-import { Rule } from 'typeschema'
+import { Rule } from 'tyshemo'
 
 // pass options
 const SomeRule = new Rule({
@@ -67,7 +67,7 @@ We have built some internal rules:
 - Any: any value
 
 ```js
-import { Numeric, Any } from 'typeschema'
+import { Numeric, Any } from 'tyshemo'
 const SomeType = new Dict({
   name: String,
   age: Int,
@@ -81,7 +81,7 @@ We have some internal functions which to create rules in simple ways.
 For example:
 
 ```js
-import { ifexist } from 'typeschema'
+import { ifexist } from 'tyshemo'
 const SomeRule = ifexist(Number)
 ```
 

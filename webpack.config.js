@@ -4,7 +4,7 @@ module.exports = {
   output: {
     path: __dirname + '/dist',
     filename: 'bundle.js',
-    library: 'typeschema',
+    library: 'tyshemo',
     libraryTarget: 'umd',
     globalObject: 'typeof window !== undefined ? window : typeof global !== undefined ? global : typeof self !== undefined ? self : this',
   },

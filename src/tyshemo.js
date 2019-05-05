@@ -1,7 +1,7 @@
 import { isInstanceOf, isFunction } from './utils.js'
 import Type from './type.js'
 
-export class Ts {
+export class TySheMo {
   constructor() {
     this._listeners = []
     this._silent = false
@@ -208,12 +208,12 @@ export class Ts {
 
 }
 
-export const ts = new Ts()
-Ts.expect = ts.expect.bind(ts)
-Ts.catch = ts.catch.bind(ts)
-Ts.trace = ts.trace.bind(ts)
-Ts.track = ts.track.bind(ts)
-Ts.is = ts.is.bind(ts)
-Ts.decorate = ts.decorate.bind(ts)
+export const ts = new TySheMo()
+TySheMo.expect = ts.expect.bind(ts)
+TySheMo.catch = ts.catch.bind(ts)
+TySheMo.trace = ts.trace.bind(ts)
+TySheMo.track = ts.track.bind(ts)
+TySheMo.is = ts.is.bind(ts)
+TySheMo.decorate = ts.decorate.bind(ts)
 
-export default Ts
+export default TySheMo

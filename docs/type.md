@@ -4,12 +4,12 @@
 
 ## Usage
 
-In TypeSchema, the basic class constructor is `Type`, which is extended to `Dict` `List` `Enum` and `Tuple`.
+In TySheMo, the basic class constructor is `Type`, which is extended to `Dict` `List` `Enum` and `Tuple`.
 
 You can create a Type instance:
 
 ```js
-import { Type } from 'typeschema'
+import { Type } from 'tyshemo'
 const SomeType = new Type(String)
 // so that you can use methods' feature with SomeType
 ```
@@ -129,7 +129,7 @@ const MyType = dict({
 These 4 types of data structure is extended from `Type`. So they have the same methods with `Type`.
 
 +-------------+----------+----------+--
-| TypeSchema  |    JS    |  Python  |
+| TySheMo  |    JS    |  Python  |
 +-------------+----------+----------+--
 |    Dict     |  Object  |   dict   |
 +-------------+----------+----------+-------------------
@@ -175,7 +175,7 @@ An Object match any structure of object. However, a Dict match certain structure
 You can use `dict` function to create Dict quickly:
 
 ```js
-import { dict } from 'typeschema'
+import { dict } from 'tyshemo'
 
 const SomeDictType = dict({
   name: String,
