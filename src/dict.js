@@ -1,6 +1,6 @@
 import Type from './type.js'
 import { isObject, isInstanceOf } from './utils.js'
-import TsError, { makeError } from './error.js'
+import TsError from './error.js'
 
 export class Dict extends Type {
   constructor(pattern) {
@@ -12,14 +12,18 @@ export class Dict extends Type {
     this.name = 'Dict'
   }
 
-  validate(value, pattern) {
-    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'type', action: 'assert' }
 
     if (!isObject(value)) {
-      return new TsError('mistaken', info)
+      throw new TsError('mistaken', info)
     }
 
-    return super.validate(value, pattern)
+    const error = this.validate(value, pattern)
+    if (error) {
+      throw makeError(error, info)
+    }
   }
 
   extend(fields) {

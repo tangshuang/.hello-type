@@ -12,11 +12,12 @@ export class Tuple extends Type {
     super(pattern)
     this.name = 'Tuple'
   }
-  validate(value, pattern) {
-    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'type', action: 'assert' }
 
     if (!isArray(value)) {
-      return new TsError('mistaken', info)
+      throw new TsError('mistaken', info)
     }
 
     const items = value
@@ -25,18 +26,19 @@ export class Tuple extends Type {
     const itemCount = items.length
 
     if (this.mode === 'strict' && itemCount !== patternCount) {
-      return new TsError('dirty', { ...info, length: patternCount })
+      throw new TsError('dirty', { ...info, length: patternCount })
     }
 
     for (let i = 0; i < itemCount; i ++) {
       let value = items[i]
       let pattern = patterns[i]
+      let _info = { ...info, index: i, value, pattern }
 
       // rule validate2
       if (isInstanceOf(pattern, Rule)) {
         let error = pattern.validate2(value, i, items)
         if (error) {
-          return makeError(error, { ...info, index: i, value, pattern })
+          throw makeError(error, _info)
         }
         else {
           continue
@@ -44,13 +46,11 @@ export class Tuple extends Type {
       }
 
       // normal validate
-      let error = super.validate(value, pattern)
+      let error = this.validate(value, pattern)
       if (error) {
-        return makeError(error, { ...info, value, pattern, index: i })
+        throw makeError(error, _info)
       }
     }
-
-    return null
   }
 }
 

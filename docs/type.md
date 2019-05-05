@@ -307,21 +307,23 @@ SomeType.test([]) // false
 
 ## Extending Type
 
-How to create a new type? Just extend from Type and override `validate` method:
+How to create a new type? Just extend from Type and override `assert` method:
 
 ```js
 class RangeType extends Type {
-  validate(value, pattern) {
+  assert(value) {
+    const pattern = this.pattern
+
     if (!Array.isArray(pattern)) {
-      return new Error('pattern should be an array.')
+      throw new Error('pattern should be an array.')
     }
     if (typeof value !== 'number' || isNaN(value)) {
-      return new Error('value should be a number.')
+      throw new Error('value should be a number.')
     }
 
     const [min, max] = pattern
     if (value < min || value > max) {
-      return new Error(`value should be in range [${min}, ${max}]`)
+      throw new Error(`value should be in range [${min}, ${max}]`)
     }
   }
 }
@@ -331,4 +333,4 @@ SomeType.test(11) // true
 SomeType.test(221) // false
 ```
 
-`validate` method should return an error or null.
+`assert` method should throw an error.

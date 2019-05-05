@@ -12,53 +12,18 @@ export class List extends Type {
     super(pattern)
     this.name = 'List'
   }
-
-  validate(value, pattern) {
-    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'type', action: 'assert' }
 
     if (!isArray(value)) {
-      return new TsError('mistaken', info)
+      throw new TsError('mistaken', info)
     }
 
-    // can be empty array
-    if (!value.length) {
-      return null
+    const error = this.validate(value, pattern)
+    if (error) {
+      throw makeError(error, info)
     }
-
-    let patterns = pattern
-    let items = value
-    let patternCount = patterns.length
-    let itemCount = items.length
-
-    // array length should equal in strict mode
-    if (this.mode === 'strict' && patternCount !== itemCount) {
-      return new TsError('dirty', { ...info, length: patternCount })
-    }
-
-    pattern = patternCount > 1 ? new Enum(patterns) : patterns[0]
-
-    for (let i = 0; i < itemCount; i ++) {
-      let value = items[i]
-
-      // rule validate2
-      if (isInstanceOf(pattern, Rule)) {
-        let error = pattern.validate2(value, i, items)
-        if (error) {
-          return makeError(error, { ...info, index: i, value, pattern })
-        }
-        else {
-          continue
-        }
-      }
-
-      // normal validate
-      let error = super.validate(value, pattern)
-      if (errort) {
-        return makeError(error, { ...info, value, pattern, index: i })
-      }
-    }
-
-    return null
   }
 }
 

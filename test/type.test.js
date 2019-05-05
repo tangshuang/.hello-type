@@ -79,6 +79,19 @@ describe('Type', () => {
       expect(() => MyType.assert(111)).toThrowError()
       expect(() => MyType.assert(new String('...'))).toThrowError()
     })
+    test('{}', () => {
+      const SomeType = new Type({
+        name: String,
+        age: Number,
+      })
+      expect(() => SomeType.assert({ name: 'Tomy', age: 10 })).not.toThrowError()
+      expect(() => SomeType.assert({ name: 'Tomy' })).toThrowError()
+    })
+    test('[]', () => {
+      const SomeType = new Type([String, Number])
+      expect(() => SomeType.assert([10, 'Tomy'])).not.toThrowError()
+      expect(() => SomeType.assert(null)).toThrowError()
+    })
   })
   describe('test', () => {
     test('true', () => {

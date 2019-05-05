@@ -1,8 +1,18 @@
 import Rule from './rule.js'
 import TsError, { makeError } from './error.js'
-import { isArray, isBoolean, isNumber, isObject, isNaN, isString, isFunction, isSymbol, isConstructor, isInstanceOf } from './utils.js'
-
-import { list } from './list.js'
+import {
+  isArray,
+  isBoolean,
+  isNumber,
+  isObject,
+  isNaN,
+  isString,
+  isFunction,
+  isSymbol,
+  isConstructor,
+  isInstanceOf,
+  inArray,
+} from './utils.js'
 
 export class Type {
 
@@ -130,10 +140,60 @@ export class Type {
       }
     }
 
-    if (isArray(pattern)) {
-      let ListType = list(pattern)
-      let error = ListType.catch(value)
-      return makeError(error, info)
+    if (isArray(pattern) && isArray(value)) {
+      // can be empty array
+      if (!value.length) {
+        return null
+      }
+
+      let patterns = pattern
+      let items = value
+      let patternCount = patterns.length
+      let itemCount = items.length
+
+      // array length should equal in strict mode
+      if (this.mode === 'strict' && patternCount !== itemCount) {
+        return new TsError('dirty', { ...info, length: patternCount })
+      }
+
+      const enumerate = (patterns, value, index, items) => {
+        for (let i = 0, len = patterns.length; i < len; i ++) {
+          let pattern = patterns[i]
+          let error = isInstanceOf(pattern, Rule) ? pattern.validate2(value, index, items) : this.validate(value, pattern)
+          // if there is one match, break the loop
+          if (!error) {
+            return null
+          }
+        }
+        return new TsError('mistaken', info)
+      }
+
+      for (let i = 0; i < itemCount; i ++) {
+        let value = items[i]
+        let error
+        if (patternCount > 1) {
+          error = enumerate(patterns, value, i, items)
+          error = makeError(error, { ...info, index: i, value, pattern: patterns, action: 'enumerate' })
+        }
+        else {
+          let pattern = patterns[0]
+          if (isInstanceOf(pattern, Rule)) {
+            error = pattern.validate2(value, i, items)
+          }
+          else {
+            error = this.validate(value, pattern)
+          }
+          error = makeError(error, { ...info, index: i, value, pattern })
+        }
+        if (error) {
+          return error
+        }
+        else {
+          continue
+        }
+      }
+
+      return null
     }
 
     if (isObject(pattern) && isObject(value)) {
@@ -156,8 +216,8 @@ export class Type {
 
       for (let i = 0, len = patternKeys.length; i < len; i ++) {
         let key = patternKeys[i]
-        let pattern = patterns[key]
         let value = target[key]
+        let pattern = patterns[key]
 
         // not found some key in target
         // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
@@ -188,6 +248,8 @@ export class Type {
           return makeError(error, { ...info, key, value, pattern })
         }
       }
+
+      return null
     }
 
     // instance of a class

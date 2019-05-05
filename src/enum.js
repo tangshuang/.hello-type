@@ -10,21 +10,21 @@ export class Enum extends Type {
     super(pattern)
     this.name = 'Enum'
   }
-
-  validate(value, pattern) {
-    const info = { value, pattern, type: this, level: 'type', action: 'validate' }
+  assert(value) {
+    const pattern = this.pattern
+    const info = { value, pattern, type: this, level: 'type', action: 'assert' }
     const patterns = pattern
 
-    for (let i = 0, len = pattern.length; i < len; i ++) {
+    for (let i = 0, len = patterns.length; i < len; i ++) {
       let pattern = patterns[i]
-      let error = super.validate(value, pattern)
+      let error = this.validate(value, pattern)
       // if there is one match, break the loop
       if (!error) {
-        return null
+        return
       }
     }
 
-    return new TsError('mistaken', info)
+    throw new TsError('mistaken', info)
   }
 }
 
