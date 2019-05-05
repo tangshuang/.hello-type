@@ -42,6 +42,12 @@ const { Ts } = window['typeschema']
 </script>
 ```
 
+If you want to use some sub modules, you can use files in dist dir.
+
+```js
+import Rule from 'typeschema/dist/rule'
+```
+
 ## Concepts
 
 Before we develop, we should learn about four concepts.

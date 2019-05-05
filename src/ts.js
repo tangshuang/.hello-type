@@ -1,6 +1,5 @@
-import { isInstanceOf, isObject, inObject, clone, inArray, isFunction } from './utils.js'
+import { isInstanceOf, isFunction } from './utils.js'
 import Type from './type.js'
-import TsError, { makeError } from './error.js'
 
 export class Ts {
   constructor() {

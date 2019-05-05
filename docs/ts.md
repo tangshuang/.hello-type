@@ -69,7 +69,7 @@ function collectError(error) {
 }
 ts.bind(collectError)
 let bool = ts.is(10).of(String) // collectError will be run, because of checking fail
-``` 
+```
 
 `unbind` is to remove `fn` from listeners list.
 
@@ -91,7 +91,7 @@ SomeTsInstance.silent(false)
 class A {
   @decorate().with(Number)
   a = 10
-  
+
   @decorate('input').by(SomeTsInstance).with(SomeTupleType)
   @decorate('output').by(SomeTsInstance).with(Object)
   calc(x, y) {}

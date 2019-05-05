@@ -1,11 +1,10 @@
-const makeConfig = (filename, bundlename, libraryname) => ({
+module.exports = {
   mode: 'none',
-  entry: __dirname + '/src/' + filename + '.js',
-  devtool: 'source-map',
+  entry: __dirname + '/src/index.js',
   output: {
-    path: __dirname,
-    filename: bundlename + '.js',
-    library: libraryname,
+    path: __dirname + '/dist',
+    filename: 'umd.js',
+    library: 'typeschema',
     libraryTarget: 'umd',
     globalObject: 'typeof window !== undefined ? window : typeof global !== undefined ? global : typeof self !== undefined ? self : this',
   },
@@ -13,7 +12,17 @@ const makeConfig = (filename, bundlename, libraryname) => ({
     rules: [
       {
         test: /\.js$/,
-        use: 'babel-loader',
+        loader: 'babel-loader',
+        options: {
+          presets: [
+            ['@babel/preset-env', {
+              targets: {
+                ie: '8',
+              },
+              modules: false,
+            }]
+          ],
+        },
       },
     ],
   },
@@ -21,9 +30,4 @@ const makeConfig = (filename, bundlename, libraryname) => ({
     usedExports: true,
     sideEffects: true,
   },
-})
-
-module.exports = [
-  makeConfig('index', 'typeschema', 'typeschema'),
-  makeConfig(),
-]
+}

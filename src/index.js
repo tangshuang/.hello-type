@@ -11,11 +11,9 @@ export { Model } from './model.js'
 export {
   Null, Undefined, Any,
   Int, Float, Numeric,
-  asynchronous,
-  validate,
-  match,
+  asynchronous, validate, determine,
   ifexist, ifnotmatch,
-  determine,
+  shouldmatch, shouldnotmatch,
   shouldexist, shouldnotexist,
   implement, equal,
   lambda,

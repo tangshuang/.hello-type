@@ -2,11 +2,10 @@
   "name": "schema-type",
   "version": "0.1.0",
   "description": "An ECMAScript data type schema library.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "prepublishOnly": "npm run test && npm run build",
-    "build": "webpack",
-    "watch": "webpack --watch",
+    "build": "node gulpfile.js && webpack",
     "test": "jest"
   },
   "repository": {
@@ -23,11 +22,14 @@
   },
   "homepage": "https://github.com/tangshuang/schema-type#readme",
   "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-loader": "^7.1.5",
-    "babel-preset-env": "^1.7.0",
+    "@babel/core": "^7.4.4",
+    "@babel/preset-env": "^7.4.4",
+    "babel-loader": "^8.0.5",
+    "gulp": "^4.0.1",
+    "gulp-babel": "^8.0.0",
     "jest": "^23.5.0",
-    "webpack": "^4.16.5",
-    "webpack-cli": "^3.1.0"
-  }
+    "webpack": "^4.30.0",
+    "webpack-cli": "^3.3.2"
+  },
+  "dependencies": {}
 }
