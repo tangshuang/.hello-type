@@ -34,7 +34,7 @@ export class Ts {
   }
   throw(error) {
     this.dispatch(error)
-    
+
     if (!this._silent) {
       throw error
     }
@@ -133,7 +133,7 @@ export class Ts {
         if (!isInstanceOf(type, Type)) {
           type = new Type(type)
         }
-        
+
         let error = type.catch(value)
         if (error) {
           this.dispatch(error)
@@ -156,7 +156,7 @@ export class Ts {
         $this = instance
         return decorator
       },
-      with: (type) => return function(target, prop, descriptor) {
+      with: (type) => function(target, prop, descriptor) {
         // decorate class constructor function
         if (target && !prop) {
           if (method !== 'input' && method !== 'output') {
@@ -169,7 +169,7 @@ export class Ts {
           }
           else {
             return target
-          } 
+          }
         }
         // decorate class member
         else if (prop) {
@@ -180,7 +180,7 @@ export class Ts {
               descriptor.value = value
             }
           }
-          
+
           // method
           if (typeof property === 'function' && (method === 'input' || method === 'output')) {
             let property = descriptor.value

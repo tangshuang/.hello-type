@@ -1,11 +1,11 @@
-const makeConfig = (name) => ({
+const makeConfig = (filename, bundlename, libraryname) => ({
   mode: 'none',
-  entry: __dirname + '/src/' + name + '.js',
+  entry: __dirname + '/src/' + filename + '.js',
   devtool: 'source-map',
   output: {
     path: __dirname,
-    filename: name + '.js',
-    library: 'txpe',
+    filename: bundlename + '.js',
+    library: libraryname,
     libraryTarget: 'umd',
     globalObject: 'typeof window !== undefined ? window : typeof global !== undefined ? global : typeof self !== undefined ? self : this',
   },
@@ -24,6 +24,6 @@ const makeConfig = (name) => ({
 })
 
 module.exports = [
-  makeConfig('index'),
-  makeConfig('txpe'),
+  makeConfig('index', 'typeschema', 'typeschema'),
+  makeConfig(),
 ]

@@ -2,8 +2,7 @@ import Rule from './rule.js'
 import TsError, { makeError } from './error.js'
 import { isArray, isBoolean, isNumber, isObject, isNaN, isString, isFunction, isSymbol, isConstructor, isInstanceOf } from './utils.js'
 
-import Dict from './dict.js'
-import List from './list.js'
+import { list } from './list.js'
 
 export class Type {
 
@@ -132,15 +131,63 @@ export class Type {
     }
 
     if (isArray(pattern)) {
-      let ListType = new List(pattern)
+      let ListType = list(pattern)
       let error = ListType.catch(value)
       return makeError(error, info)
     }
 
-    if (isObject(pattern)) {
-      let DictType = new Dict(pattern)
-      let error = DictType.catch(value)
-      return makeError(error, info)
+    if (isObject(pattern) && isObject(value)) {
+      const patterns = pattern
+      const target = value
+      const patternKeys = Object.keys(patterns)
+      const targetKeys = Object.keys(target)
+
+      // in strict mode, keys should absolutely equal
+      if (this.mode === 'strict') {
+        // properties should be absolutely same
+        for (let i = 0, len = targetKeys.length; i < len; i ++) {
+          let key = targetKeys[i]
+          // target has key beyond rules
+          if (!inArray(key, patternKeys)) {
+            return new TsError('overflow', { ...info, key })
+          }
+        }
+      }
+
+      for (let i = 0, len = patternKeys.length; i < len; i ++) {
+        let key = patternKeys[i]
+        let pattern = patterns[key]
+        let value = target[key]
+
+        // not found some key in target
+        // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
+        if (!inArray(key, targetKeys)) {
+          if (isInstanceOf(pattern, Rule) && this.mode !== 'strict') {
+            let error = pattern.validate2(value, key, target)
+            if (!error) {
+              continue
+            }
+          }
+          return new TsError('missing', { ...info, key })
+        }
+
+        // rule validate2
+        if (isInstanceOf(pattern, Rule)) {
+          let error = pattern.validate2(value, key, target)
+          if (error) {
+            return makeError(error, { ...info, key, value, pattern })
+          }
+          else {
+            continue
+          }
+        }
+
+        // normal validate
+        let error = this.validate(value, pattern)
+        if (error) {
+          return makeError(error, { ...info, key, value, pattern })
+        }
+      }
     }
 
     // instance of a class
@@ -230,14 +277,8 @@ export class Type {
   }
   get strict() {
     const Constructor = Object.getPrototypeOf(this).constructor
-    const ins = new Constructor(...this.patterns)
+    const ins = new Constructor(this.pattern)
     ins.toBeStrict()
-
-    let keys = Object.keys(this)
-    keys.forEach((key) => {
-      ins[key] = this[key]
-    })
-
     return ins
   }
   get Strict() {

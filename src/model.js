@@ -73,7 +73,7 @@ export class Model {
   }
 
   define() {
-    throw new Error('Model.schema method should be override.')
+    throw new Error('model.define method should be override.')
   }
 
   get(keyPath) {

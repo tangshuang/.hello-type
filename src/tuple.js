@@ -54,8 +54,8 @@ export class Tuple extends Type {
   }
 }
 
-export function tuple(...patterns) {
-  const type = new Tuple(...patterns)
+export function tuple(pattern) {
+  const type = new Tuple(pattern)
   return type
 }
 

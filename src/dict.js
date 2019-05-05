@@ -1,5 +1,5 @@
 import Type from './type.js'
-import { isObject, isBoolean, isInstanceOf } from './utils.js'
+import { isObject, isInstanceOf } from './utils.js'
 import TsError, { makeError } from './error.js'
 
 export class Dict extends Type {
@@ -19,59 +19,7 @@ export class Dict extends Type {
       return new TsError('mistaken', info)
     }
 
-    const patterns = pattern
-    const target = value
-    const patternKeys = Object.keys(patterns)
-    const targetKeys = Object.keys(target)
-
-    // in strict mode, keys should absolutely equal
-    if (this.mode === 'strict') {
-      // properties should be absolutely same
-      for (let i = 0, len = targetKeys.length; i < len; i ++) {
-        let key = targetKeys[i]
-        // target has key beyond rules
-        if (!inArray(key, patternKeys)) {
-          return new TsError('overflow', { ...info, key })
-        }
-      }
-    }
-
-    for (let i = 0, len = patternKeys.length; i < len; i ++) {
-      let key = patternKeys[i]
-      let pattern = patterns[key]
-      let value = target[key]
-
-      // not found some key in target
-      // i.e. should be { name: String, age: Number } but give { name: 'tomy' }, 'age' is missing
-      if (!inArray(key, targetKeys)) {
-        if (isInstanceOf(pattern, Rule) && this.mode !== 'strict') {
-          let error = pattern.validate2(value, key, target)
-          if (!error) {
-            continue
-          }
-        }
-        return new TsError('missing', { ...info, key })
-      }
-
-      // rule validate2
-      if (isInstanceOf(pattern, Rule)) {
-        let error = pattern.validate2(value, key, target)
-        if (error) {
-          return makeError(error, { ...info, key, value, pattern })
-        }
-        else {
-          continue
-        }
-      }
-
-      // normal validate
-      let error = super.validate(value, pattern)
-      if (error) {
-        return makeError(error, { ...info, key, value, pattern })
-      }
-    }
-
-    return null
+    return super.validate(value, pattern)
   }
 
   extend(fields) {

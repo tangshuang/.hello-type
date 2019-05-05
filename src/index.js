@@ -3,8 +3,10 @@ export { Dict, dict } from './dict.js'
 export { List, list } from './list.js'
 export { Tuple, tuple } from './tuple.js'
 export { Enum, enumerate } from './enum.js'
-export { Schema } from './schema.js'
 export { Rule } from './rule.js'
+
+export { Schema } from './schema.js'
+export { Model } from './model.js'
 
 export {
   Null, Undefined, Any,

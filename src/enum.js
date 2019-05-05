@@ -1,6 +1,5 @@
 import Type from './type.js'
-import { isInstanceOf } from './utils.js'
-import TsError, { makeError } from './error.js'
+import TsError from './error.js'
 
 export class Enum extends Type {
   constructor(pattern) {
@@ -29,8 +28,8 @@ export class Enum extends Type {
   }
 }
 
-export function enumerate(...patterns) {
-  const type = new Enum(...patterns)
+export function enumerate(pattern) {
+  const type = new Enum(pattern)
   return type
 }
 
