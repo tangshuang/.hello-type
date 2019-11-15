@@ -5,6 +5,8 @@ An ECMAScript data type/structure check library.
 
 【[中文文档](https://www.tangshuang.net/5625.html)】
 
+**Deprecated. Use [tyshemo](https://github.com/tangshuang/tyshemo) instead.**
+
 ## Install
 
 ```
